@@ -15,9 +15,11 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, Self, runtime_checkable
 
-from aimedia.domain.artifacts import Artifact, ArtifactRole, RemoteArtifact
+from pydantic import model_validator
+
+from aimedia.domain.artifacts import Artifact, ArtifactKind, ArtifactRole, RemoteArtifact
 from aimedia.domain.base import DomainModel
 from aimedia.domain.costs import Cost, Usage
 from aimedia.domain.job import Job
@@ -57,6 +59,25 @@ class SubmissionResult(DomainModel):
     state: ProviderJobState
     remote_ref: RemoteJobRef | None = None
     result: ProviderResult | None = None
+
+    @model_validator(mode="after")
+    def _check_submission_state(self) -> Self:
+        if self.state is ProviderJobState.COMPLETED and (
+            self.result is None
+            or not any(
+                artifact.kind is ArtifactKind.IMAGE
+                and (artifact.url or artifact.base64_data or artifact.provider_file_id)
+                for artifact in self.result.remote_artifacts
+            )
+        ):
+            raise ValueError("completed submit требует результат с доступным image artifact")
+        if self.state in (ProviderJobState.SUBMITTED, ProviderJobState.RUNNING) and (
+            self.remote_ref is None or self.remote_ref.operation is None
+        ):
+            raise ValueError("ожидающий submit требует remote_ref с operation")
+        if self.state is ProviderJobState.FAILED:
+            raise ValueError("отказ provider при submit должен поднимать ProviderError")
+        return self
 
 
 @runtime_checkable

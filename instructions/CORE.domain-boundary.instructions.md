@@ -86,8 +86,10 @@ terminal — `completed`/`failed`/`cancelled` (инвариант 13).
 - Методы `ProviderGateway` асинхронны, методы `JobRepository`/`ArtifactStorage`
   синхронны: локальный SQLite не должен ждать remote внутри транзакции.
 - Через границу provider проходит `ProviderResult`/`SubmissionResult`, а не сырой
-  HTTP JSON и не `httpx.Response`. Нормализованный отказ provider поднимается как
-  `ProviderError` с `JobError`, а не возвращается особым значением результата.
+  HTTP JSON и не `httpx.Response`. `SubmissionResult(completed)` несёт результат
+  с доступным удалённым image artifact; `submitted`/`running` несёт `RemoteJobRef`
+  с `operation` для опроса. Нормализованный отказ provider поднимается как
+  `ProviderError` с `JobError`, а не возвращается состоянием `failed`.
 
 ## Место fake provider
 

@@ -23,8 +23,10 @@ from fake_provider import (
     FakeScenario,
     FakeTransportError,
 )
+from pydantic import ValidationError
 
 from aimedia.domain import (
+    ArtifactKind,
     CancellableProviderGateway,
     CompiledPrompt,
     ImageGenerationRequest,
@@ -35,6 +37,8 @@ from aimedia.domain import (
     ProviderGateway,
     ProviderJobState,
     ProviderRef,
+    ProviderResult,
+    RemoteArtifact,
     RemoteJobRef,
     RemoteOperation,
     SubmissionResult,
@@ -82,12 +86,68 @@ def test_real_adapter_missing_polling_is_not_a_fake_gateway_error() -> None:
             return ProviderCapabilities()
 
         async def submit(self, request: ImageGenerationRequest) -> SubmissionResult:
-            return SubmissionResult(state=ProviderJobState.COMPLETED)
+            return SubmissionResult(
+                state=ProviderJobState.COMPLETED,
+                result=ProviderResult(
+                    remote_artifacts=[
+                        RemoteArtifact(
+                            kind=ArtifactKind.IMAGE, url="https://example.invalid/image.png"
+                        )
+                    ]
+                ),
+            )
 
     provider = SyncOnlyProvider()
     assert isinstance(provider, ProviderGateway)
     assert not isinstance(provider, PollingProviderGateway)
     assert provider.capabilities.polling is False
+
+
+# --- Контракт результата submit ---------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        None,
+        ProviderResult(),
+        ProviderResult(remote_artifacts=[RemoteArtifact(kind=ArtifactKind.IMAGE)]),
+    ],
+)
+def test_completed_submission_requires_retrievable_image(result: ProviderResult | None) -> None:
+    with pytest.raises(ValidationError, match="доступным image artifact"):
+        SubmissionResult(state=ProviderJobState.COMPLETED, result=result)
+
+
+@pytest.mark.parametrize(
+    "locator",
+    [
+        {"url": "https://example.invalid/image.png"},
+        {"base64_data": "aW1hZ2U="},
+        {"provider_file_id": "file-1"},
+    ],
+)
+def test_completed_submission_accepts_each_artifact_locator(locator: dict[str, str]) -> None:
+    result = ProviderResult(remote_artifacts=[RemoteArtifact(kind=ArtifactKind.IMAGE, **locator)])
+    assert SubmissionResult(state=ProviderJobState.COMPLETED, result=result).result == result
+
+
+@pytest.mark.parametrize("state", [ProviderJobState.SUBMITTED, ProviderJobState.RUNNING])
+def test_pending_submission_requires_ref_with_operation(state: ProviderJobState) -> None:
+    with pytest.raises(ValidationError, match="remote_ref с operation"):
+        SubmissionResult(state=state)
+    with pytest.raises(ValidationError, match="remote_ref с operation"):
+        SubmissionResult(
+            state=state,
+            remote_ref=RemoteJobRef(provider_id=FAKE_PROVIDER_ID, remote_job_id=FAKE_REMOTE_JOB_ID),
+        )
+    ref = FakeImageProvider().remote_ref()
+    assert SubmissionResult(state=state, remote_ref=ref).remote_ref == ref
+
+
+def test_failed_submission_must_raise_provider_error_instead() -> None:
+    with pytest.raises(ValidationError, match="ProviderError"):
+        SubmissionResult(state=ProviderJobState.FAILED)
 
 
 # --- Сценарий success --------------------------------------------------------
