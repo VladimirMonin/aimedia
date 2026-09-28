@@ -186,6 +186,24 @@ def test_completed_image_job_accepts_saved_artifact_in_aggregate_list() -> None:
     assert job.artifact_paths == ("out/481/recovered.webp",)
 
 
+@pytest.mark.parametrize("final_in", ["result", "job"])
+def test_completed_image_artifact_cannot_be_removed_after_validation(final_in: str) -> None:
+    """Neither artifact collection can lose the only FINAL image after validation."""
+    final = saved_image_artifact()
+    job = make_completed_image_job(
+        result=JobResult(artifacts=[final] if final_in == "result" else []),
+        artifacts=[final] if final_in == "job" else [],
+    )
+    assert job.result is not None
+    artifacts = job.result.artifacts if final_in == "result" else job.artifacts
+    assert isinstance(artifacts, tuple)
+    with pytest.raises(AttributeError):
+        artifacts.clear()  # type: ignore[attr-defined]
+    assert job.status is JobStatus.COMPLETED
+    assert final in (*job.result.artifacts, *job.artifacts)
+    assert Job.model_validate_json(job.model_dump_json()) == job
+
+
 def test_completed_image_job_accepts_final_with_original_in_other_list() -> None:
     original = Artifact(
         kind=ArtifactKind.IMAGE,
@@ -215,7 +233,7 @@ def test_recovery_failed_to_completed_supplies_saved_artifact() -> None:
         cost=Cost(amount="4.00", currency="RUB"),
     )
     assert failed.result is None
-    assert failed.artifacts == []
+    assert failed.artifacts == ()
 
     with pytest.raises(InvalidJobStateTransitionError):
         ensure_transition(failed.status, JobStatus.COMPLETED)

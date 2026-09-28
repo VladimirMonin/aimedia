@@ -229,7 +229,9 @@ def test_full_job_round_trip_python_and_json() -> None:
         ),
         cost=Cost(amount="4.00", currency="RUB"),
         usage=Usage(output_units=1.0, raw={"cost_rub": 4.0}),
-        result=JobResult(),
+        result=JobResult(
+            artifacts=[Artifact(kind=ArtifactKind.IMAGE, local_path="out/481/result_002.webp")]
+        ),
         artifacts=[
             Artifact(
                 kind=ArtifactKind.IMAGE,
@@ -239,6 +241,12 @@ def test_full_job_round_trip_python_and_json() -> None:
             )
         ],
     )
+    payload = json.loads(job.model_dump_json())
+    assert isinstance(payload["artifacts"], list)
+    assert isinstance(payload["result"]["artifacts"], list)
+    assert isinstance(job.artifacts, tuple)
+    assert job.result is not None
+    assert isinstance(job.result.artifacts, tuple)
     for restored in (
         Job.model_validate(job.model_dump(mode="python")),
         Job.model_validate_json(job.model_dump_json()),
@@ -249,6 +257,9 @@ def test_full_job_round_trip_python_and_json() -> None:
         assert restored.cost.amount == Decimal("4.00")
         assert restored.created_at.tzinfo is not None
         assert restored.artifacts[0].mime_type == "image/webp"
+        assert isinstance(restored.artifacts, tuple)
+        assert restored.result is not None
+        assert isinstance(restored.result.artifacts, tuple)
 
 
 def test_mime_type_is_validated_and_normalized() -> None:

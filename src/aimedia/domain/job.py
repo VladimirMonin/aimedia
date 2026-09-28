@@ -53,7 +53,7 @@ class JobResult(DomainModel):
     `Artifact`; `content` покрывает текстовый ответ модели.
     """
 
-    artifacts: list[Artifact] = []
+    artifacts: tuple[Artifact, ...] = ()
     content: str | None = None
     usage: Usage | None = None
     cost: Cost | None = None
@@ -85,7 +85,7 @@ class Job(DomainModel):
     compiled_prompt: CompiledPrompt | None = None
 
     result: JobResult | None = None
-    artifacts: list[Artifact] = []
+    artifacts: tuple[Artifact, ...] = ()
 
     usage: Usage | None = None
     cost: Cost | None = None

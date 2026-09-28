@@ -102,14 +102,14 @@ def _iter_modules(root: Path, src_root: Path) -> Iterator[tuple[str, Path]]:
         yield _module_name(path, src_root), path
 
 
-def _resolve_relative(name: str, level: int, module: str) -> str:
-    """Привести относительный импорт к полному имени модуля."""
+def _resolve_relative(name: str, level: int, module: str, *, is_package: bool = False) -> str:
+    """Привести относительный импорт к полному имени модуля или пакета."""
     if level == 0:
         return name
-    package_parts = module.split(".")
-    # Уровень 1 — текущий пакет, поэтому для модуля `aimedia.domain.base` это
-    # `aimedia.domain`; для `aimedia.domain` (пакета) — `aimedia`.
-    base = package_parts[: len(package_parts) - level]
+    package_parts = module.split(".") if is_package else module.split(".")[:-1]
+    # Уровень 1 остаётся внутри текущего пакета; у __init__.py имя module уже
+    # обозначает пакет, тогда как у обычного файла последний компонент — модуль.
+    base = package_parts[: len(package_parts) - level + 1]
     if name:
         base = [*base, *name.split(".")]
     return ".".join(part for part in base if part)
@@ -123,7 +123,9 @@ def _imports_of(path: Path, module: str) -> set[str]:
         if isinstance(node, ast.Import):
             found.update(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom):
-            target = _resolve_relative(node.module or "", node.level, module)
+            target = _resolve_relative(
+                node.module or "", node.level, module, is_package=path.name == "__init__.py"
+            )
             if not target:
                 continue
             found.add(target)
@@ -353,9 +355,23 @@ def test_namespace_modules_returns_every_leaf() -> None:
 
 def test_relative_import_resolution() -> None:
     assert _resolve_relative("base", 1, "aimedia.domain.job") == "aimedia.domain.base"
-    assert _resolve_relative("", 1, "aimedia.domain") == "aimedia"
+    assert _resolve_relative("", 1, "aimedia.domain", is_package=True) == "aimedia.domain"
+    assert _resolve_relative("cli", 2, "aimedia.domain", is_package=True) == "aimedia.cli"
     assert _resolve_relative("domain", 2, "aimedia.domain.job") == "aimedia.domain"
     assert _resolve_relative("httpx", 0, "aimedia.domain.job") == "httpx"
+
+
+def test_package_relative_import_catches_forbidden_sibling(tmp_path: Path) -> None:
+    """`from ..cli import x` in domain/__init__.py must reach aimedia.cli."""
+    package_root = tmp_path / "src" / "aimedia"
+    domain_root = package_root / "domain"
+    domain_root.mkdir(parents=True)
+    (package_root / "__init__.py").write_text("", encoding="utf-8")
+    (domain_root / "__init__.py").write_text("from ..cli import x\n", encoding="utf-8")
+    graph = build_import_graph(root=package_root, src_root=tmp_path / "src")
+    reachable = reachable_from_namespace(graph, DOMAIN_PACKAGE)
+    assert "aimedia.cli" in graph[DOMAIN_PACKAGE]
+    assert _forbidden_hits(reachable, FORBIDDEN_INTERNAL_ROOTS) == {"aimedia.cli", "aimedia.cli.x"}
 
 
 def test_import_graph_uses_static_analysis_only() -> None:
