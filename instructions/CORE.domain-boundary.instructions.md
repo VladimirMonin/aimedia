@@ -100,5 +100,26 @@ terminal — `completed`/`failed`/`cancelled` (инвариант 13).
 Домен определяет только DTO (`PromptSource`, `CompiledPrompt`, `InputRef`).
 Чтение файлов, определение MIME, вычисление SHA-256 и компиляция prompt с
 разделителем `\n\n` — работа C04 (`feat(inputs): preserve ordered prompt and
-reference snapshots`). Не реализуй файловый pipeline в домене и не возвращай
-сохранённый прежний текст при изменившемся source-file.
+reference snapshots`) и живёт в `src/aimedia/application/`:
+
+- `aimedia.application.prompts.compile` — `PromptCompiler` на одном упорядоченном
+  списке источников; compiled prompt это ровно `"\n\n".join` снимков непустых
+  источников;
+- `aimedia.application.inputs.prepare` — `prepare_reference_images`: порядок refs в
+  `InputRef.position`, MIME по фактическим байтам, `size_bytes` и `sha256` по тем
+  же байтам;
+- `aimedia.application.inputs.image_probe` — структурная проверка PNG/JPEG/WebP по
+  содержимому (не по расширению), только стандартная библиотека.
+
+Границы, которые нельзя ослаблять:
+
+- файловый pipeline не возвращается в `aimedia.domain`; домен остаётся IO-free и
+  проверяется `tests/architecture/test_dependencies.py` (включая запрет импорта
+  `httpx`/`peewee`/`PIL`/`typer`/`yaml` из `aimedia.application`);
+- снимок источника (`PromptSource.text`) и подготовленный `InputRef` не
+  перечитываются задним числом: изменение файла на диске не меняет уже
+  подготовленные данные (инвариант prompt history);
+- количественные лимиты модели приходят из Model Registry (E03) и остаются
+  `None`, пока неизвестны; локально подтверждён только набор форматов
+  `SUPPORTED_IMAGE_MIME_TYPES` (PNG/JPEG/WebP) — придуманные model-specific числа
+  не подставляются (`06-model-registry.md`).

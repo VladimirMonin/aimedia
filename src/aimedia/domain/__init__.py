@@ -8,9 +8,10 @@
 денежные значения с различием unknown и zero, доменные ошибки, допустимые переходы
 состояний, provider/storage ports.
 
-Что появится на C04: компилятор prompt и подготовка входов (порядок, MIME,
-SHA-256). DTO под них (`PromptSource`, `CompiledPrompt`, `InputRef`) уже
-определены здесь, но файловый pipeline в C03 не реализуется.
+Файловый pipeline C04 (компиляция prompt и подготовка входов: порядок, MIME,
+SHA-256) живёт отдельно — в `aimedia.application`, а не в домене. Домен определяет
+только DTO под него (`PromptSource`, `CompiledPrompt`, `InputRef`) и остаётся
+IO-free.
 """
 
 from __future__ import annotations

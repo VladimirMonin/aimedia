@@ -55,6 +55,35 @@ FORBIDDEN_INTERNAL_ROOTS: frozenset[str] = frozenset(
     }
 )
 
+# Зависимости, которых не должно быть в application-слое: transport, ORM, CLI и
+# YAML остаются в своих adapters, а `aimedia.application` работает с доменными DTO.
+FORBIDDEN_APPLICATION_EXTERNAL_ROOTS: frozenset[str] = frozenset(
+    {
+        "aiohttp",
+        "httpx",
+        "peewee",
+        "PIL",
+        "platformdirs",
+        "pydantic_settings",
+        "requests",
+        "rich",
+        "sqlite3",
+        "typer",
+        "yaml",
+    }
+)
+
+# Модули проекта, от которых application не зависит: presentation и infra.
+FORBIDDEN_APPLICATION_INTERNAL_ROOTS: frozenset[str] = frozenset(
+    {
+        "aimedia.cli",
+        "aimedia.providers",
+        "aimedia.registry",
+        "aimedia.search",
+        "aimedia.storage",
+    }
+)
+
 # Каталоги тестовых doubles: production-код не имеет права их импортировать.
 FORBIDDEN_TEST_ROOTS: frozenset[str] = frozenset({"tests", "support", "offline_policy"})
 
@@ -185,6 +214,39 @@ def test_domain_does_not_call_open_or_path_io() -> None:
             if name in io_methods:
                 violations.append(f"{path.relative_to(REPO_ROOT)}:{node.lineno}: {name}()")
     assert violations == []
+
+
+APPLICATION_PACKAGE = "aimedia.application"
+
+
+def test_application_package_modules_are_discovered() -> None:
+    """Граф включает application-слой, а не только домен."""
+    graph = build_import_graph()
+    application_modules = {name for name in graph if name.startswith(APPLICATION_PACKAGE)}
+    assert "aimedia.application.prompts.compile" in application_modules
+    assert "aimedia.application.inputs.prepare" in application_modules
+
+
+def test_application_does_not_reach_transport_orm_or_cli() -> None:
+    """Application не тянет httpx/Peewee/Pillow/Typer/YAML и их адаптеры."""
+    graph = build_import_graph()
+    reachable = reachable_modules(graph, APPLICATION_PACKAGE)
+    assert _forbidden_hits(reachable, FORBIDDEN_APPLICATION_EXTERNAL_ROOTS) == set()
+
+
+def test_application_does_not_reach_presentation_or_infrastructure() -> None:
+    """Application не зависит от CLI, provider, registry, storage и search."""
+    graph = build_import_graph()
+    reachable = reachable_modules(graph, APPLICATION_PACKAGE)
+    assert _forbidden_hits(reachable, FORBIDDEN_APPLICATION_INTERNAL_ROOTS) == set()
+
+
+def test_application_prepares_data_only_in_its_own_layer() -> None:
+    """Подготовка входов не реализуется в домене: файловый pipeline — в application."""
+    graph = build_import_graph()
+    domain_reachable = reachable_modules(graph, DOMAIN_PACKAGE)
+    assert not any(module.startswith("aimedia.application") for module in domain_reachable)
+    assert any(module.startswith(APPLICATION_PACKAGE) for module in graph)
 
 
 def test_guard_would_detect_real_violation(tmp_path: Path) -> None:
