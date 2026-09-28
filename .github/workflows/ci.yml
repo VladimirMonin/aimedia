@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-checks:
+    name: offline checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      PYTHONUTF8: "1"
+      # Секретов здесь нет: offline-тесты явно отключают секреты и внешнюю сеть.
+      POLZA_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.9.27"
+          enable-cache: true
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Sync locked environment
+        run: uv sync --locked
+
+      - name: Run offline quality checks
+        run: uv run --locked --no-env-file python scripts/quality.py full --report-dir artifacts/quality
+
+      - name: Upload quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-${{ matrix.os }}
+          path: artifacts/quality
+          if-no-files-found: warn
