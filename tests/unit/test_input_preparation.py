@@ -173,6 +173,24 @@ def test_corrupted_png_content_is_rejected(tmp_path: Path, name: str, content: b
         ("truncated-seg.jpg", jpeg_with_truncated_segment_header()),
         ("beyond.jpg", jpeg_with_segment_beyond_file()),
         ("short-sof.jpg", jpeg_with_short_sof()),
+        ("no-sos.jpg", bytes.fromhex("ff d8 ff c0 00 0b 08 00 01 00 01 01 01 11 00 ff d9")),
+        ("empty-scan.jpg", jpeg_bytes().replace(b"\x00\xff\xd9", b"\xff\xd9")),
+        ("short-sos.jpg", jpeg_bytes().replace(b"\xff\xda\x00\x08", b"\xff\xda\x00\x07")),
+        (
+            "bad-selector.jpg",
+            jpeg_bytes().replace(b"\xff\xda\x00\x08\x01\x01", b"\xff\xda\x00\x08\x01\x02"),
+        ),
+        ("early-eoi.jpg", jpeg_bytes() + b"\xff\xd9"),
+        ("restart-outside-scan.jpg", b"\xff\xd8\xff\xd0" + jpeg_bytes()[2:]),
+        ("restart-only-scan.jpg", jpeg_bytes().replace(b"\x00\xff\xd9", b"\xff\xd0\xff\xd9")),
+        (
+            "sos-before-sof.jpg",
+            b"\xff\xd8" + jpeg_bytes()[15:25] + jpeg_bytes()[2:15] + b"\x00\xff\xd9",
+        ),
+        (
+            "short-sof-components.jpg",
+            jpeg_bytes().replace(b"\xff\xc0\x00\x0b", b"\xff\xc0\x00\x0a"),
+        ),
     ],
 )
 def test_corrupted_jpeg_content_is_rejected(tmp_path: Path, name: str, content: bytes) -> None:
@@ -487,13 +505,42 @@ def test_interlaced_png_with_broken_scanlines_is_rejected(
 
 
 def test_jpeg_with_filler_and_restart_markers_is_accepted(tmp_path: Path) -> None:
-    """0xFF-заполнители и restart-маркеры не ломают разбор JPEG."""
+    """0xFF-заполнители, stuffed FF и restart-маркеры допустимы внутри SOS."""
     path = _write(tmp_path, "fillers.jpg", jpeg_with_filler_bytes())
 
     prepared = prepare_reference_images([path])
 
     assert prepared[0].mime_type == "image/jpeg"
     assert prepared[0].metadata == {"width": 2, "height": 2}
+
+
+def test_progressive_jpeg_with_multiple_scans_is_accepted(tmp_path: Path) -> None:
+    """DHT между непустыми SOS-сканами не обрывает прогрессивный JPEG."""
+    single_scan = jpeg_bytes()
+    sos = b"\xff\xda\x00\x08\x01\x01\x00\x00\x3f\x00"
+    progressive = (
+        single_scan[:15].replace(b"\xff\xc0", b"\xff\xc2")  # SOF2 вместо SOF0
+        + sos[:7]
+        + b"\x00\x00\x00"  # Ss=Se=Ah/Al=0
+        + b"\x12\xff\xc4\x00\x02"  # первый скан, затем DHT
+        + sos[:7]
+        + b"\x01\x3f\x00"
+        + b"\x34\xff\xd9"
+    )
+    path = _write(tmp_path, "progressive.jpg", progressive)
+
+    prepared = prepare_reference_images([path])
+
+    assert prepared[0].metadata == {"width": 2, "height": 2}
+
+
+def test_jpeg_with_only_stuffed_entropy_byte_is_accepted(tmp_path: Path) -> None:
+    """FF00 в SOS считается одним байтом данных, а не маркером."""
+    path = _write(
+        tmp_path, "stuffed.jpg", jpeg_bytes().replace(b"\x00\xff\xd9", b"\xff\x00\xff\xd9")
+    )
+
+    assert prepare_reference_images([path])[0].mime_type == "image/jpeg"
 
 
 def test_multiple_idat_chunks_are_joined(tmp_path: Path) -> None:

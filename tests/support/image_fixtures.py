@@ -222,8 +222,8 @@ def png_with_truncated_chunk_header() -> bytes:
 
 
 def jpeg_bytes(width: int = 2, height: int = 2) -> bytes:
-    """Структурно корректный JPEG: SOI, SOF0, SOS и EOI без энтропийных данных."""
-    return b"\xff\xd8" + _jpeg_sof(width, height) + _JPEG_SOS + b"\xff\xd9"
+    """Минимальный JPEG-контейнер с SOF0, SOS и байтом данных скана."""
+    return b"\xff\xd8" + _jpeg_sof(width, height) + _JPEG_SOS + b"\x00\xff\xd9"
 
 
 def _jpeg_sof(width: int, height: int) -> bytes:
@@ -280,8 +280,13 @@ def jpeg_with_segment_beyond_file() -> bytes:
 
 
 def jpeg_with_filler_bytes() -> bytes:
-    """JPEG с 0xFF-заполнителем и restart-маркером до SOF."""
-    return b"\xff\xd8" + b"\xff\xff" + b"\xff\xd0" + _jpeg_sof(2, 2) + b"\xff\xd9"
+    """JPEG с заполнителями, stuffed FF и restart-маркером внутри SOS."""
+    return (
+        b"\xff\xd8\xff\xff"
+        + _jpeg_sof(2, 2)
+        + _JPEG_SOS
+        + b"\x00\xff\x00\xff\xd0\xff\xff\x01\xff\xd9"
+    )
 
 
 # --- WebP -------------------------------------------------------------------

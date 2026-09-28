@@ -6,7 +6,7 @@
 
 - PNG — сигнатура, последовательность chunk'ов с CRC (IHDR первым, IEND последним)
   и распаковываемые IDAT, объём которых соответствует геометрии изображения;
-- JPEG — маркеры сегментов, наличие SOF и терминатора EOI;
+- JPEG — маркеры сегментов, SOF, непустые SOS-сканы и терминатор EOI;
 - WebP — контейнер RIFF/WEBP с корректными размерами chunk'ов и присутствием
   кадра VP8/VP8L; VP8X — расширение контейнера, а не кадр, поэтому одного VP8X
   недостаточно (анимированный WebP локально не поддерживается).
@@ -316,7 +316,7 @@ def _png_adam7_layout(width: int, height: int, bits_per_pixel: int) -> list[tupl
 
 
 def _probe_jpeg(content: bytes) -> tuple[int, int]:
-    """Пройти маркеры JPEG, найти SOF и убедиться в наличии EOI."""
+    """Проверить структуру маркеров, SOF и непустых SOS-сканов до EOI."""
     if len(content) < 4:
         raise InvalidImageContentError("JPEG обрезан: файл короче минимального.")
     if not content.endswith(_JPEG_EOI):
@@ -324,38 +324,69 @@ def _probe_jpeg(content: bytes) -> tuple[int, int]:
 
     offset = 2  # после SOI
     dims: tuple[int, int] | None = None
+    components: frozenset[int] = frozenset()
+    saw_scan = False
+    in_scan = False
+    scan_payload = False
     total = len(content)
 
-    while offset + 1 < total:
-        if content[offset] != 0xFF:
-            raise InvalidImageContentError("JPEG повреждён: ожидался маркер сегмента.")
-        marker = content[offset + 1]
-        # Заполнители 0xFF допустимы между сегментами.
-        if marker == 0xFF:
+    while offset < total:
+        if in_scan and content[offset] != 0xFF:
+            scan_payload = True
             offset += 1
             continue
-        if marker in (0xD8, 0x01) or 0xD0 <= marker <= 0xD7:
-            offset += 2
+        if content[offset] != 0xFF:
+            raise InvalidImageContentError("JPEG повреждён: ожидался маркер сегмента.")
+        offset += 1
+        # Заполнители 0xFF допустимы как перед сегментами, так и в скане.
+        while offset < total and content[offset] == 0xFF:
+            offset += 1
+        if offset >= total:
+            raise InvalidImageContentError("JPEG обрезан: неполный маркер.")
+        marker = content[offset]
+        offset += 1
+        if in_scan:
+            if marker == 0x00:  # stuffed FF — один байт энтропийных данных
+                scan_payload = True
+                continue
+            if 0xD0 <= marker <= 0xD7:  # restart внутри скана
+                continue
+            if not scan_payload:
+                raise InvalidImageContentError("JPEG повреждён: пустой скан SOS.")
+            in_scan = False
+        elif marker == 0x00 or 0xD0 <= marker <= 0xD7:
+            raise InvalidImageContentError("JPEG повреждён: маркер скана вне SOS.")
+        if marker == 0xD9:
+            if not saw_scan or offset != total or dims is None:
+                raise InvalidImageContentError("JPEG повреждён: EOI до скана или лишние данные.")
+            return dims
+        if marker == 0xD8:
+            raise InvalidImageContentError("JPEG повреждён: повторный SOI.")
+        if marker == 0x01:  # TEM не несёт длины
             continue
-        if marker == 0xD9:  # EOI не несёт длины сегмента
-            break
-        if offset + 4 > total:
+        if offset + 2 > total:
             raise InvalidImageContentError("JPEG обрезан: неполный заголовок сегмента.")
-        (segment_length,) = struct.unpack(">H", content[offset + 2 : offset + 4])
+        (segment_length,) = struct.unpack(">H", content[offset : offset + 2])
         if segment_length < 2:
             raise InvalidImageContentError("JPEG повреждён: длина сегмента меньше 2.")
-        segment_end = offset + 2 + segment_length
+        segment_end = offset + segment_length
         if segment_end > total:
             raise InvalidImageContentError("JPEG обрезан: сегмент выходит за пределы файла.")
+        data = content[offset + 2 : segment_end]
         if _is_jpeg_sof(marker):
-            dims = _jpeg_sof_dimensions(content[offset + 4 : segment_end])
-        if marker == 0xDA:  # SOS: далее энтропийные данные до EOI
-            break
+            if dims is not None or saw_scan:
+                raise InvalidImageContentError("JPEG повреждён: повторный SOF.")
+            dims, components = _jpeg_sof_dimensions(data)
+        elif marker == 0xDA:
+            if dims is None:
+                raise InvalidImageContentError("JPEG повреждён: SOS до SOF.")
+            _validate_jpeg_sos(data, components)
+            saw_scan = True
+            in_scan = True
+            scan_payload = False
         offset = segment_end
 
-    if dims is None:
-        raise InvalidImageContentError("JPEG повреждён: отсутствует кадр (SOF).")
-    return dims
+    raise InvalidImageContentError("JPEG обрезан: отсутствует маркер EOI.")
 
 
 def _is_jpeg_sof(marker: int) -> bool:
@@ -363,13 +394,24 @@ def _is_jpeg_sof(marker: int) -> bool:
     return 0xC0 <= marker <= 0xCF and marker not in (0xC4, 0xC8, 0xCC)
 
 
-def _jpeg_sof_dimensions(data: bytes) -> tuple[int, int]:
-    if len(data) < 6:
+def _jpeg_sof_dimensions(data: bytes) -> tuple[tuple[int, int], frozenset[int]]:
+    if len(data) < 6 or data[5] == 0 or len(data) != 6 + 3 * data[5]:
         raise InvalidImageContentError("JPEG повреждён: SOF неверной длины.")
     height, width = struct.unpack(">HH", data[1:5])
     if width == 0 or height == 0:
         raise InvalidImageContentError("JPEG повреждён: нулевые размеры изображения.")
-    return width, height
+    components = frozenset(data[6::3])
+    if len(components) != data[5]:
+        raise InvalidImageContentError("JPEG повреждён: повторные компоненты SOF.")
+    return (width, height), components
+
+
+def _validate_jpeg_sos(data: bytes, components: frozenset[int]) -> None:
+    if len(data) < 4 or data[0] == 0 or len(data) != 4 + 2 * data[0]:
+        raise InvalidImageContentError("JPEG повреждён: SOS неверной длины.")
+    selectors = [data[index] for index in range(1, 1 + 2 * data[0], 2)]
+    if len(set(selectors)) != len(selectors) or not set(selectors) <= components:
+        raise InvalidImageContentError("JPEG повреждён: SOS с неизвестной компонентой.")
 
 
 def _probe_webp(content: bytes) -> tuple[int, int]:
