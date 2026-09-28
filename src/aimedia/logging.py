@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import sys
 import time
 import traceback
@@ -37,6 +38,36 @@ SENSITIVE_KEY_PARTS: tuple[str, ...] = (
     "secret",
     "token",
 )
+
+# Дополнительные имена query-/fragment-параметров, встречающиеся в signed URL
+# (AWS S3/CloudFront, Google Cloud Storage, Azure SAS, OAuth). Совпадение для
+# этого набора — точное, чтобы короткие ключи вроде `sig` не сужали чужие имена.
+SIGNED_URL_QUERY_KEYS: tuple[str, ...] = (
+    "access_key_id",
+    "awsaccesskeyid",
+    "googleaccessid",
+    "key_pair_id",
+    "policy",
+    "sas",
+    "sig",
+    "signature",
+    "x_amz_credential",
+    "x_amz_security_token",
+    "x_amz_signature",
+    "x_goog_credential",
+    "x_goog_security_token",
+    "x_goog_signature",
+)
+
+# Абсолютный URL c явной схемой. Unicode-хосты и pct-encoded userinfo попадают в
+# символьный класс, а пробелы и обрамляющие кавычки/скобки-декорации — нет.
+_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.\-]*://[^\s<>\"'`]+")
+# Пара `key=value` внутри query- или `#fragment`-части.
+_QUERY_PAIR_RE = re.compile(r"([^=&;#]+)=([^&;#]*)")
+# Пунктуация, которая по смыслу принадлежит предложению, а не URL.
+_URL_TRAILING_PUNCTUATION = ".,;!"
+# Закрывающие скобки-декорации (markdown/обрамление), но не IPv6-literal `[::1]`.
+_URL_CLOSING_TO_OPENING = {")": "(", "]": "[", "}": "{"}
 
 # Разрешённые поля записи события (полный список — в logging-contract.md).
 EVENT_FIELDS: tuple[str, ...] = (
@@ -83,13 +114,103 @@ def _is_sensitive_key(key: str) -> bool:
     return any(part in normalized for part in SENSITIVE_KEY_PARTS)
 
 
+def _is_sensitive_query_key(key: str) -> bool:
+    """Чувствителен ли query-/fragment-ключ URL.
+
+    Сначала переиспользуется консервативная проверка имён полей (`token`,
+    `secret`, …), затем — точный список signed URL variants.
+    """
+    if _is_sensitive_key(key):
+        return True
+    return key.lower().replace("-", "_") in SIGNED_URL_QUERY_KEYS
+
+
+def _redact_query_pairs(part: str) -> str:
+    """Затемнить значения чувствительных пар в query или `#fragment`-части.
+
+    `part` начинается с разделителя (`?`/`#`) и сохраняется как есть, чтобы не
+    менять структуру URL. Незнакомое значение удаляется целиком, а ключ и порядок
+    остальных пар остаются.
+    """
+    if not part:
+        return part
+
+    def _replace(match: re.Match[str]) -> str:
+        key, value = match.group(1), match.group(2)
+        if value and _is_sensitive_query_key(key):
+            return f"{key}={REDACTED}"
+        return match.group(0)
+
+    return part[0] + _QUERY_PAIR_RE.sub(_replace, part[1:])
+
+
+def _sanitize_url(url: str) -> str:
+    """Убрать userinfo и подписи из абсолютного URL, сохранив хост/путь/параметры.
+
+    Обрабатываются только URL с явной схемой (`scheme://`). Границы контракта
+    описаны в `docs/plans/logging-contract.md`: это не универсальный DLP, а
+    точечная редакция известных носителей credentials.
+    """
+    scheme_end = url.find("://")
+    if scheme_end == -1:
+        return url
+    scheme = url[: scheme_end + 3]
+    rest = url[scheme_end + 3 :]
+
+    fragment = ""
+    hash_pos = rest.find("#")
+    if hash_pos != -1:
+        fragment = rest[hash_pos:]
+        rest = rest[:hash_pos]
+
+    query = ""
+    query_pos = rest.find("?")
+    if query_pos != -1:
+        query = rest[query_pos:]
+        rest = rest[:query_pos]
+
+    slash_pos = rest.find("/")
+    if slash_pos == -1:
+        authority, path = rest, ""
+    else:
+        authority, path = rest[:slash_pos], rest[slash_pos:]
+
+    userinfo_sep = authority.rfind("@")
+    if userinfo_sep != -1:
+        authority = REDACTED + authority[userinfo_sep:]
+
+    return f"{scheme}{authority}{path}{_redact_query_pairs(query)}{_redact_query_pairs(fragment)}"
+
+
+def _redact_url_match(match: re.Match[str]) -> str:
+    """Отредактировать одно URL-совпадение, вернув хвостовую декорацию на место."""
+    url = match.group(0)
+    core = url.rstrip(_URL_TRAILING_PUNCTUATION)
+    tail = url[len(core) :]
+    while core and core[-1] in _URL_CLOSING_TO_OPENING:
+        closing = core[-1]
+        opening = _URL_CLOSING_TO_OPENING[closing]
+        # Парная закрывающая скобка — часть URL (например `[::1]`), одиночная —
+        # декорация обрамления и возвращается в текст без редакции.
+        if core.count(closing) <= core.count(opening):
+            break
+        tail = closing + tail
+        core = core[:-1]
+    return _sanitize_url(core) + tail
+
+
 def redact_text(text: str, secrets: Sequence[str] = ()) -> str:
-    """Убрать известные секреты из текста."""
+    """Убрать известные секреты и URL-credentials из текста.
+
+    Помимо подстановки известных `secrets` выполняется структурная редакция URL:
+    userinfo и значения чувствительных query-/fragment-параметров заменяются без
+    знания их значения. Хост, путь и безопасные параметры сохраняются.
+    """
     result = text
     for secret in secrets:
         if secret:
             result = result.replace(secret, REDACTED)
-    return result
+    return _URL_RE.sub(_redact_url_match, result)
 
 
 def redact(value: Any, secrets: Sequence[str] = ()) -> Any:

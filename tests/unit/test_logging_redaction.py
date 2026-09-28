@@ -210,3 +210,113 @@ def test_child_logger_extends_correlation_without_mutation() -> None:
     child = parent.child(job_id="job-1")
     assert parent.context.job_id is None
     assert child.context.job_id == "job-1"
+
+
+# --- Структурная редакция URL: значения НЕ переданы в `secrets` ---
+# Значения ниже намеренно не регистрируются как секреты: они проверяют, что
+# редакция работает по структуре, а не только по известной подстроке.
+_SIGNED_URL = (
+    "https://user:unknown-password@example.org/path?X-Amz-Signature=unknown-signature&size=1024"
+)
+
+
+def test_url_userinfo_and_signed_query_redacted_without_secrets() -> None:
+    """userinfo и signed query-токен удаляются при `secrets=()`.
+
+    Регрессия P1: раньше без известного секрета URL оставался как есть.
+    """
+    result = redact_text(_SIGNED_URL)
+    assert "unknown-password" not in result
+    assert "unknown-signature" not in result
+    assert result == ("https://[REDACTED]@example.org/path?X-Amz-Signature=[REDACTED]&size=1024")
+
+
+def test_url_safe_parts_preserved() -> None:
+    """Хост, путь и безопасные параметры не теряются."""
+    result = redact_text("see https://cdn.example.org/img/cat.png?w=64&h=64 for details")
+    assert "https://cdn.example.org/img/cat.png?w=64&h=64" in result
+
+
+def test_url_common_signed_variants_redacted() -> None:
+    """Распространённые signed URL variants редактируются по имени ключа."""
+    cases = [
+        "https://bucket.example.org/k?X-Amz-Credential=AKIAUNKNOWN",
+        "https://bucket.example.org/k?X-Amz-Security-Token=unknown-token",
+        "https://storage.example.org/k?X-Goog-Signature=unknown-sig",
+        "https://cdn.example.org/k?Signature=unknown",
+        "https://cdn.example.org/k?policy=unknown-policy",
+    ]
+    for url in cases:
+        result = redact_text(url)
+        assert "unknown" not in result, url
+        assert REDACTED in result, url
+
+
+def test_url_non_sensitive_query_kept() -> None:
+    """Нечувствительные параметры и короткие имена вне списка сохраняются."""
+    result = redact_text("https://example.org/p?size=1024&format=webp&sig=short")
+    assert "size=1024" in result
+    assert "format=webp" in result
+    # `sig` — точное имя Azure SAS-подписи, поэтому оно редактируется.
+    assert "sig=short" not in result
+    assert "sig=[REDACTED]" in result
+
+
+def test_url_trailing_punctuation_preserved() -> None:
+    """Точка/запятая конца предложения не съедается редакцией."""
+    result = redact_text(f"url {_SIGNED_URL}.")
+    assert result.endswith(".")
+    assert "size=1024." in result
+    assert "unknown-signature" not in result
+
+
+def test_url_redacted_in_exception_without_secrets() -> None:
+    """Signed URL внутри трассировки исключения удаляется без known secrets."""
+    try:
+        raise RuntimeError(f"fetch failed for {_SIGNED_URL}")
+    except RuntimeError as exc:
+        formatted = format_exception(exc)
+    assert "unknown-password" not in formatted
+    assert "unknown-signature" not in formatted
+    assert "example.org" in formatted
+
+
+def test_url_redacted_in_nested_details_without_secrets() -> None:
+    """URL внутри вложенных `details` редактируется на сквозном пути события."""
+    stream = io.StringIO()
+    logger = EventLogger(stream=stream)
+    record = logger.event(
+        "fetch",
+        details={"request": {"urls": [_SIGNED_URL], "message": f"got {_SIGNED_URL}"}},
+    )
+    serialized = json.dumps(record, ensure_ascii=False)
+    assert "unknown-password" not in serialized
+    assert "unknown-signature" not in serialized
+    assert "unknown-password" not in stream.getvalue()
+    assert "unknown-signature" not in stream.getvalue()
+    assert "example.org" in serialized
+
+
+def test_stdlib_signed_url_redacted_without_secrets() -> None:
+    """stdlib-логирование без registered secrets не пропускает signed URL."""
+    stream = io.StringIO()
+    configure_diagnostics(level="DEBUG", stream=stream)
+    logging.getLogger("aimedia.test.url").error("provider url: %s", _SIGNED_URL)
+    written = stream.getvalue()
+    assert "unknown-password" not in written
+    assert "unknown-signature" not in written
+
+
+def test_relative_path_without_scheme_not_mistaken_for_url() -> None:
+    """Относительный путь без `scheme://` не считается URL и не искажается."""
+    text = "/v1/images?token=still-here"
+    assert redact_text(text) == text
+
+
+def test_url_fragment_sensitive_token_redacted() -> None:
+    """Чувствительный параметр в `#fragment` тоже редактируется (OAuth implicit)."""
+    result = redact_text("https://app.example.org/cb#access_token=unknown-token&state=abc")
+    assert "unknown-token" not in result
+    assert "access_token=[REDACTED]" in result
+    assert "state=abc" in result
+    assert "app.example.org/cb" in result
