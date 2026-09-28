@@ -15,7 +15,14 @@ TIMEOUT_SECONDS = 120
 
 def _clean_env() -> dict[str, str]:
     env = dict(os.environ)
-    for name in ("POLZA_API_KEY", "AIMEDIA_DATA_DIR", "AIMEDIA_LIVE_ENABLED"):
+    for name in (
+        "POLZA_API_KEY",
+        "AIMEDIA_DATA_DIR",
+        "AIMEDIA_LIVE_ENABLED",
+        "AIMEDIA_LOG_LEVEL",
+        "AIMEDIA_POLZA_API_KEY_ENV",
+        "AIMEDIA_CONFIG",
+    ):
         env.pop(name, None)
     return env
 
@@ -79,3 +86,47 @@ def test_cli_reports_no_ansi(tmp_path: Path, args: list[str]) -> None:
     result = _run(args, cwd=tmp_path)
     assert result.returncode == 0
     assert "\x1b[" not in result.stdout
+
+
+def test_help_emits_no_diagnostics(tmp_path: Path) -> None:
+    """Обычная справка не производит диагностического шума в stderr."""
+    result = _run(["--help"], cwd=tmp_path)
+    assert result.returncode == 0
+    assert result.stderr.strip() == ""
+
+
+def test_version_json_keeps_diagnostics_off_stdout(tmp_path: Path) -> None:
+    """В `--json` stdout — один документ, диагностика уходит в stderr."""
+    result = _run(["version", "--json"], cwd=tmp_path)
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is True
+
+    events = [json.loads(line) for line in result.stderr.splitlines() if line.strip()]
+    names = [event["event"] for event in events]
+    assert "app_started" in names
+    assert "config_loaded" in names
+    assert "command_finished" in names
+    config_event = next(event for event in events if event["event"] == "config_loaded")
+    assert config_event["details"]["sources"] == ["default"]
+    assert events[-1]["details"]["exit_code"] == 0
+
+
+def test_version_json_stderr_has_no_api_key(tmp_path: Path) -> None:
+    """Даже при экспортированном ключе диагностика не печатает его значение."""
+    env = _clean_env()
+    env["POLZA_API_KEY"] = "sk-canary-0123456789abcdef"
+    result = subprocess.run(
+        [sys.executable, "-m", "aimedia", "version", "--json"],
+        cwd=str(tmp_path),
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        shell=False,
+        timeout=TIMEOUT_SECONDS,
+    )
+    assert result.returncode == 0
+    assert env["POLZA_API_KEY"] not in result.stderr
+    assert env["POLZA_API_KEY"] not in result.stdout
