@@ -320,3 +320,76 @@ def test_url_fragment_sensitive_token_redacted() -> None:
     assert "access_token=[REDACTED]" in result
     assert "state=abc" in result
     assert "app.example.org/cb" in result
+
+
+# --- Percent-encoded имена query-ключей ---
+# Имя ключа проверяется после одного слоя decoding, иначе подпись уходит сырой
+# при `secrets=()`. Значения намеренно не секреты — проверяется структура.
+
+
+def test_url_percent_encoded_query_key_redacted_without_secrets() -> None:
+    """`%73ig` декодируется в `sig` и редактируется при `secrets=()`."""
+    result = redact_text("https://cdn.example.org/p?%73ig=unknown-signature&size=1024")
+    assert "unknown-signature" not in result
+    # Исходное написание имени и безопасное значение сохраняются.
+    assert result == "https://cdn.example.org/p?%73ig=[REDACTED]&size=1024"
+
+
+def test_url_percent_encoded_token_key_redacted_without_secrets() -> None:
+    """`to%6Ben` декодируется в `token` и редактируется без known secrets."""
+    result = redact_text("https://example.org/p?to%6Ben=unknown-value&w=64")
+    assert "unknown-value" not in result
+    assert result == "https://example.org/p?to%6Ben=[REDACTED]&w=64"
+
+
+def test_url_percent_encoded_signed_variant_redacted_without_secrets() -> None:
+    """Mixed-case `X%2DAmz%2DSignature` декодируется и попадает в signed variants."""
+    result = redact_text("https://bucket.example.org/k?X%2DAmz%2DSignature=unknown-sig&part=1")
+    assert "unknown-sig" not in result
+    assert result == "https://bucket.example.org/k?X%2DAmz%2DSignature=[REDACTED]&part=1"
+
+
+def test_url_plus_encoded_sensitive_key_redacted_without_secrets() -> None:
+    """`+` в имени разбирается как пробел: `api+key` → `api key` содержит `api_key`."""
+    result = redact_text("https://example.org/p?api+key=unknown-key&w=64")
+    assert "unknown-key" not in result
+    assert result == "https://example.org/p?api+key=[REDACTED]&w=64"
+
+
+def test_url_percent_encoded_safe_key_kept() -> None:
+    """Percent-encoded нечувствительный ключ и значение не искажаются."""
+    result = redact_text("https://example.org/p?si%7Ae=1024&format=webp")
+    assert result == "https://example.org/p?si%7Ae=1024&format=webp"
+
+
+def test_url_percent_encoded_key_redacted_in_nested_details_without_secrets() -> None:
+    """Encoded подпись редактируется на сквозном пути EventLogger с `secrets=()`."""
+    stream = io.StringIO()
+    logger = EventLogger(stream=stream)
+    encoded_url = "https://cdn.example.org/p?%73ig=unknown-signature&size=1024"
+    record = logger.event("fetch", details={"request": {"url": encoded_url}})
+    serialized = json.dumps(record, ensure_ascii=False)
+    assert "unknown-signature" not in serialized
+    assert "unknown-signature" not in stream.getvalue()
+    assert "%73ig=[REDACTED]" in serialized
+
+
+def test_url_percent_encoded_key_redacted_in_exception_without_secrets() -> None:
+    """Encoded подпись в трассировке исключения удаляется без known secrets."""
+    encoded_url = "https://cdn.example.org/p?%73ig=unknown-signature&size=1024"
+    try:
+        raise RuntimeError(f"fetch failed for {encoded_url}")
+    except RuntimeError as exc:
+        formatted = format_exception(exc)
+    assert "unknown-signature" not in formatted
+    assert "cdn.example.org" in formatted
+
+
+def test_stdlib_percent_encoded_signed_url_redacted_without_secrets() -> None:
+    """stdlib-логирование не пропускает encoded signed URL без registered secrets."""
+    stream = io.StringIO()
+    configure_diagnostics(level="DEBUG", stream=stream)
+    encoded_url = "https://cdn.example.org/p?%73ig=unknown-signature&size=1024"
+    logging.getLogger("aimedia.test.url.encoded").error("provider url: %s", encoded_url)
+    written = stream.getvalue()
+    assert "unknown-signature" not in written

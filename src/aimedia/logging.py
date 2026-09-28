@@ -21,6 +21,7 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from types import TracebackType
 from typing import Any, TextIO
+from urllib.parse import unquote_plus
 
 REDACTED = "[REDACTED]"
 
@@ -117,12 +118,21 @@ def _is_sensitive_key(key: str) -> bool:
 def _is_sensitive_query_key(key: str) -> bool:
     """Чувствителен ли query-/fragment-ключ URL.
 
-    Сначала переиспользуется консервативная проверка имён полей (`token`,
-    `secret`, …), затем — точный список signed URL variants.
+    Имя ключа проверяется так, как его разберёт query-parser: один слой
+    percent-decoding, а `+` трактуется как пробел-разделитель
+    (`unquote_plus` + пробел→`_`). Без этого `%73ig` или
+    `X%2DAmz%2DSignature` прошли бы мимо проверки. Затем переиспользуется
+    консервативная проверка имён полей (`token`, `secret`, …) и точный список
+    signed URL variants.
+
+    Декодируется только имя; исходное написание URL и значения безопасных
+    параметров в выводе сохраняются.
     """
-    if _is_sensitive_key(key):
+    decoded = unquote_plus(key)
+    normalized = decoded.replace(" ", "_")
+    if _is_sensitive_key(normalized):
         return True
-    return key.lower().replace("-", "_") in SIGNED_URL_QUERY_KEYS
+    return normalized.lower().replace("-", "_") in SIGNED_URL_QUERY_KEYS
 
 
 def _redact_query_pairs(part: str) -> str:
