@@ -316,6 +316,17 @@ def webp_animated_bytes(width: int = 3, height: int = 5) -> bytes:
     )
 
 
+def webp_with_animation_and_frame(
+    *, animation_flag: bool = True, animation_chunk: bytes | None = b"ANIM"
+) -> bytes:
+    """WebP с VP8L и независимо задаваемыми признаками анимации."""
+    chunks = [(b"VP8X", _webp_vp8x_payload(3, 5, flags=0x02 if animation_flag else 0))]
+    if animation_chunk is not None:
+        chunks.append((animation_chunk, bytes(4)))
+    chunks.append((b"VP8L", _webp_vp8l_payload(3, 5)))
+    return _webp_container(*chunks)
+
+
 def webp_lossy_bytes(width: int = 4, height: int = 6) -> bytes:
     """Валидный WebP с кадром VP8 (lossy)."""
     payload = b"\x00\x00\x00" + b"\x9d\x01\x2a" + struct.pack("<HH", width, height) + bytes(4)

@@ -326,8 +326,8 @@ def _probe_webp(content: bytes) -> tuple[int, int]:
 
     VP8X задаёт флаги и размеры canvas расширенного контейнера, но пиксельного
     изображения не содержит: расширенный WebP принимается только при наличии
-    кадра VP8/VP8L. Анимированный WebP (VP8X + ANIM/ANMF) локально не
-    поддерживается и отклоняется, а не принимается по одному заголовку.
+    кадра VP8/VP8L. Анимация по флагу VP8X или chunk'ам ANIM/ANMF локально
+    не поддерживается, даже если контейнер также содержит статичный кадр.
     """
     if len(content) < 12:
         raise InvalidImageContentError("WebP обрезан: неполный RIFF-заголовок.")
@@ -351,6 +351,10 @@ def _probe_webp(content: bytes) -> tuple[int, int]:
         payload = content[data_start : data_start + chunk_size]
         if fourcc == b"VP8X":
             vp8x_canvas = _webp_vp8x_dimensions(payload)
+            if payload[0] & 0x02:
+                raise InvalidImageContentError("Анимированный WebP не поддерживается.")
+        elif fourcc in (b"ANIM", b"ANMF"):
+            raise InvalidImageContentError("Анимированный WebP не поддерживается.")
         elif fourcc == b"VP8L" and frame_dims is None:
             frame_dims = _webp_vp8l_dimensions(payload)
         elif fourcc == b"VP8 " and frame_dims is None:

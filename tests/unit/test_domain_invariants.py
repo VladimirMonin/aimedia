@@ -155,6 +155,21 @@ def test_completed_image_job_requires_saved_local_artifact() -> None:
             make_job(status=JobStatus.COMPLETED, completed_at=COMPLETED_AT, result=result)
 
 
+@pytest.mark.parametrize("in_result", [True, False], ids=["result", "job"])
+def test_completed_image_job_rejects_original_only(in_result: bool) -> None:
+    """Сохранённый provider-original не заменяет конечный файл."""
+    original = Artifact(
+        kind=ArtifactKind.IMAGE,
+        role=ArtifactRole.ORIGINAL,
+        local_path="out/481/original.webp",
+    )
+    with pytest.raises(ValidationError, match="ролью final"):
+        make_completed_image_job(
+            result=JobResult(artifacts=[original] if in_result else []),
+            artifacts=[] if in_result else [original],
+        )
+
+
 def test_completed_image_job_accepts_saved_artifact_in_result() -> None:
     job = make_completed_image_job()
     assert job.result is not None
@@ -169,6 +184,21 @@ def test_completed_image_job_accepts_saved_artifact_in_aggregate_list() -> None:
         artifacts=[saved_image_artifact("out/481/recovered.webp")],
     )
     assert job.artifact_paths == ("out/481/recovered.webp",)
+
+
+def test_completed_image_job_accepts_final_with_original_in_other_list() -> None:
+    original = Artifact(
+        kind=ArtifactKind.IMAGE,
+        role=ArtifactRole.ORIGINAL,
+        local_path="out/481/original.webp",
+    )
+    job = make_completed_image_job(
+        result=JobResult(artifacts=[original]),
+        artifacts=[saved_image_artifact("out/481/final.webp")],
+    )
+    assert job.result is not None
+    assert job.result.artifacts[0].role is ArtifactRole.ORIGINAL
+    assert job.artifacts[0].role is ArtifactRole.FINAL
 
 
 def test_recovery_failed_to_completed_supplies_saved_artifact() -> None:

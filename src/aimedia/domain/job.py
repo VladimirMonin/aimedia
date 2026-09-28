@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pydantic import model_validator
 
-from aimedia.domain.artifacts import Artifact, ArtifactKind
+from aimedia.domain.artifacts import Artifact, ArtifactKind, ArtifactRole
 from aimedia.domain.base import DomainModel, UtcDatetime
 from aimedia.domain.costs import Cost, Usage
 from aimedia.domain.errors import JobError
@@ -135,17 +135,21 @@ class Job(DomainModel):
         Artifact ищется в самом результате, а также в агрегатном списке Job, чтобы
         проверка не зависела от того, в каком из двух поддерживаемых мест его
         разместил вызывающий код. «Usable» здесь — image-kind с непустым
-        `local_path`; hash и размер остаются опциональными согласно доменной модели.
+        `local_path` и ролью `final`; hash и размер остаются опциональными
+        согласно доменной модели.
         """
         if self.result is None:
             raise ValueError("Job в статусе completed обязан иметь финальный result")
         artifacts = (*self.result.artifacts, *self.artifacts)
         if not any(
-            artifact.kind is ArtifactKind.IMAGE and artifact.local_path is not None
+            artifact.kind is ArtifactKind.IMAGE
+            and artifact.role is ArtifactRole.FINAL
+            and artifact.local_path is not None
             for artifact in artifacts
         ):
             raise ValueError(
-                "Job в статусе completed обязан иметь сохранённый локальный image artifact"
+                "Job в статусе completed обязан иметь сохранённый локальный image artifact "
+                "с ролью final"
             )
 
     @property

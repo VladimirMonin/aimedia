@@ -55,6 +55,7 @@ from image_fixtures import (
     webp_lossy_bytes,
     webp_short_vp8_header,
     webp_truncated_header,
+    webp_with_animation_and_frame,
     webp_with_bad_vp8l_header,
     webp_with_chunk_beyond_file,
     webp_with_short_vp8x,
@@ -228,6 +229,29 @@ def test_webp_without_real_frame_is_rejected(tmp_path: Path, name: str, content:
 
     with pytest.raises(UnsupportedInputFormatError) as exc_info:
         prepare_reference_images([broken])
+
+    assert exc_info.value.code is DomainErrorCode.UNSUPPORTED_INPUT_FORMAT
+
+
+@pytest.mark.parametrize(
+    ("animation_flag", "animation_chunk"),
+    [(True, b"ANIM"), (True, None), (False, b"ANIM"), (False, b"ANMF")],
+    ids=["flag-and-chunk", "flag-only", "anim-only", "anmf-only"],
+)
+def test_webp_animation_with_static_frame_is_rejected(
+    tmp_path: Path, animation_flag: bool, animation_chunk: bytes | None
+) -> None:
+    """Даже с VP8L любой признак анимации отклоняется до provider submit."""
+    path = _write(
+        tmp_path,
+        "mixed.webp",
+        webp_with_animation_and_frame(
+            animation_flag=animation_flag, animation_chunk=animation_chunk
+        ),
+    )
+
+    with pytest.raises(UnsupportedInputFormatError) as exc_info:
+        prepare_reference_images([path])
 
     assert exc_info.value.code is DomainErrorCode.UNSUPPORTED_INPUT_FORMAT
 

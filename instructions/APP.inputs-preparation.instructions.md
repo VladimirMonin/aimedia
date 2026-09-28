@@ -64,7 +64,8 @@ provider submit. План-источники — `docs/plans/04-cli-contract.md`
 (`SUPPORTED_IMAGE_MIME_TYPES`). Это локальная поддержка проекта, а не выдуманное
 ограничение конкретной модели. Расширенный WebP принимается только при наличии
 фактического кадра VP8/VP8L: заголовок VP8X без кадра и анимированный WebP
-(VP8X + ANIM/ANMF) отклоняются как `UNSUPPORTED_INPUT_FORMAT` до submit.
+(флаг анимации VP8X **или** chunk ANIM/ANMF, даже при наличии VP8/VP8L)
+отклоняются как `UNSUPPORTED_INPUT_FORMAT` до submit.
 
 ## Лимиты без выдуманных чисел
 

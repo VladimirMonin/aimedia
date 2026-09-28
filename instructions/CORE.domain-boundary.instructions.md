@@ -44,6 +44,10 @@ terminal — `completed`/`failed`/`cancelled` (инвариант 13).
   (D01), поэтому успешная финализация не маскирует прежний платный сбой (R23).
 - `created` не несёт `submitted_at`/`completed_at`; `completed` не несёт terminal
   error; `failed` обязан иметь `error`; terminal Job обязан иметь `completed_at`.
+- `completed` image Job требует `result` и хотя бы один локально сохранённый
+  `Artifact(kind=IMAGE, role=FINAL)` в `result.artifacts` или `Job.artifacts`.
+  `ORIGINAL` от `--keep-original` остаётся partial artifact при сбое и сам по
+  себе не завершает Job; recovery `failed → completed` требует того же FINAL.
 - Недопустимый переход поднимает `InvalidJobStateTransitionError` до записи в
   историю, а не после.
 
