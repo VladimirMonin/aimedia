@@ -71,6 +71,22 @@ _PNG_IHDR_COMBINATIONS: frozenset[tuple[int, int]] = frozenset(
 # grayscale+alpha, truecolor+alpha.
 _PNG_CHANNELS: dict[int, int] = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
 
+# Семь проходов Adam7: (x_start, y_start, x_step, y_step). Проход отдаёт только
+# те пиксели, координаты которых попадают в его решётку, поэтому объём IDAT
+# interlaced PNG определяется суммой строк всех непустых проходов.
+_ADAM7_PASSES: tuple[tuple[int, int, int, int], ...] = (
+    (0, 0, 8, 8),
+    (4, 0, 8, 8),
+    (0, 4, 4, 8),
+    (2, 0, 4, 4),
+    (0, 2, 2, 4),
+    (1, 0, 2, 2),
+    (0, 1, 1, 2),
+)
+
+# Допустимые байты фильтра scanline: 0–4 по спецификации PNG.
+_PNG_MAX_FILTER_BYTE = 4
+
 
 class InvalidImageContentError(Exception):
     """Содержимое не является структурно корректным изображением.
@@ -118,8 +134,9 @@ def _probe_png(content: bytes) -> tuple[int, int]:
     """Полностью проверить PNG и вернуть размеры из IHDR.
 
     Помимо цепочки chunk'ов и их CRC распакованные данные IDAT обязаны давать
-    ожидаемый объём отфильтрованных scanline'ов (для non-interlaced изображений),
-    поэтому обрезанный или подменённый IDAT не проходит как валидный вход.
+    ожидаемый объём отфильтрованных scanline'ов: для non-interlaced — по одному
+    на строку изображения, для Adam7 — по геометрии семи проходов. Поэтому
+    обрезанный или подменённый IDAT не проходит как валидный вход.
     """
     offset = len(_PNG_SIGNATURE)
     ihdr: tuple[int, int, int, int, int] | None = None
@@ -195,16 +212,56 @@ def _png_validate_pixels(ihdr: tuple[int, int, int, int, int], idat: bytes) -> N
         raw = zlib.decompress(idat)
     except zlib.error as exc:
         raise InvalidImageContentError("PNG повреждён: IDAT не распаковывается.") from exc
-    if interlace == 1:
-        # Adam7: точный объём зависит от проходов; достаточно успешной распаковки.
-        return
     bits_per_pixel = bit_depth * _PNG_CHANNELS[color_type]
+    if interlace == 1:
+        _png_validate_adam7(width, height, bits_per_pixel, raw)
+        return
     stride_bytes = (width * bits_per_pixel + 7) // 8
     expected = (stride_bytes + 1) * height  # +1 — байт фильтра на каждой строке
     if len(raw) != expected:
         raise InvalidImageContentError(
             "PNG повреждён: распакованные данные не соответствуют размерам изображения."
         )
+
+
+def _adam7_pass_size(
+    width: int, height: int, x_start: int, y_start: int, x_step: int, y_step: int
+) -> tuple[int, int]:
+    """Ширина и высота прохода Adam7: проход без пикселей не даёт ни строки."""
+    pass_width = (width - x_start + x_step - 1) // x_step if width > x_start else 0
+    pass_height = (height - y_start + y_step - 1) // y_step if height > y_start else 0
+    return pass_width, pass_height
+
+
+def _png_validate_adam7(width: int, height: int, bits_per_pixel: int, raw: bytes) -> None:
+    """Проверить Adam7-развёртку: геометрия проходов, объём и байты фильтра.
+
+    Успешная распаковка IDAT ещё не означает корректный interlace: объём
+    распакованных данных обязан точно совпасть с суммой строк всех непустых
+    проходов, иначе payload обрезан или содержит лишние строки. Байт фильтра
+    каждой строки проверяется отдельно, потому что сломанный фильтр ломает
+    raster-decode уже у провайдера.
+    """
+    passes: list[tuple[int, int]] = []  # (размер строки с фильтром, число строк)
+    expected = 0
+    for x_start, y_start, x_step, y_step in _ADAM7_PASSES:
+        pass_width, pass_height = _adam7_pass_size(width, height, x_start, y_start, x_step, y_step)
+        if pass_width == 0 or pass_height == 0:
+            continue
+        stride_bytes = (pass_width * bits_per_pixel + 7) // 8
+        row_size = stride_bytes + 1  # +1 — байт фильтра на каждой строке
+        passes.append((row_size, pass_height))
+        expected += row_size * pass_height
+    if len(raw) != expected:
+        raise InvalidImageContentError(
+            "PNG повреждён: распакованные данные не соответствуют геометрии Adam7."
+        )
+    offset = 0
+    for row_size, pass_height in passes:
+        for _ in range(pass_height):
+            if raw[offset] > _PNG_MAX_FILTER_BYTE:
+                raise InvalidImageContentError("PNG повреждён: недопустимый байт фильтра scanline.")
+            offset += row_size
 
 
 def _probe_jpeg(content: bytes) -> tuple[int, int]:

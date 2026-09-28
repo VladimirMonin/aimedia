@@ -20,6 +20,9 @@ from pathlib import Path
 import pytest
 from image_fixtures import (
     interlaced_png_bytes,
+    interlaced_png_with_bad_filter,
+    interlaced_png_with_extra_scanlines,
+    interlaced_png_with_truncated_scanlines,
     jpeg_bytes,
     jpeg_with_filler_bytes,
     jpeg_with_invalid_segment_length,
@@ -246,6 +249,21 @@ def test_interlaced_png_is_accepted(tmp_path: Path) -> None:
 
     assert prepared[0].mime_type == "image/png"
     assert prepared[0].metadata == {"width": 3, "height": 4}
+
+
+@pytest.mark.parametrize(
+    ("name", "content"),
+    [
+        ("bad-filter.png", interlaced_png_with_bad_filter(width=3, height=4)),
+        ("truncated-scanlines.png", interlaced_png_with_truncated_scanlines(width=3, height=4)),
+        ("extra-scanlines.png", interlaced_png_with_extra_scanlines(width=3, height=4)),
+    ],
+)
+def test_interlaced_png_with_broken_scanlines_is_rejected(
+    tmp_path: Path, name: str, content: bytes
+) -> None:
+    """Adam7 проверяется по проходам: объём и байты фильтра важны, а не только inflate."""
+    _rejects(tmp_path, name, content)
 
 
 def test_jpeg_with_filler_and_restart_markers_is_accepted(tmp_path: Path) -> None:

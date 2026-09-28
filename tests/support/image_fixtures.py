@@ -41,16 +41,65 @@ def png_bytes(width: int = 2, height: int = 2) -> bytes:
     )
 
 
-def interlaced_png_bytes(width: int = 2, height: int = 2) -> bytes:
-    """PNG с Adam7-развёрткой: объём IDAT зависит от проходов."""
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 1)
-    idat = zlib.compress(b"\x00" + bytes(width * 3))
+def _adam7_raw(width: int, height: int, channels: int = 3) -> bytes:
+    """Собрать отфильтрованные scanline'ы Adam7: по строке на непустой проход.
+
+    Геометрия проходов задана спецификацией PNG; фильтр каждой строки — 0.
+    """
+    passes = (
+        (0, 0, 8, 8),
+        (4, 0, 8, 8),
+        (0, 4, 4, 8),
+        (2, 0, 4, 4),
+        (0, 2, 2, 4),
+        (1, 0, 2, 2),
+        (0, 1, 1, 2),
+    )
+    rows = bytearray()
+    for x_start, y_start, x_step, y_step in passes:
+        pass_width = (width - x_start + x_step - 1) // x_step if width > x_start else 0
+        pass_height = (height - y_start + y_step - 1) // y_step if height > y_start else 0
+        if pass_width == 0 or pass_height == 0:
+            continue
+        for _ in range(pass_height):
+            rows += b"\x00" + bytes(pass_width * channels)
+    return bytes(rows)
+
+
+def _interlaced_png(ihdr: bytes, raw: bytes) -> bytes:
+    """Собрать PNG с заданным IHDR и распакованным IDAT-содержимым."""
     return (
         PNG_SIGNATURE
         + png_chunk(b"IHDR", ihdr)
-        + png_chunk(b"IDAT", idat)
+        + png_chunk(b"IDAT", zlib.compress(raw))
         + png_chunk(b"IEND", b"")
     )
+
+
+def interlaced_png_bytes(width: int = 2, height: int = 2) -> bytes:
+    """Валидный PNG с Adam7-развёрткой: scanline'ы всех непустых проходов."""
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 1)
+    return _interlaced_png(ihdr, _adam7_raw(width, height))
+
+
+def interlaced_png_with_bad_filter(width: int = 3, height: int = 4) -> bytes:
+    """Adam7-PNG, где байт фильтра первой строки вне допустимых 0–4."""
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 1)
+    raw = bytearray(_adam7_raw(width, height))
+    raw[0] = 5
+    return _interlaced_png(ihdr, bytes(raw))
+
+
+def interlaced_png_with_truncated_scanlines(width: int = 3, height: int = 4) -> bytes:
+    """Adam7-PNG, где распакованный payload короче геометрии проходов."""
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 1)
+    return _interlaced_png(ihdr, _adam7_raw(width, height)[:-1])
+
+
+def interlaced_png_with_extra_scanlines(width: int = 3, height: int = 4) -> bytes:
+    """Adam7-PNG, где распакованный payload содержит лишнюю строку."""
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 1)
+    return _interlaced_png(ihdr, _adam7_raw(width, height) + b"\x00" + bytes(9))
 
 
 def png_with_invalid_ihdr(ihdr: bytes) -> bytes:
