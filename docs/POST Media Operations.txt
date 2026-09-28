@@ -1,0 +1,471 @@
+https://polza.ai/docs/api-reference/media/operations
+
+> ## Documentation Index
+> Fetch the complete documentation index at: https://polza.ai/docs/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# POST Media Operations
+
+> Выполнение операций над существующими медиа (extend, upscale)
+
+## Операции над медиа
+
+После генерации медиа контента можно выполнять дополнительные операции:
+
+| Операция        | Описание                       | Тип         |
+| --------------- | ------------------------------ | ----------- |
+| `extend`        | Продление видео                | Асинхронная |
+| `upscale_1080p` | Увеличение разрешения до 1080p | Синхронная  |
+| `upscale_4k`    | Увеличение разрешения до 4K    | Синхронная  |
+
+## Синхронные vs Асинхронные операции
+
+### Синхронные операции (upscale)
+
+Результат возвращается сразу в поле `data`:
+
+```json theme={null}
+{
+  "id": "aig_abc123",
+  "object": "media.generation",
+  "status": "completed",
+  "created": 1703001244,
+  "model": "google/gemini-2.5-flash-image",
+  "data": {
+    "url": "https://storage.polza.ai/video_1080p.mp4"
+  }
+}
+```
+
+### Асинхронные операции (extend)
+
+Создаётся новая генерация со статусом `pending`:
+
+```json theme={null}
+{
+  "id": "aig_xyz789",
+  "object": "media.generation",
+  "status": "pending",
+  "created": 1703001244,
+  "model": "pending"
+}
+```
+
+Для получения результата используйте [GET /v1/media/{id}](/docs/api-reference/media/status) с новым ID.
+
+### Параметр async
+
+* `async: false` (по умолчанию) — ждёт результат до 120 секунд
+* `async: true` — сразу возвращает ID новой генерации
+
+## Примеры
+
+### Продление видео (extend)
+
+```bash theme={null}
+curl -X POST "https://polza.ai/api/v1/media/aig_abc123/operations" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "operation": "extend",
+    "params": {
+      "prompt": "Камера отдаляется, показывая панораму города"
+    }
+  }'
+```
+
+### Увеличение разрешения (upscale)
+
+```bash theme={null}
+curl -X POST "https://polza.ai/api/v1/media/aig_abc123/operations" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "operation": "upscale_1080p"
+  }'
+```
+
+## Параметры операции extend
+
+| Параметр   | Тип    | Обязательный | Описание                          |
+| ---------- | ------ | ------------ | --------------------------------- |
+| `prompt`   | string | Да           | Промпт для продолжения видео      |
+| `seeds`    | number | Нет          | Seed для воспроизводимости        |
+| `duration` | number | Нет          | Длительность продления (3-10 сек) |
+
+<Note>
+  Операция extend создаёт новую генерацию с новым ID.
+  Оригинальное видео не изменяется.
+</Note>
+
+
+## OpenAPI
+
+````yaml POST /v1/media/{id}/operations
+openapi: 3.0.0
+info:
+  title: Polza.ai API
+  description: AI агрегатор — унифицированный доступ к сотням AI моделей
+  version: '1.0'
+  contact: {}
+servers:
+  - url: https://polza.ai/api
+    description: Production
+security: []
+tags: []
+paths:
+  /v1/media/{id}/operations:
+    post:
+      tags:
+        - Медиа
+      summary: Выполнить операцию над медиа
+      operationId: MediaController_executeOperation[1]
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaOperationRequestDto'
+      responses:
+        '200':
+          description: >-
+            Результат операции. `status: processing` с `id` исходной генерации
+            означает, что провайдер ещё готовит результат (например,
+            upscale_1080p сразу после генерации): повторите тот же запрос позже,
+            за такой ответ оплата не списывается.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaStatusPresenter'
+        '400':
+          description: Некорректный запрос. Проверьте параметры и тело
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '401':
+          description: Ошибка авторизации. Проверьте ключ доступа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '402':
+          description: Недостаточно средств или достигнут лимит
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '403':
+          description: Ошибка доступа. Проверьте права доступа ключа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '404':
+          description: Ресурс не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '408':
+          description: Истекло время ожидания ответа. Повторите запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '409':
+          description: Конфликт состояния. Перечитайте ресурс и повторите запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '413':
+          description: Размер тела запроса превышает допустимый предел
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '429':
+          description: Слишком много запросов. Повторите позже
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '500':
+          description: Ошибка сервера. Обратитесь к поставщику услуг
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '502':
+          description: Поставщик услуг вернул некорректный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '503':
+          description: Сервис временно недоступен. Повторите позже
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+      security:
+        - bearer: []
+components:
+  schemas:
+    MediaOperationRequestDto:
+      type: object
+      properties:
+        operation:
+          type: string
+          description: ID операции
+          example: extend
+          enum:
+            - extend
+            - upscale_1080p
+            - upscale_4k
+        params:
+          type: object
+          description: Параметры операции. Зависят от типа операции.
+          example:
+            prompt: Продолжение сцены
+            seeds: 12345
+        async:
+          type: boolean
+          description: >-
+            Асинхронный режим. При true сразу возвращает ID операции, результат
+            получить через GET /v2/media/:id
+          example: false
+          default: false
+      required:
+        - operation
+    MediaStatusPresenter:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Уникальный идентификатор генерации
+          example: gen_581761234567890123
+        object:
+          type: string
+          description: Тип объекта
+          example: media.generation
+        status:
+          type: string
+          description: Статус генерации
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+            - cancelled
+          example: pending
+        created:
+          type: number
+          description: Временная метка создания (Unix timestamp)
+          example: 1703001234
+        model:
+          type: string
+          description: ID модели, которая генерирует контент
+          example: google/gemini-2.5-flash-image
+        completed_at:
+          type: number
+          description: Временная метка завершения (Unix timestamp)
+          example: 1703001244
+        data:
+          description: Данные сгенерированного контента
+          oneOf:
+            - 4db31d1d-1cfc-4929-8e06-b66377b40ff3
+            - 037f5bef-fe31-4c6f-a5ea-1d87b081b0ae
+            - 4fcc53bb-13f7-490d-9f60-4007d47e6210
+        usage:
+          description: Информация об использовании ресурсов
+          allOf:
+            - $ref: '#/components/schemas/MediaUsagePresenter'
+        error:
+          description: Информация об ошибке (если failed)
+          allOf:
+            - $ref: '#/components/schemas/MediaErrorPresenter'
+        content:
+          type: string
+          description: >-
+            Текстовый ответ модели (если вернула текст вместо/вместе с
+            изображением)
+          example: Банан и яблоко — это фрукты.
+        reasoning_summary:
+          type: string
+          description: Краткое резюме рассуждений модели
+          example: Preparing image generation prompt with camera settings...
+        warnings:
+          description: Предупреждения (неподдерживаемые параметры и т.д.)
+          example:
+            - >-
+              Параметр isEnhance не поддерживается OpenRouter и будет
+              проигнорирован
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - object
+        - status
+        - created
+        - model
+    ApiErrorPresenter:
+      type: object
+      properties:
+        error:
+          description: Информация об ошибке
+          allOf:
+            - $ref: '#/components/schemas/ApiErrorBodyPresenter'
+        trace_id:
+          type: string
+          description: ID трассировки запроса
+          example: 550e8400-e29b-41d4-a716-446655440000
+      required:
+        - error
+    MediaUsagePresenter:
+      type: object
+      properties:
+        input_units:
+          type: number
+          description: Входные единицы (для edit mode)
+          example: 1
+        output_units:
+          type: number
+          description: Выходные единицы (сгенерированные)
+          example: 1
+        duration_seconds:
+          type: number
+          description: Длительность для видео/аудио (секунды)
+          example: 5
+        input_tokens:
+          type: number
+          description: Количество входных токенов
+          example: 10
+        output_tokens:
+          type: number
+          description: Количество выходных токенов
+          example: 0
+        total_tokens:
+          type: number
+          description: Общее количество токенов
+          example: 10
+        cost_rub:
+          type: number
+          description: Стоимость в рублях
+          example: 1.5
+        cost:
+          type: number
+          description: Стоимость в рублях (alias для cost_rub)
+          example: 1.5
+    MediaErrorPresenter:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Код ошибки (FORBIDDEN, BAD_GATEWAY, REQUEST_TIMEOUT и т.д.)
+          example: BAD_GATEWAY
+        message:
+          type: string
+          description: Сообщение об ошибке на русском языке
+          example: Ошибка генерации медиа контента
+        metadata:
+          type: object
+          description: 'Детали ошибки: исходное сообщение провайдера (raw) и его имя'
+          example:
+            raw: content policy violation
+            provider_name: kie
+      required:
+        - code
+        - message
+    ApiErrorBodyPresenter:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Код ошибки
+          enum:
+            - BAD_REQUEST
+            - UNAUTHORIZED
+            - api_key_revoked
+            - INSUFFICIENT_BALANCE
+            - FORBIDDEN
+            - NOT_FOUND
+            - REQUEST_TIMEOUT
+            - CONFLICT
+            - PAYLOAD_TOO_LARGE
+            - TOO_MANY_REQUESTS
+            - BAD_GATEWAY
+            - SERVICE_UNAVAILABLE
+            - INTERNAL_ERROR
+          example: BAD_REQUEST
+        message:
+          type: string
+          description: Описание ошибки
+          example: Недопустимое значение параметра
+        trace_id:
+          type: string
+          description: ID трассировки запроса
+          example: 550e8400-e29b-41d4-a716-446655440000
+        details:
+          type: object
+          description: Уточняющие поля ошибки. Отдаются только для 4xx
+          additionalProperties: true
+        metadata:
+          description: Метаданные ошибки провайдера
+          allOf:
+            - $ref: '#/components/schemas/ApiErrorMetadataPresenter'
+      required:
+        - code
+        - message
+    ApiErrorMetadataPresenter:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 'Машинная причина отказа: по ней можно ветвиться, не разбирая текст'
+          example: noProvidersForModel
+        raw:
+          type: string
+          description: Исходный текст ответа провайдера
+          example: The parameter `duration` specified in the request is not valid
+        provider_name:
+          type: string
+          description: Провайдер, вернувший ошибку
+          example: openrouter
+        attempts:
+          description: Кого перебрали, прежде чем отказать
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiErrorAttemptPresenter'
+    ApiErrorAttemptPresenter:
+      type: object
+      properties:
+        provider:
+          type: string
+          description: Провайдер, к которому обращались
+          example: OpenRouter
+        reason:
+          type: string
+          description: Машинная причина отказа провайдера
+          example: RATE_LIMIT
+      required:
+        - provider
+        - reason
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: API Key
+      type: http
+      description: >-
+        API ключ передаётся в заголовке: Authorization: Bearer
+        <POLZA_AI_API_KEY>
+
+````

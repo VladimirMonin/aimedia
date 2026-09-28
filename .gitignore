@@ -1,0 +1,31 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+.venv/
+
+# Local application and agent state
+.local/
+.pi/
+artifacts/
+
+# Build and package outputs
+dist/
+build/
+*.egg-info/
+
+# Python caches and quality reports
+__pycache__/
+*.py[cod]
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editor and OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,647 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://polza.ai/docs/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# POST Audio Speech
+
+> Синтез речи из текста (Text-to-Speech)
+
+<Info>
+  Этот эндпоинт совместим с OpenAI SDK и подходит для быстрой миграции существующего кода.
+  Для синтеза речи рекомендуется именно dedicated-эндпоинт `/v1/audio/speech`: здесь доступен полный диапазон `speed` (0.25–4.0) и согласованный набор параметров под каждое семейство моделей.
+  Те же возможности доступны и через общий [Media API](/docs/api-reference/media/create), но там часть параметров (`speed`, `instructions`, ElevenLabs-only поля) ведёт себя иначе или ограничена.
+</Info>
+
+## Доступные модели
+
+| Модель                     | ID                                          | Описание                                                    |
+| -------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
+| TTS                        | `openai/tts-1`                              | OpenAI стандарт (по умолчанию)                              |
+| TTS HD                     | `openai/tts-1-hd`                           | OpenAI HD                                                   |
+| GPT-4o Mini TTS            | `openai/gpt-4o-mini-tts`                    | OpenAI, управляемый интонацией, поддерживает `instructions` |
+| ElevenLabs Multilingual v2 | `elevenlabs/text-to-speech-multilingual-v2` | ElevenLabs многоязычный                                     |
+| ElevenLabs Turbo v2.5      | `elevenlabs/text-to-speech-turbo-2-5`       | ElevenLabs Turbo (единственный с `language_code`)           |
+
+## Разрешение голоса по семействам
+
+Параметр `voice` интерпретируется Polza в зависимости от семейства модели. Передача голоса «не из своего» семейства не приводит к ошибке тихо — **голос приводится к дефолту семейства**:
+
+| Семейство      | Дефолт   | Допустимые значения                                                                                                                                                                    |
+| -------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `openai/*`     | `alloy`  | `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`                                                                                         |
+| `elevenlabs/*` | `Rachel` | `voice_id` из аккаунта ElevenLabs (например `pNInz6obpgDQGcFmaJgB`) **или** имя пресета (`Rachel`, `Aria`, `Roger`, `Sarah`...). Стандартный OpenAI-голос будет отклонён с ошибкой 400 |
+
+> В релизе 1.6.7 на каталоге доступны OpenAI и ElevenLabs. Семейства Gemini TTS / Kokoro / MAI Voice поддержаны на уровне разрешения голоса, но включаются отдельно.
+
+## Параметры запроса
+
+| Параметр          | Тип    | Обязательный | Описание                                                                                                          |
+| ----------------- | ------ | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `model`           | string | Нет          | Модель TTS (по умолчанию `openai/tts-1`)                                                                          |
+| `input`           | string | Да           | Текст для озвучки, до 5000 символов                                                                               |
+| `voice`           | string | Да           | Имя голоса (см. таблицу выше)                                                                                     |
+| `response_format` | enum   | Нет          | `mp3` (по умолчанию), `opus`, `aac`, `flac`, `wav`, `pcm`                                                         |
+| `speed`           | number | Нет          | Скорость речи, `0.25`–`4.0` (по умолчанию `1.0`). Только OpenAI-модели                                            |
+| `instructions`    | string | Нет          | Голосовые инструкции, до 4096 символов. **Только** `openai/gpt-4o-mini-tts`. **Не** работает у `tts-1`/`tts-1-hd` |
+| `stream_format`   | enum   | Нет          | `sse` или `audio`. **Не** поддерживается для `tts-1`/`tts-1-hd`                                                   |
+| `user`            | string | Нет          | Идентификатор конечного пользователя                                                                              |
+
+### Параметры ElevenLabs
+
+| Параметр           | Тип          | Описание                                                                                                       |
+| ------------------ | ------------ | -------------------------------------------------------------------------------------------------------------- |
+| `stability`        | number (0–1) | Стабильность голоса (меньше = экспрессивнее)                                                                   |
+| `similarity_boost` | number (0–1) | Схожесть с оригинальным голосом                                                                                |
+| `style`            | number (0–1) | Эмоциональность                                                                                                |
+| `timestamps`       | boolean      | Посимвольный alignment в ответе (`characters`, `character_start_times_seconds`, `character_end_times_seconds`) |
+| `previous_text`    | string       | Текст перед текущим фрагментом (контекст), до 5000 символов                                                    |
+| `next_text`        | string       | Текст после текущего фрагмента (контекст), до 5000 символов                                                    |
+| `language_code`    | string       | ISO-639-1 (`ru`, `en`...). **Только** `elevenlabs/text-to-speech-turbo-2-5`                                    |
+
+## Примеры
+
+<CodeGroup>
+  ```bash cURL theme={null}
+  curl -X POST "https://polza.ai/api/v1/audio/speech" \
+    -H "Authorization: Bearer YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "openai/tts-1",
+      "input": "Привет! Это Polza.AI!",
+      "voice": "alloy"
+    }'
+  ```
+
+  ```python Python theme={null}
+  import requests
+
+  response = requests.post(
+      'https://polza.ai/api/v1/audio/speech',
+      headers={'Authorization': 'Bearer YOUR_API_KEY'},
+      json={
+          'model': 'openai/tts-1',
+          'input': 'Привет! Это тестовое сообщение.',
+          'voice': 'alloy'
+      }
+  )
+
+  data = response.json()
+  print(f"Аудио: {data['audio']}")
+  print(f"Длительность: {data.get('duration')} сек")
+  ```
+
+  ```javascript JavaScript theme={null}
+  const response = await fetch('https://polza.ai/api/v1/audio/speech', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer YOUR_API_KEY',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'openai/tts-1',
+      input: 'Hello! This is a test message.',
+      voice: 'nova'
+    })
+  });
+
+  const data = await response.json();
+  console.log(data.audio);
+  ```
+</CodeGroup>
+
+### Пример с ElevenLabs + timestamps
+
+```bash theme={null}
+curl -X POST "https://polza.ai/api/v1/audio/speech" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "elevenlabs/text-to-speech-multilingual-v2",
+    "input": "Привет, как дела?",
+    "voice": "Rachel",
+    "timestamps": true
+  }'
+```
+
+## Ответ (200)
+
+```json theme={null}
+{
+  "audio": "SUQzBAAAAAAAI1RTU0UAAA...",
+  "contentType": "audio/mpeg",
+  "model": "openai/tts-1",
+  "duration": 3.5,
+  "usage": {
+    "characters": 25,
+    "cost_rub": 0.50,
+    "cost": 0.50
+  }
+}
+```
+
+| Поле          | Тип    | Описание                                                                                                        |
+| ------------- | ------ | --------------------------------------------------------------------------------------------------------------- |
+| `audio`       | string | Аудио в формате **base64-строки** (не бинарный поток) — декодируйте и сохраняйте с расширением по `contentType` |
+| `contentType` | string | MIME-тип (например, `audio/mpeg`, `audio/wav`, `audio/ogg`)                                                     |
+| `model`       | string | Использованная модель                                                                                           |
+| `duration`    | number | Длительность в секундах, если известна                                                                          |
+| `usage`       | object | Использование: `characters` (для посимвольных моделей), `cost_rub`, `cost`                                      |
+| `alignment`   | object | Посимвольные тайминги (только ElevenLabs при `timestamps: true`)                                                |
+
+> Поле `usage.characters` присутствует для посимвольных моделей (`tts-1`/`tts-1-hd`); для токенных (`gpt-4o-mini-tts`) состав `usage` иной.
+
+### Пример ответа ElevenLabs с alignment
+
+```json theme={null}
+{
+  "audio": "...",
+  "contentType": "audio/mpeg",
+  "model": "elevenlabs/text-to-speech-multilingual-v2",
+  "alignment": {
+    "characters": ["П", "р", "и"],
+    "character_start_times_seconds": [0.0, 0.05, 0.11],
+    "character_end_times_seconds": [0.05, 0.11, 0.18]
+  }
+}
+```
+
+***
+
+## Генерация звуковых эффектов
+
+Также доступна генерация звуков по текстовому описанию через тот же эндпоинт.
+
+### Параметры
+
+| Параметр           | Тип     | Обязательный | Описание                     |
+| ------------------ | ------- | ------------ | ---------------------------- |
+| `model`            | string  | Да           | Модель генерации звуков      |
+| `input`            | string  | Да           | Описание звука на английском |
+| `duration_seconds` | number  | Нет          | Длительность (0.5-10 сек)    |
+| `loop`             | boolean | Нет          | Зацикленность                |
+| `output_format`    | string  | Нет          | Формат аудио                 |
+| `prompt_influence` | number  | Нет          | Влияние промпта              |
+
+### Форматы вывода
+
+* `mp3_22050_32` — MP3 22050Hz 32kbps
+* `mp3_44100_32` — MP3 22050Hz 32kbps
+* `mp3_44100_64` — MP3 44100Hz 64kbps
+* `mp3_44100_128` — MP3 44100Hz 128kbps (рекомендуется)
+* `mp3_44100_192` — MP3 44100Hz 192kbps
+
+### Пример
+
+```bash theme={null}
+curl -X POST "https://polza.ai/api/v1/audio/speech" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "elevenlabs/sound-effect-v2",
+    "input": "sound of guitar strumming",
+    "duration_seconds": 2.5,
+    "loop": false,
+    "output_format": "mp3_44100_128",
+    "prompt_influence": 0.3
+  }'
+```
+
+<Note>
+  Описание звуковых эффектов должно быть на английском языке.
+</Note>
+
+
+## OpenAPI
+
+````yaml POST /v1/audio/speech
+openapi: 3.0.0
+info:
+  title: Polza.ai API
+  description: AI агрегатор — унифицированный доступ к сотням AI моделей
+  version: '1.0'
+  contact: {}
+servers:
+  - url: https://polza.ai/api
+    description: Production
+security: []
+tags: []
+paths:
+  /v1/audio/speech:
+    post:
+      tags:
+        - Аудио
+      summary: Сгенерировать речь из текста (TTS)
+      operationId: AudioTtsController_createSpeech[3]
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AudioSpeechDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AudioSpeechPresenter'
+        '400':
+          description: Некорректный запрос. Проверьте параметры и тело
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '401':
+          description: Ошибка авторизации. Проверьте ключ доступа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '402':
+          description: Недостаточно средств или достигнут лимит
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '403':
+          description: Ошибка доступа. Проверьте права доступа ключа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '404':
+          description: Ресурс не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '408':
+          description: Истекло время ожидания ответа. Повторите запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '409':
+          description: Конфликт состояния. Перечитайте ресурс и повторите запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '413':
+          description: Размер тела запроса превышает допустимый предел
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '429':
+          description: Слишком много запросов. Повторите позже
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '500':
+          description: Ошибка сервера. Обратитесь к поставщику услуг
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '502':
+          description: Поставщик услуг вернул некорректный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+        '503':
+          description: Сервис временно недоступен. Повторите позже
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorPresenter'
+      security:
+        - bearer: []
+components:
+  schemas:
+    AudioSpeechDto:
+      type: object
+      properties:
+        model:
+          type: string
+          description: ID модели для генерации речи
+          example: tts-1
+          default: tts-1
+        input:
+          type: string
+          description: Текст для озвучивания (максимум 5000 символов)
+          example: Привет! Это тестовое сообщение.
+          maxLength: 5000
+        voice:
+          type: string
+          description: >-
+            Голос для генерации речи. Допустимые значения зависят от модели:
+            OpenAI (alloy, ash, ballad, coral, echo, fable, onyx, nova, sage,
+            shimmer, verse), ElevenLabs (Rachel, Aria, Roger, Sarah и др.)
+          example: alloy
+        instructions:
+          type: string
+          description: >-
+            Инструкции для управления характеристиками голоса. Поддерживается
+            только для gpt-4o-mini-tts, не работает с tts-1 и tts-1-hd
+          example: Говори медленно и выразительно
+          maxLength: 4096
+        response_format:
+          type: string
+          description: Формат выходного аудио
+          enum:
+            - mp3
+            - opus
+            - aac
+            - flac
+            - wav
+            - pcm
+          default: mp3
+        speed:
+          type: number
+          description: Скорость генерации речи (0.25 - 4.0)
+          example: 1
+          minimum: 0.25
+          maximum: 4
+          default: 1
+        stream_format:
+          type: string
+          description: >-
+            Формат потоковой передачи аудио. Не поддерживается для tts-1 и
+            tts-1-hd
+          enum:
+            - sse
+            - audio
+        user:
+          type: string
+          description: >-
+            Уникальный идентификатор конечного пользователя для отслеживания и
+            предотвращения злоупотреблений
+          example: user-123
+        stability:
+          type: number
+          description: Стабильность голоса (0-1). Только для ElevenLabs
+          example: 0.5
+          minimum: 0
+          maximum: 1
+        similarity_boost:
+          type: number
+          description: Усиление схожести голоса (0-1). Только для ElevenLabs
+          example: 0.75
+          minimum: 0
+          maximum: 1
+        style:
+          type: number
+          description: Экспрессия стиля (0-1). Только для ElevenLabs
+          example: 0
+          minimum: 0
+          maximum: 1
+        timestamps:
+          type: boolean
+          description: Возвращать временные метки для каждого слова. Только для ElevenLabs
+          example: false
+        previous_text:
+          type: string
+          description: >-
+            Предшествующий текст для улучшения непрерывности речи при
+            конкатенации. Только для ElevenLabs
+          maxLength: 5000
+        next_text:
+          type: string
+          description: >-
+            Последующий текст для улучшения непрерывности речи при конкатенации.
+            Только для ElevenLabs
+          maxLength: 5000
+        language_code:
+          type: string
+          description: Код языка ISO 639-1. Для ElevenLabs Turbo v2.5 и MiniMax Speech
+          example: ru
+          maxLength: 10
+        emotion:
+          type: string
+          description: >-
+            Эмоциональная окраска речи. Только для MiniMax Speech (neutral,
+            happy, sad, angry, fearful, disgusted, surprised)
+          example: happy
+          maxLength: 20
+        provider:
+          description: Настройки выбора провайдера. В multipart-форме — JSON-строкой
+          allOf:
+            - $ref: '#/components/schemas/ProviderDto'
+      required:
+        - input
+        - voice
+    AudioSpeechPresenter:
+      type: object
+      properties:
+        audio:
+          type: string
+          description: Base64-encoded аудио данные
+          example: SUQzBAAAAAAAI1RTU0UAAA...
+        contentType:
+          type: string
+          description: Content-Type аудио
+          example: audio/mpeg
+        model:
+          type: string
+          description: ID использованной модели
+          example: tts-1
+        duration:
+          type: number
+          description: Длительность аудио в секундах (если известна)
+          example: 5.2
+        usage:
+          type: object
+          description: Информация об использовании
+          example:
+            characters: 100
+            cost: 0.01
+            cost_rub: 0.01
+        alignment:
+          type: object
+          description: 'Временные метки символов (при timestamps: true, ElevenLabs)'
+      required:
+        - audio
+        - contentType
+        - model
+    ApiErrorPresenter:
+      type: object
+      properties:
+        error:
+          description: Информация об ошибке
+          allOf:
+            - $ref: '#/components/schemas/ApiErrorBodyPresenter'
+        trace_id:
+          type: string
+          description: ID трассировки запроса
+          example: 550e8400-e29b-41d4-a716-446655440000
+      required:
+        - error
+    ProviderDto:
+      type: object
+      properties:
+        require_parameters:
+          type: boolean
+          description: Требовать от OpenRouter поддержку всех переданных параметров
+          example: true
+        allow_fallbacks:
+          type: boolean
+          description: Разрешить использование резервных провайдеров
+          example: true
+        order:
+          description: Упорядоченный список slug провайдеров для использования
+          example:
+            - OpenAI
+            - Anthropic
+          type: array
+          items:
+            type: string
+        only:
+          description: Список разрешенных slug провайдеров
+          example:
+            - OpenAI
+            - Google
+          type: array
+          items:
+            type: string
+        ignore:
+          description: Список игнорируемых slug провайдеров
+          example:
+            - DeepInfra
+          type: array
+          items:
+            type: string
+        sort:
+          type: string
+          description: Критерий сортировки провайдеров
+          enum:
+            - price
+            - throughput
+            - latency
+          example: price
+        max_price:
+          description: Максимальные цены для запроса
+          allOf:
+            - $ref: '#/components/schemas/ProviderMaxPriceDto'
+    ApiErrorBodyPresenter:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Код ошибки
+          enum:
+            - BAD_REQUEST
+            - UNAUTHORIZED
+            - api_key_revoked
+            - INSUFFICIENT_BALANCE
+            - FORBIDDEN
+            - NOT_FOUND
+            - REQUEST_TIMEOUT
+            - CONFLICT
+            - PAYLOAD_TOO_LARGE
+            - TOO_MANY_REQUESTS
+            - BAD_GATEWAY
+            - SERVICE_UNAVAILABLE
+            - INTERNAL_ERROR
+          example: BAD_REQUEST
+        message:
+          type: string
+          description: Описание ошибки
+          example: Недопустимое значение параметра
+        trace_id:
+          type: string
+          description: ID трассировки запроса
+          example: 550e8400-e29b-41d4-a716-446655440000
+        details:
+          type: object
+          description: Уточняющие поля ошибки. Отдаются только для 4xx
+          additionalProperties: true
+        metadata:
+          description: Метаданные ошибки провайдера
+          allOf:
+            - $ref: '#/components/schemas/ApiErrorMetadataPresenter'
+      required:
+        - code
+        - message
+    ProviderMaxPriceDto:
+      type: object
+      properties:
+        prompt:
+          type: number
+          description: Максимальная цена за промпт токены (RUB за миллион токенов)
+          example: 10
+        completion:
+          type: number
+          description: Максимальная цена за completion токены (RUB за миллион токенов)
+          example: 20
+        image:
+          type: number
+          description: Максимальная цена за изображение (RUB за штуку)
+          example: 5
+        audio:
+          type: number
+          description: Максимальная цена за аудио (RUB за миллион токенов)
+          example: 15
+        request:
+          type: number
+          description: Максимальная цена за запрос (RUB за запрос)
+          example: 1
+        video_per_second:
+          type: number
+          description: Максимальная цена за секунду видео (RUB за секунду)
+          example: 50
+        stt_per_minute:
+          type: number
+          description: Максимальная цена распознавания речи (RUB за минуту)
+          example: 5
+        tts_per_million_characters:
+          type: number
+          description: Максимальная цена синтеза речи (RUB за миллион символов)
+          example: 1500
+    ApiErrorMetadataPresenter:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 'Машинная причина отказа: по ней можно ветвиться, не разбирая текст'
+          example: noProvidersForModel
+        raw:
+          type: string
+          description: Исходный текст ответа провайдера
+          example: The parameter `duration` specified in the request is not valid
+        provider_name:
+          type: string
+          description: Провайдер, вернувший ошибку
+          example: openrouter
+        attempts:
+          description: Кого перебрали, прежде чем отказать
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiErrorAttemptPresenter'
+    ApiErrorAttemptPresenter:
+      type: object
+      properties:
+        provider:
+          type: string
+          description: Провайдер, к которому обращались
+          example: OpenRouter
+        reason:
+          type: string
+          description: Машинная причина отказа провайдера
+          example: RATE_LIMIT
+      required:
+        - provider
+        - reason
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: API Key
+      type: http
+      description: >-
+        API ключ передаётся в заголовке: Authorization: Bearer
+        <POLZA_AI_API_KEY>
+
+````
