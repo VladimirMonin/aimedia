@@ -16,7 +16,7 @@ IO-free.
 
 from __future__ import annotations
 
-from aimedia.domain.artifacts import Artifact, ArtifactKind, ArtifactRole
+from aimedia.domain.artifacts import Artifact, ArtifactKind, ArtifactRole, RemoteArtifact
 from aimedia.domain.base import (
     CurrencyCode,
     DomainModel,

@@ -26,6 +26,7 @@ from aimedia.domain import (
     JobError,
     JobKind,
     JobRecovery,
+    JobResult,
     JobStatus,
     ModelRef,
     ProviderRef,
@@ -65,6 +66,47 @@ def make_job(**overrides: object) -> Job:
     return Job(**payload)  # type: ignore[arg-type]
 
 
+def saved_image_artifact(path: str = "out/481/result_001.webp") -> Artifact:
+    """Локально сохранённый image artifact — обязательный результат image Job."""
+    return Artifact(kind=ArtifactKind.IMAGE, local_path=path)
+
+
+def make_completed_image_job(**overrides: object) -> Job:
+    """`completed` image Job с финальным result и сохранённым artifact."""
+    payload: dict[str, object] = {
+        "status": JobStatus.COMPLETED,
+        "completed_at": COMPLETED_AT,
+        "result": JobResult(artifacts=[saved_image_artifact()]),
+    }
+    payload.update(overrides)
+    return make_job(**payload)
+
+
+# --- Публичный контракт пакета домена ---------------------------------------
+
+
+def test_every_public_export_is_importable() -> None:
+    """Каждое имя из `aimedia.domain.__all__` реально доступно в пакете.
+
+    `RemoteArtifact` был объявлен в `__all__`, но не импортирован, поэтому
+    `from aimedia.domain import *` падал на нём. Тест ловит расхождение между
+    списком экспорта и фактическими объектами модуля.
+    """
+    import aimedia.domain as domain
+
+    missing = [name for name in domain.__all__ if not hasattr(domain, name)]
+    assert missing == []
+
+
+def test_remote_artifact_is_publicly_importable() -> None:
+    """`RemoteArtifact` доступен как публичное имя пакета домена."""
+    from aimedia.domain import RemoteArtifact
+
+    remote = RemoteArtifact(kind=ArtifactKind.IMAGE, url="https://example.invalid/a.png")
+    assert remote.kind is ArtifactKind.IMAGE
+    assert remote.url == "https://example.invalid/a.png"
+
+
 # --- Состояния Job -----------------------------------------------------------
 
 
@@ -93,11 +135,79 @@ def test_terminal_job_requires_completed_at() -> None:
 
 def test_completed_job_may_not_carry_terminal_error() -> None:
     with pytest.raises(ValidationError, match="terminal error"):
-        make_job(
-            status=JobStatus.COMPLETED,
-            completed_at=COMPLETED_AT,
-            error=JobError(code="X", message="boom"),
-        )
+        make_completed_image_job(error=JobError(code="X", message="boom"))
+
+
+def test_completed_image_job_requires_final_result() -> None:
+    """`completed` image Job без финального result не существует."""
+    with pytest.raises(ValidationError, match="финальный result"):
+        make_job(status=JobStatus.COMPLETED, completed_at=COMPLETED_AT)
+
+
+def test_completed_image_job_requires_saved_local_artifact() -> None:
+    """Успешный HTTP-response без сохранённого локального файла — ещё не completed."""
+    remote_only = Artifact(
+        kind=ArtifactKind.IMAGE,
+        remote_url="https://example.invalid/result.png",
+    )
+    for result in (JobResult(), JobResult(artifacts=[remote_only]), JobResult(content="text")):
+        with pytest.raises(ValidationError, match="локальный image artifact"):
+            make_job(status=JobStatus.COMPLETED, completed_at=COMPLETED_AT, result=result)
+
+
+def test_completed_image_job_accepts_saved_artifact_in_result() -> None:
+    job = make_completed_image_job()
+    assert job.result is not None
+    assert job.artifact_paths == ()
+    assert job.result.artifacts[0].local_path is not None
+
+
+def test_completed_image_job_accepts_saved_artifact_in_aggregate_list() -> None:
+    """Recovery-финализация кладёт сохранённый artifact в агрегатный список Job."""
+    job = make_completed_image_job(
+        result=JobResult(artifacts=[]),
+        artifacts=[saved_image_artifact("out/481/recovered.webp")],
+    )
+    assert job.artifact_paths == ("out/481/recovered.webp",)
+
+
+def test_recovery_failed_to_completed_supplies_saved_artifact() -> None:
+    """Recovery-переход не ослабляется и требует сохранённый artifact.
+
+    Failed image Job с partial result и cost разрешён, переход `failed → completed`
+    возможен только с `recovery=True`, а итоговый completed Job обязан нести
+    локально сохранённый artifact.
+    """
+    failed = make_job(
+        status=JobStatus.FAILED,
+        completed_at=COMPLETED_AT,
+        error=JobError(code="ARTIFACT_DOWNLOAD_FAILED", message="download failed"),
+        cost=Cost(amount="4.00", currency="RUB"),
+    )
+    assert failed.result is None
+    assert failed.artifacts == []
+
+    with pytest.raises(InvalidJobStateTransitionError):
+        ensure_transition(failed.status, JobStatus.COMPLETED)
+    assert ensure_transition(failed.status, JobStatus.COMPLETED, recovery=True) is (
+        JobStatus.COMPLETED
+    )
+
+    # Без сохранённого artifact финализация не становится completed.
+    with pytest.raises(ValidationError, match="локальный image artifact"):
+        make_completed_image_job(result=JobResult())
+
+    recovered = make_completed_image_job(
+        cost=Cost(amount="4.00", currency="RUB"),
+        recovery=JobRecovery(
+            previous_error=JobError(code="ARTIFACT_DOWNLOAD_FAILED", message="download failed"),
+            recovered_at=COMPLETED_AT,
+        ),
+    )
+    assert recovered.status is JobStatus.COMPLETED
+    assert recovered.error is None
+    assert recovered.result is not None
+    assert recovered.result.artifacts[0].local_path is not None
 
 
 def test_failed_job_requires_error() -> None:
@@ -207,9 +317,7 @@ def test_invalid_transition_error_is_a_domain_error_with_details() -> None:
 
 def test_recovery_record_keeps_previous_error() -> None:
     """Успешная финализация не стирает прежнюю ошибку: она остаётся в записи recovery."""
-    job = make_job(
-        status=JobStatus.COMPLETED,
-        completed_at=COMPLETED_AT,
+    job = make_completed_image_job(
         recovery=JobRecovery(
             previous_error=JobError(code="ARTIFACT_DOWNLOAD_FAILED", message="download failed"),
             recovered_at=COMPLETED_AT,

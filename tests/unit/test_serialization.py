@@ -28,6 +28,7 @@ from aimedia.domain import (
     InputRef,
     Job,
     JobKind,
+    JobResult,
     JobStatus,
     ModelRef,
     ProviderJobState,
@@ -228,6 +229,7 @@ def test_full_job_round_trip_python_and_json() -> None:
         ),
         cost=Cost(amount="4.00", currency="RUB"),
         usage=Usage(output_units=1.0, raw={"cost_rub": 4.0}),
+        result=JobResult(),
         artifacts=[
             Artifact(
                 kind=ArtifactKind.IMAGE,

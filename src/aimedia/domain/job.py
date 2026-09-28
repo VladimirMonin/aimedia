@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pydantic import model_validator
 
-from aimedia.domain.artifacts import Artifact
+from aimedia.domain.artifacts import Artifact, ArtifactKind
 from aimedia.domain.base import DomainModel, UtcDatetime
 from aimedia.domain.costs import Cost, Usage
 from aimedia.domain.errors import JobError
@@ -106,8 +106,11 @@ class Job(DomainModel):
         """Проверить инварианты состояний, не зависящие от конкретного перехода.
 
         Creation: статус `created` не имеет времени подачи и завершения.
-        Completion: `completed` не может нести terminal error. Failure: `failed`
-        обязан иметь error. Terminal Job всегда имеет `completed_at`.
+        Completion: `completed` не может нести terminal error и для
+        file-producing (image) Job обязан иметь финальный result с сохранённым
+        локальным artifact. Failure: `failed` обязан иметь error, но может
+        сохранять partial result/artifacts/cost. Terminal Job всегда имеет
+        `completed_at`.
         """
         if self.status is JobStatus.CREATED and (
             self.submitted_at is not None or self.completed_at is not None
@@ -119,7 +122,31 @@ class Job(DomainModel):
             raise ValueError("Job в статусе failed обязан иметь error")
         if is_terminal(self.status) and self.completed_at is None:
             raise ValueError("terminal Job обязан иметь completed_at")
+        if self.status is JobStatus.COMPLETED and self.kind is JobKind.IMAGE_GENERATE:
+            self._ensure_completed_image_result()
         return self
+
+    def _ensure_completed_image_result(self) -> None:
+        """`completed` image Job обязан нести финальный result и локальный artifact.
+
+        `completed` означает завершённое задание, а не успешный HTTP-response
+        (`03-domain-model.md`, Completion invariants): генерация считается
+        завершённой только после сохранения обязательного локального результата.
+        Artifact ищется в самом результате, а также в агрегатном списке Job, чтобы
+        проверка не зависела от того, в каком из двух поддерживаемых мест его
+        разместил вызывающий код. «Usable» здесь — image-kind с непустым
+        `local_path`; hash и размер остаются опциональными согласно доменной модели.
+        """
+        if self.result is None:
+            raise ValueError("Job в статусе completed обязан иметь финальный result")
+        artifacts = (*self.result.artifacts, *self.artifacts)
+        if not any(
+            artifact.kind is ArtifactKind.IMAGE and artifact.local_path is not None
+            for artifact in artifacts
+        ):
+            raise ValueError(
+                "Job в статусе completed обязан иметь сохранённый локальный image artifact"
+            )
 
     @property
     def has_known_cost(self) -> bool:
