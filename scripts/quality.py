@@ -38,6 +38,7 @@ _COLLECTED_RE = re.compile(r"^(?:(\d+)\s+tests?\s+collected|no\s+tests?\s+collec
 # реальных каталогов тестов, а не заранее.
 REQUIRED_SUITES: tuple[str, ...] = (
     "tests/unit",
+    "tests/architecture",
     "tests/cli",
     "tests/tooling",
     "tests/security",

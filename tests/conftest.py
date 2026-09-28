@@ -27,6 +27,12 @@ _OFFLINE_DIR = Path(__file__).resolve().parent / "offline"
 if str(_OFFLINE_DIR) not in sys.path:
     sys.path.insert(0, str(_OFFLINE_DIR))
 
+# `tests/support` содержит тестовые doubles (fake provider). Это не production код
+# и не suite: каталог не собирается pytest и не входит в REQUIRED_SUITES.
+_SUPPORT_DIR = Path(__file__).resolve().parent / "support"
+if str(_SUPPORT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SUPPORT_DIR))
+
 from offline_policy import (  # noqa: E402
     ensure_socket_guard,
     scrub_secret_env,

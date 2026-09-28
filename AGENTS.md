@@ -30,6 +30,7 @@
 | [DOCS.instructions_style](instructions/DOCS.instructions_style.instructions.md) | Создание, обновление, переименование, разделение или удаление инструкций и `AGENTS.md` |
 | [DOCS.commit_messages](instructions/DOCS.commit_messages.instructions.md) | Подготовка staging, проверок и локального Git commit |
 | [TEST.offline_quality](instructions/TEST.offline-quality.instructions.md) | Изменение tests/, scripts/quality.py, конфигурации pytest/Ruff/mypy или CI; обязательные offline-гейты, сетевая изоляция и изоляция секретов |
+| [CORE.domain-boundary](instructions/CORE.domain-boundary.instructions.md) | Изменение `src/aimedia/domain/`, provider/storage ports, статусов Job, денежных значений, DTO запросов/результатов, `tests/architecture/`, `tests/support/` или доменных тестов |
 | [CORE.code_intelligence](instructions/CORE.code_intelligence.instructions.md) | Поиск реализации, символов, связей, структурных паттернов и оценка влияния |
 
 - **Каждую новую инструкцию обязательно добавляй сюда** рабочей Markdown-ссылкой
