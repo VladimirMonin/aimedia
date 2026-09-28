@@ -207,30 +207,70 @@ def jpeg_with_filler_bytes() -> bytes:
 # --- WebP -------------------------------------------------------------------
 
 
-def _webp_container(fourcc: bytes, payload: bytes) -> bytes:
-    """Собрать RIFF/WEBP с единственным chunk'ом, выровненным по чётности."""
-    chunk = fourcc + struct.pack("<I", len(payload)) + payload
-    if len(payload) % 2:
-        chunk += b"\x00"
-    return b"RIFF" + struct.pack("<I", len(chunk) + 4) + b"WEBP" + chunk
+def _webp_container(*chunks: tuple[bytes, bytes]) -> bytes:
+    """Собрать RIFF/WEBP из chunk'ов, каждый выровнен по чётности."""
+    body = b"".join(
+        fourcc + struct.pack("<I", len(payload)) + payload + (b"\x00" if len(payload) % 2 else b"")
+        for fourcc, payload in chunks
+    )
+    return b"RIFF" + struct.pack("<I", len(body) + 4) + b"WEBP" + body
+
+
+def _webp_vp8x_payload(width: int, height: int, flags: int = 0) -> bytes:
+    """Заголовок VP8X: флаги и размеры canvas минус один."""
+    return (
+        flags.to_bytes(4, "little")
+        + (width - 1).to_bytes(3, "little")
+        + (height - 1).to_bytes(3, "little")
+    )
+
+
+def _webp_vp8l_payload(width: int, height: int) -> bytes:
+    """Кадр VP8L: сигнатура 0x2F и упакованные размеры."""
+    bits = (width - 1) | ((height - 1) << 14)
+    return b"\x2f" + bits.to_bytes(4, "little")
 
 
 def webp_lossless_bytes(width: int = 2, height: int = 2) -> bytes:
     """Валидный RIFF/WEBP с кадром VP8L заданного размера."""
-    bits = (width - 1) | ((height - 1) << 14)
-    return _webp_container(b"VP8L", b"\x2f" + bits.to_bytes(4, "little"))
+    return _webp_container((b"VP8L", _webp_vp8l_payload(width, height)))
 
 
 def webp_extended_bytes(width: int = 3, height: int = 5) -> bytes:
-    """Валидный WebP с кадром VP8X (расширенный формат)."""
-    payload = bytes(4) + (width - 1).to_bytes(3, "little") + (height - 1).to_bytes(3, "little")
-    return _webp_container(b"VP8X", payload)
+    """Валидный расширенный WebP: заголовок VP8X и фактический кадр VP8L.
+
+    Одного VP8X недостаточно: он задаёт canvas и флаги, но не пиксельный кадр.
+    """
+    return _webp_container(
+        (b"VP8X", _webp_vp8x_payload(width, height)),
+        (b"VP8L", _webp_vp8l_payload(width, height)),
+    )
+
+
+def webp_extended_without_frame_bytes(width: int = 3, height: int = 5) -> bytes:
+    """Расширенный WebP с одним VP8X и без кадра VP8/VP8L: кадра нет."""
+    return _webp_container((b"VP8X", _webp_vp8x_payload(width, height)))
+
+
+def webp_animated_bytes(width: int = 3, height: int = 5) -> bytes:
+    """Анимированный WebP: VP8X с флагом ANIM и ANMF, но без статичного кадра.
+
+    Локально анимация не поддерживается: заголовок VP8X не заменяет кадр.
+    """
+    animation_flag = 0b00000010
+    anim = bytes(4)
+    anmf = bytes(16)
+    return _webp_container(
+        (b"VP8X", _webp_vp8x_payload(width, height, flags=animation_flag)),
+        (b"ANIM", anim),
+        (b"ANMF", anmf),
+    )
 
 
 def webp_lossy_bytes(width: int = 4, height: int = 6) -> bytes:
     """Валидный WebP с кадром VP8 (lossy)."""
     payload = b"\x00\x00\x00" + b"\x9d\x01\x2a" + struct.pack("<HH", width, height) + bytes(4)
-    return _webp_container(b"VP8 ", payload)
+    return _webp_container((b"VP8 ", payload))
 
 
 def webp_with_wrong_riff_size() -> bytes:
@@ -240,8 +280,8 @@ def webp_with_wrong_riff_size() -> bytes:
 
 
 def webp_without_frame() -> bytes:
-    """Контейнер RIFF/WEBP без VP8/VP8L/VP8X: формат не подтверждён."""
-    return _webp_container(b"JUNK", b"ABCD")
+    """Контейнер RIFF/WEBP без VP8/VP8L: формат не подтверждён."""
+    return _webp_container((b"JUNK", b"ABCD"))
 
 
 def webp_truncated_header() -> bytes:
@@ -266,15 +306,15 @@ def webp_with_chunk_beyond_file() -> bytes:
 
 
 def webp_with_short_vp8x() -> bytes:
-    """WebP с VP8X-кадром короче требуемых 10 байт."""
-    return _webp_container(b"VP8X", b"\x00\x00\x00")
+    """WebP с VP8X-заголовком короче требуемых 10 байт."""
+    return _webp_container((b"VP8X", b"\x00\x00\x00"))
 
 
 def webp_short_vp8_header() -> bytes:
     """WebP с VP8-кадром без корректной сигнатуры \\x9d\\x01\\x2a."""
-    return _webp_container(b"VP8 ", bytes(10))
+    return _webp_container((b"VP8 ", bytes(10)))
 
 
 def webp_with_bad_vp8l_header() -> bytes:
     """WebP, у которого VP8L-заголовок не начинается с сигнатуры 0x2F."""
-    return _webp_container(b"VP8L", bytes(5))
+    return _webp_container((b"VP8L", bytes(5)))

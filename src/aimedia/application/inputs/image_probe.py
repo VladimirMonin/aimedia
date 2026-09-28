@@ -8,7 +8,8 @@
   и распаковываемые IDAT, объём которых соответствует геометрии изображения;
 - JPEG — маркеры сегментов, наличие SOF и терминатора EOI;
 - WebP — контейнер RIFF/WEBP с корректными размерами chunk'ов и присутствием
-  одного из VP8/VP8L/VP8X.
+  кадра VP8/VP8L; VP8X — расширение контейнера, а не кадр, поэтому одного VP8X
+  недостаточно (анимированный WebP локально не поддерживается).
 
 Это не перекодирование и не полный raster-decode: цель — отклонить повреждённый
 файл и не отправить провайдеру заведомо невалидный вход (`08-job-execution.md`,
@@ -264,7 +265,13 @@ def _jpeg_sof_dimensions(data: bytes) -> tuple[int, int]:
 
 
 def _probe_webp(content: bytes) -> tuple[int, int]:
-    """Проверить контейнер RIFF/WEBP и вернуть размеры кадра."""
+    """Проверить контейнер RIFF/WEBP и вернуть размеры фактического кадра.
+
+    VP8X задаёт флаги и размеры canvas расширенного контейнера, но пиксельного
+    изображения не содержит: расширенный WebP принимается только при наличии
+    кадра VP8/VP8L. Анимированный WebP (VP8X + ANIM/ANMF) локально не
+    поддерживается и отклоняется, а не принимается по одному заголовку.
+    """
     if len(content) < 12:
         raise InvalidImageContentError("WebP обрезан: неполный RIFF-заголовок.")
     (riff_size,) = struct.unpack("<I", content[4:8])
@@ -272,7 +279,8 @@ def _probe_webp(content: bytes) -> tuple[int, int]:
         raise InvalidImageContentError("WebP повреждён: размер RIFF не совпадает с файлом.")
 
     offset = 12
-    dims: tuple[int, int] | None = None
+    frame_dims: tuple[int, int] | None = None
+    vp8x_canvas: tuple[int, int] | None = None
     total = len(content)
     while offset < total:
         if offset + 8 > total:
@@ -285,19 +293,24 @@ def _probe_webp(content: bytes) -> tuple[int, int]:
             raise InvalidImageContentError("WebP обрезан: chunk выходит за пределы файла.")
         payload = content[data_start : data_start + chunk_size]
         if fourcc == b"VP8X":
-            dims = _webp_vp8x_dimensions(payload)
-        elif fourcc == b"VP8L" and dims is None:
-            dims = _webp_vp8l_dimensions(payload)
-        elif fourcc == b"VP8 " and dims is None:
-            dims = _webp_vp8_dimensions(payload)
+            vp8x_canvas = _webp_vp8x_dimensions(payload)
+        elif fourcc == b"VP8L" and frame_dims is None:
+            frame_dims = _webp_vp8l_dimensions(payload)
+        elif fourcc == b"VP8 " and frame_dims is None:
+            frame_dims = _webp_vp8_dimensions(payload)
         offset = padded_end
 
-    if dims is None:
-        raise InvalidImageContentError("WebP повреждён: отсутствует кадр VP8/VP8L/VP8X.")
-    return dims
+    if frame_dims is None:
+        if vp8x_canvas is not None:
+            raise InvalidImageContentError(
+                "WebP повреждён: VP8X без кадра VP8/VP8L; анимированный WebP не поддерживается."
+            )
+        raise InvalidImageContentError("WebP повреждён: отсутствует кадр VP8/VP8L.")
+    return frame_dims
 
 
 def _webp_vp8x_dimensions(payload: bytes) -> tuple[int, int]:
+    """Размеры canvas из заголовка VP8X: они лишь проверяются, кадром не являются."""
     if len(payload) < 10:
         raise InvalidImageContentError("WebP повреждён: VP8X неверной длины.")
     width = 1 + int.from_bytes(payload[4:7], "little")

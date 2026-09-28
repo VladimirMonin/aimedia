@@ -44,7 +44,9 @@ from image_fixtures import (
     png_without_iend,
     png_without_ihdr_first,
     truncated_png,
+    webp_animated_bytes,
     webp_extended_bytes,
+    webp_extended_without_frame_bytes,
     webp_header_without_chunks,
     webp_lossless_bytes,
     webp_lossy_bytes,
@@ -200,14 +202,31 @@ def test_probe_reports_dimensions_and_mime() -> None:
 # --- Подтверждённые форматы принимаются -------------------------------------
 
 
-def test_extended_webp_frame_is_accepted(tmp_path: Path) -> None:
-    """Расширенный WebP (VP8X) принимается и отдаёт размеры кадра."""
+def test_extended_webp_with_frame_is_accepted(tmp_path: Path) -> None:
+    """Расширенный WebP (VP8X + кадр VP8L) принимается и отдаёт размеры кадра."""
     path = _write(tmp_path, "extended.webp", webp_extended_bytes(width=3, height=5))
 
     prepared = prepare_reference_images([path])
 
     assert prepared[0].mime_type == "image/webp"
     assert prepared[0].metadata == {"width": 3, "height": 5}
+
+
+@pytest.mark.parametrize(
+    ("name", "content"),
+    [
+        ("vp8x-only.webp", webp_extended_without_frame_bytes(width=3, height=5)),
+        ("animated.webp", webp_animated_bytes(width=3, height=5)),
+    ],
+)
+def test_webp_without_real_frame_is_rejected(tmp_path: Path, name: str, content: bytes) -> None:
+    """VP8X сам по себе не кадр: без VP8/VP8L вход отклоняется до submit."""
+    broken = _write(tmp_path, name, content)
+
+    with pytest.raises(UnsupportedInputFormatError) as exc_info:
+        prepare_reference_images([broken])
+
+    assert exc_info.value.code is DomainErrorCode.UNSUPPORTED_INPUT_FORMAT
 
 
 def test_lossy_webp_frame_is_accepted(tmp_path: Path) -> None:
