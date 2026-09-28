@@ -171,9 +171,13 @@ def _probe_png(content: bytes) -> tuple[int, int]:
         elif chunk_type == b"IDAT":
             idat_parts.append(data)
         elif chunk_type == b"IEND":
+            if length != 0:
+                raise InvalidImageContentError("PNG повреждён: IEND обязан быть пустым.")
             seen_iend = True
             offset = crc_start + 4
             break
+        elif chunk_type[:1].isupper() and chunk_type != b"PLTE":
+            raise InvalidImageContentError("PNG повреждён: неизвестный критический chunk.")
         offset = crc_start + 4
 
     if ihdr is None:

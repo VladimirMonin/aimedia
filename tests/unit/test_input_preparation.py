@@ -114,6 +114,29 @@ def test_corrupted_png_with_valid_signature_is_rejected(tmp_path: Path) -> None:
     _rejects(tmp_path, "broken.png", png_with_bad_crc())
 
 
+def test_png_with_nonempty_iend_is_rejected_before_submit(tmp_path: Path) -> None:
+    """Даже с корректным CRC IEND не может содержать данные."""
+    content = png_bytes()[:-12] + png_chunk(b"IEND", b"x")
+    path = _write(tmp_path, "nonempty-iend.png", content)
+
+    with pytest.raises(UnsupportedInputFormatError) as exc_info:
+        prepare_reference_images([path])
+
+    assert exc_info.value.code is DomainErrorCode.UNSUPPORTED_INPUT_FORMAT
+
+
+def test_png_with_unknown_critical_chunk_is_rejected_before_submit(tmp_path: Path) -> None:
+    """Корректный CRC неизвестного критического chunk'а не делает PNG допустимым."""
+    valid = png_bytes()
+    content = valid[:-12] + png_chunk(b"ABCD", b"x") + valid[-12:]
+    path = _write(tmp_path, "unknown-critical.png", content)
+
+    with pytest.raises(UnsupportedInputFormatError) as exc_info:
+        prepare_reference_images([path])
+
+    assert exc_info.value.code is DomainErrorCode.UNSUPPORTED_INPUT_FORMAT
+
+
 @pytest.mark.parametrize(
     ("name", "content"),
     [
