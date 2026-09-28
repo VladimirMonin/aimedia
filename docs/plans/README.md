@@ -296,11 +296,11 @@ Build backend выбирается и фиксируется одной реал
 
 **Коммиты:** C01 `chore(scaffold): create uv package and offline CI`; C02 `feat(config): add explicit settings and redacted logging`.
 
-- [ ] Чистый clone воспроизводит окружение через `uv sync --locked`.
-- [ ] `.env` не отслеживается и не попадает в собранный пакет.
-- [ ] Offline-тесты не используют экспортированный реальный ключ.
-- [ ] Один упавший child process делает quality command неуспешной.
-- [ ] Логгер и JSON presenter не пишут друг другу в stdout.
+- [x] Чистый clone воспроизводит окружение через `uv sync --locked`.
+- [x] `.env` не отслеживается и не попадает в собранный пакет.
+- [x] Offline-тесты не используют экспортированный реальный ключ.
+- [x] Один упавший child process делает quality command неуспешной.
+- [x] Логгер и JSON presenter не пишут друг другу в stdout.
 
 ### E02. Domain, ports и точная подготовка входов 🧠
 
