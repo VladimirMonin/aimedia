@@ -690,7 +690,7 @@ remote_ref
 ```python
 class RemoteJobRef(BaseModel):
     provider_id: str
-    remote_id: str
+    remote_job_id: str
     operation: str | None = None
 ```
 
@@ -698,7 +698,7 @@ class RemoteJobRef(BaseModel):
 
 ```text
 provider_id = polza
-remote_id = aig_abc123
+remote_job_id = aig_abc123
 operation = media
 ```
 
@@ -706,10 +706,12 @@ operation = media
 
 ```text
 provider_id = polza
-remote_id = gen_123
+remote_job_id = gen_123
 operation = audio.transcription
 ```
 
+Каноническое имя поля — `remote_job_id` (согласовано с `03`/`07`, baseline E00).
+`operation` хранится в remote ref/snapshot; endpoint не угадывается по строке ID.
 Точная схема будет определена позже, но сама проблема должна быть учтена.
 
 ---
@@ -1348,12 +1350,18 @@ provider_options:
 
 Пример:
 
+> [!note]
+> Значение `some/model/id` ниже — **явно демонстрационный placeholder**, а не
+> проверенный remote model ID. Реальный binding содержит только ID, документально
+> подтверждённый источником и live-проверкой; источник параметров, дата и результат
+> фиксируются в evidence.
+
 ```yaml
 id: seedream-5-pro
 
 providers:
   polza:
-    remote_model_id: some/model/id
+    remote_model_id: <PLACEHOLDER_REMOTE_MODEL_ID>
 ```
 
 Позже:
@@ -1361,13 +1369,15 @@ providers:
 ```yaml
 providers:
   polza:
-    remote_model_id: some/model/id
+    remote_model_id: <PLACEHOLDER_REMOTE_MODEL_ID>
 
   another:
-    remote_model_id: model-x-2026
+    remote_model_id: <PLACEHOLDER_REMOTE_MODEL_ID_OTHER>
 ```
 
-Application выбирает provider, затем registry отдаёт нужный binding.
+Application выбирает provider, затем registry отдаёт нужный binding. Переименование
+параметров и любой mapping из domain-полей в provider-параметры выполняет Python
+adapter, а не YAML (см. baseline E00).
 
 ---
 

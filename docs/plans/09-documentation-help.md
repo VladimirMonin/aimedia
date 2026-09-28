@@ -741,6 +741,11 @@ flowchart LR
 
 `--raw` должен возвращать **resolved Markdown**.
 
+> [!important]
+> Уточнение baseline E00: `--raw` возвращает resolved Markdown **без front matter и без
+> неразрешённых директив/placeholders**; ANSI и progress отсутствуют. Исходные файлы
+> справки остаются обычными читаемыми Markdown (source mode — отдельная роль).
+
 Причина:
 
 > Агенту нужна актуальная готовая справка, а не внутренние placeholders.

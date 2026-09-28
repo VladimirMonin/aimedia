@@ -184,7 +184,7 @@ generation_xyz
 Job.id
 → локальный ID системы
 
-RemoteJobRef.id
+RemoteJobRef.remote_job_id
 → ID удалённого задания provider
 ```
 
@@ -979,6 +979,10 @@ class ProviderModelBinding(BaseModel):
 
 Здесь допускаются provider-specific metadata, но не бизнес-логика.
 
+Каноническое имя фактического model ID — `remote_model_id`; оно едино для
+`03`/`05`/`06`/`07` (см. baseline E00). Локальный `model_id` — canonical ID
+логической модели, `remote_model_id` — то, что реально ушло provider.
+
 ---
 
 # Cost 💰
@@ -1090,8 +1094,16 @@ usage.raw
 ```python
 class RemoteJobRef(BaseModel):
     provider_id: str
-    remote_id: str
+    remote_job_id: str
+    operation: str | None = None
 ```
+
+> [!important]
+> Каноническое имя поля remote job — `remote_job_id` (не `remote_id`),
+> согласовано с `05` и `07` и зафиксировано в baseline E00
+> [`decisions/implementation-baseline.md`](decisions/implementation-baseline.md).
+> `operation` хранит тип удалённой операции (для image — `media`); endpoint по
+> строке ID не угадывается.
 
 Позже возможно добавить:
 
@@ -1479,6 +1491,13 @@ cancelled
 После terminal state обычный Job не должен возвращаться в `running`.
 
 Retry создаёт новый Job.
+
+> [!important]
+> Единственное исключение из инварианта: `failed → completed` разрешён только при
+> recovery того же самого remote execution (без новой генерации), когда ранее
+> провалившаяся локальная финализация позже завершилась успешно. Прежняя ошибка
+> сохраняется в записи recovery. Уточнено в baseline E00
+> [`decisions/implementation-baseline.md`](decisions/implementation-baseline.md).
 
 ---
 
@@ -2329,7 +2348,8 @@ request:
 
 remote_ref:
   provider_id: polza
-  remote_id: aig_abc123
+  remote_job_id: aig_abc123
+  operation: media
 
 result:
   artifacts:
@@ -2591,7 +2611,7 @@ DynamicAnything
 > **12. Retry создаёт новый Job, а не переписывает историю старого.**
 
 > [!important]
-> **13. Terminal Job не возвращается в non-terminal status.**
+> **13. Terminal Job не возвращается в non-terminal status.** Единственное исключение — `failed → completed` при recovery того же remote execution без новой генерации (см. раздел Terminal states и baseline E00). Промежуточное возвращение в `running` запрещено и для этого случая.
 
 > [!important]
 > **14. Model Registry описывает способности модели, а Provider Adapter — способ вызова API.**

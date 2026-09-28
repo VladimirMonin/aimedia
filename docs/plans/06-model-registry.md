@@ -167,7 +167,11 @@ Registry **не содержит**:
 - пригоден для ручного редактирования;
 - не требует изменения Python-кода при добавлении модели.
 
-Пример общего вида:
+> [!note]
+> Это **демонстрационный** пример. `seedream-5-pro` и `some/provider/model` —
+> условные имена: наличие YAML-записи не означает проверенную поддержку модели.
+> Для реальной модели отдельно фиксируются exact remote ID, источник параметров,
+> дата проверки и результаты live-сценариев (baseline E00).
 
 ```yaml
 schema_version: 1
@@ -1002,19 +1006,23 @@ resolution
 
 # Допустимый declarative provider mapping 🗺️
 
-Для простых случаев можно позволить binding:
+Для простых случаев binding концептуально может нести mapping:
 
 ```yaml
 providers:
   polza:
-    remote_model_id: model-x
+    remote_model_id: <PLACEHOLDER_REMOTE_MODEL_ID>
 
     parameter_map:
       resolution: image_resolution
       output_format: output_format
 ```
 
-Однако это должно использоваться только для **простого переименования**.
+> [!important]
+> В v0.1 `parameter_map` — **неактивная будущая возможность**. Mapping из domain-полей
+> в provider-параметры выполняет **только Python adapter** (см. baseline E00).
+> YAML хранит bindings и ограничения; второго конкурирующего механизма mapping в
+> v0.1 не существует. Пример выше — иллюстрация схемы, а не рабочий каталог.
 
 ---
 
@@ -1793,6 +1801,22 @@ webp
 
 ---
 
+## Решение v0.1 (baseline E00)
+
+Вводятся два раздельных понятия:
+
+```text
+final_format  — конечный локальный формат CLI (png / jpeg / webp; alias jpg → jpeg)
+provider output — формат, запрашиваемый/возвращаемый provider
+```
+
+`--format` из `04` означает именно `final_format`. Локальная конвертация WebP не
+считается native WebP модели; provider output задаётся отдельно (provider output
+param) и только там, где он реально документирован. См.
+[`decisions/implementation-baseline.md`](decisions/implementation-baseline.md).
+
+---
+
 ## Предлагаемая модель
 
 В Registry:
@@ -2495,6 +2519,11 @@ YAML parsing должен использовать safe loader.
 ---
 
 # Полный концептуальный пример image модели 🖼️
+
+> [!note]
+> Это **демонстрационный** пример структуры (`example-image-pro`,
+> `provider/example-image-pro`), а не утверждение о параметрах реальной модели.
+> Демонстрационные ID и лимиты не объявляются проверенными без live-доказательства.
 
 ```yaml
 schema_version: 1

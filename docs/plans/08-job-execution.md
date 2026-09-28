@@ -202,6 +202,13 @@ provider.submit()
 
 Это правило позволяет всегда иметь локальный `job_id`, даже если ошибка произойдёт во время первого сетевого запроса.
 
+> [!important]
+> Решение baseline E00 о моменте создания Job: синтаксическая ошибка CLI (invalid
+> arguments, `Exit code 2`) **не создаёт Job**. Job создаётся после успешного разбора
+> intent и чтения prompt-источников/входов, но **до** предметной pre-submit validation;
+> последняя может завершить Job ошибкой. `provider.submit()` **без сохранённого Job
+> запрещён**.
+
 Такой `job_id` используется:
 
 - в logs;
@@ -434,6 +441,11 @@ Job completed
 
 > [!important]
 > `failed → completed` допустим только для локальной recovery уже существующего remote execution. Он не является скрытым retry генерации.
+>
+> Согласовано baseline E00 (`03` / `08`): terminal = `completed`/`failed`/`cancelled`;
+> единственное исключение — именно `failed → completed` при recovery того же remote
+> execution. `sync` не вызывает submit, не стирает прежнюю ошибку и при продолжающемся
+> remote Job обновляет только наблюдение; прежняя ошибка сохраняется в записи recovery.
 
 ---
 
@@ -610,6 +622,11 @@ JOB_TIMEOUT
 ```
 
 с признаком возможной recovery.
+
+> [!important]
+> Решение baseline E00 (timeout): локальное прекращение ожидания ≠ remote cancel.
+> При timeout с known remote ref recovery разрешён; неизвестный outcome submit
+> запрещает автоматический повтор и не маскируется как «можно просто повторить».
 
 ---
 
@@ -1330,6 +1347,12 @@ Ctrl+C обычно означает:
 > уничтожить remote generation.
 
 Remote cancellation должна быть отдельной явной командой/опцией.
+
+> [!important]
+> Решение baseline E00 (Ctrl+C): Ctrl+C не отправляет remote cancel; known remote refs
+> сохраняются; ожидающие локального слота Jobs отменяются. Штатно обработанный
+> Ctrl+C даёт exit code `130` (см. `04`), а не выдаётся за подтверждённую remote
+> cancellation.
 
 ---
 
@@ -2102,6 +2125,12 @@ v0.1 не ориентирована на несколько одновреме�
 - не делать submit для Job, который уже `submitted/running`.
 
 Distributed locks не нужны.
+
+> [!important]
+> Решение baseline E00 (local ownership): v0.1 требует минимального cross-process
+> guard (status-guard + короткая транзакция), но не брокера и не распределённой
+> блокировки. Конкретная схема и способ снятия stale ownership **утверждаются до E08**
+> (здесь — требование, не реализация).
 
 ---
 
