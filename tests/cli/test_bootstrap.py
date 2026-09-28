@@ -3,20 +3,25 @@
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from offline_policy import child_process_env
 
 TIMEOUT_SECONDS = 120
 
 
 def _clean_env() -> dict[str, str]:
-    env = dict(os.environ)
+    """Окружение CLI-ребёнка из общей политики.
+
+    `child_process_env()` удаляет секреты (включая алиас из
+    `AIMEDIA_POLZA_API_KEY_ENV`) и добавляет в `PYTHONPATH` каталог offline-guard,
+    поэтому дочерний CLI тоже не выходит во внешнюю сеть.
+    """
+    env = child_process_env()
     for name in (
-        "POLZA_API_KEY",
         "AIMEDIA_DATA_DIR",
         "AIMEDIA_LIVE_ENABLED",
         "AIMEDIA_LOG_LEVEL",

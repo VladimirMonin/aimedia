@@ -34,6 +34,8 @@ packages = ["src/aimedia"]
 minversion = "8.0"
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
+# Каталог процессно-независимой offline-политики доступен и conftest, и тестам.
+pythonpath = ["tests/offline"]
 markers = [
     "live: реальный вызов provider; только по явному разрешению",
     "slow: длительная проверка",

@@ -12,14 +12,27 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import os
+import re
 import subprocess
 import sys
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# Общая политика изоляции живёт рядом с тестами. Единственный владелец правил —
+# `tests/offline/offline_policy.py`; harness загружает её по пути, потому что
+# запускается обычным Python-процессом, а не через pytest.
+OFFLINE_POLICY_PATH = REPO_ROOT / "tests" / "offline" / "offline_policy.py"
+
+# Разбор итоговой строки pytest `--collect-only -q`: `28 tests collected in 0.2s`
+# или `no tests collected in 0.01s`.
+_COLLECTED_RE = re.compile(r"^(?:(\d+)\s+tests?\s+collected|no\s+tests?\s+collected)", re.MULTILINE)
 
 # Обязательные suites на текущем этапе. Список расширяется вместе с появлением
 # реальных каталогов тестов, а не заранее.
@@ -52,6 +65,9 @@ class CheckResult:
     stdout: str = ""
     stderr: str = ""
     required: bool = True
+    # Сколько тестов реально собрал `--collect-only`. `None` — проверка не
+    # собирала тесты.
+    collected_tests: int | None = None
 
 
 @dataclass
@@ -61,17 +77,46 @@ class RunReport:
     results: list[CheckResult] = field(default_factory=list)
 
 
+def load_offline_policy() -> ModuleType:
+    """Загрузить общую offline-политику из `tests/offline/offline_policy.py`."""
+    spec = importlib.util.spec_from_file_location("offline_policy", OFFLINE_POLICY_PATH)
+    if spec is None or spec.loader is None:  # pragma: no cover - защита от повреждения репо
+        raise RuntimeError(f"Не удалось загрузить offline-политику: {OFFLINE_POLICY_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["offline_policy"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+offline_policy = load_offline_policy()
+
+
 def find_missing_suites(root: Path, suites: tuple[str, ...] = REQUIRED_SUITES) -> list[str]:
     """Вернуть обязательные suites, которых нет в рабочем дереве."""
     return [suite for suite in suites if not (root / suite).is_dir()]
 
 
+def sanitize_process_env() -> tuple[str, ...]:
+    """Удалить секреты из окружения harness до запуска любых дочерних проверок.
+
+    Возвращает только имена удалённых переменных: их безопасно печатать, значения
+    не читаются и не логируются.
+    """
+    return offline_policy.scrub_secret_env(os.environ)
+
+
 def run_check(check: Check, *, cwd: Path) -> CheckResult:
-    """Запустить команду без shell и вернуть её сырой exit code."""
+    """Запустить команду без shell и вернуть её сырой exit code.
+
+    Окружение ребёнка строится через общую политику: секреты удалены, а
+    `PYTHONPATH` дополнен каталогом offline-guard, поэтому Python-потомки
+    проверок тоже запрещают внешнюю сеть.
+    """
     started = time.monotonic()
     completed = subprocess.run(
         check.args,
         cwd=str(cwd),
+        env=offline_policy.child_process_env(os.environ),
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -120,6 +165,59 @@ def _pytest_args(extra: list[str] | None = None) -> list[str]:
     if extra:
         args.extend(extra)
     return args
+
+
+def _collect_args(suite: str) -> list[str]:
+    return [
+        sys.executable,
+        "-m",
+        "pytest",
+        suite,
+        "--collect-only",
+        "-q",
+        "-m",
+        "not live",
+        "--strict-markers",
+    ]
+
+
+def parse_collected_tests(stdout: str) -> int | None:
+    """Число собранных тестов из вывода `pytest --collect-only -q`.
+
+    Возвращает `None`, если итоговая строка не распознана: непонятный вывод не
+    считается доказательством наличия тестов.
+    """
+    matches = list(_COLLECTED_RE.finditer(stdout))
+    if not matches:
+        return None
+    digits = matches[-1].group(1)
+    return int(digits) if digits is not None else 0
+
+
+def run_suite_collect_check(suite: str, *, cwd: Path) -> CheckResult:
+    """Проверить, что обязательный suite собирает хотя бы один тест.
+
+    Общий pytest-запуск всех suites маскирует пустой каталог: пока другой suite
+    собирает тесты, общий код успешен. Поэтому каждый обязательный suite
+    проверяется отдельно, а ноль собранных тестов даёт failure с
+    `MISSING_SUITE_EXIT_CODE`, а не зелёный итог.
+    """
+    check = Check(f"collect:{suite}", _collect_args(suite))
+    result = run_check(check, cwd=cwd)
+    collected = parse_collected_tests(result.stdout)
+    result.collected_tests = collected
+    if collected is None or collected == 0:
+        # Ноль собранных тестов — отсутствие suite, даже если pytest вернул 5.
+        result.exit_code = MISSING_SUITE_EXIT_CODE
+        result.required = True
+        detail = f"Suite {suite} не собрал ни одного теста (collected={collected!r})."
+        result.stderr = (result.stderr + "\n" + detail).strip()
+    return result
+
+
+def run_collect_gate(*, cwd: Path) -> list[CheckResult]:
+    """Отдельно проверить собираемость каждого обязательного suite."""
+    return [run_suite_collect_check(suite, cwd=cwd) for suite in REQUIRED_SUITES]
 
 
 def build_checks(mode: str) -> list[Check]:
@@ -180,6 +278,8 @@ def run_mode(mode: str, *, root: Path = REPO_ROOT, report_dir: Path | None = Non
             )
         )
 
+    sanitize_process_env()
+    results.extend(run_collect_gate(cwd=root))
     results.extend(run_checks(build_checks(mode), cwd=root))
     exit_code = overall_exit_code(results)
     report = RunReport(mode=mode, exit_code=exit_code, results=results)
