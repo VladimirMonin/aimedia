@@ -1,0 +1,25 @@
+{
+  "_comment": "Шаблон отчёта этапа aimedia. Пустой, ещё не выполненный отчёт: значения-заглушки в угловых скобках заполняются только реальными данными прогона. NOT_RUN/SKIPPED/XFAILED/NOT_COLLECTED не равны PASSED; выдуманные pass, SHA или evidence недопустимы. Полное описание полей, обязательных проверок и evidence-контракта — в docs/plans/README.md.",
+  "stage": "<E01..E11>",
+  "work_status": "NOT_STARTED",
+  "source_commit": null,
+  "tree_clean": null,
+  "diff_digest": null,
+  "environment": null,
+  "lockfile_digest": null,
+  "checks": [
+    {
+      "requirement_id": "<R01..R24 или id чек-листа этапа>",
+      "test_node_id": null,
+      "status": "NOT_RUN",
+      "exit_code": null,
+      "evidence_path": null,
+      "assertion": "<что именно проверяет этот тест>"
+    }
+  ],
+  "coverage": null,
+  "live_checks": [],
+  "known_gaps": [],
+  "reviewer": null,
+  "notes": ""
+}

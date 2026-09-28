@@ -137,6 +137,25 @@ def test_invalid_log_level_is_rejected() -> None:
         Settings(log_level="bogus")
 
 
+def test_invalid_log_level_error_hides_input_value() -> None:
+    """Ошибка валидации не повторяет недопустимое значение при выводе.
+
+    Им может быть секрет, ошибочно помещённый в `AIMEDIA_LOG_LEVEL`/`--log-level`.
+    `hide_input_in_errors` убирает значение из `str`/`repr` — ровно тех
+    поверхностей, которые печатает необработанное исключение или трассировка.
+    Программный `errors()` сохраняет `input` для отладки, поэтому CLI собирает
+    безопасное сообщение по `loc`, а не рендерит `errors()` целиком (см.
+    `tests/cli/test_bootstrap.py::test_invalid_log_level_as_env_is_safe_config_error`).
+    """
+    canary = "sk-canary-e01-settings-0123456789"
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(log_level=canary)
+    error = exc_info.value
+    assert canary not in str(error)
+    assert canary not in repr(error)
+    assert "Недопустимый уровень логирования" in str(error)
+
+
 def test_log_level_is_normalized() -> None:
     assert Settings(log_level="  debug ").log_level == "DEBUG"
 

@@ -50,6 +50,9 @@ class Settings(BaseSettings):
         case_sensitive=False,
         populate_by_name=True,
         extra="ignore",
+        # Ошибка валидации не должна печатать недопустимое значение: им может быть
+        # секрет, ошибочно переданный в переменную настройки.
+        hide_input_in_errors=True,
     )
 
     data_dir: Path = Field(default_factory=paths.default_data_dir)
@@ -69,7 +72,9 @@ class Settings(BaseSettings):
     def _normalize_log_level(cls, value: str) -> str:
         normalized = value.strip().upper()
         if normalized not in LOG_LEVELS:
-            raise ValueError(f"Недопустимый уровень логирования: {value!r}; ожидается {LOG_LEVELS}")
+            # Только перечень допустимых уровней, без самого значения: пользователь
+            # мог ошибочно поместить секрет в `AIMEDIA_LOG_LEVEL`/`--log-level`.
+            raise ValueError(f"Недопустимый уровень логирования; ожидается {LOG_LEVELS}")
         return normalized
 
     @classmethod

@@ -12,10 +12,12 @@ stderr. В режиме `--json` stdout содержит единственны�
 from __future__ import annotations
 
 import json
-import sys
+import tomllib
 from pathlib import Path
 
 import typer
+from pydantic import ValidationError
+from pydantic_settings import SettingsError
 
 from aimedia import __version__
 from aimedia.config import Settings
@@ -25,6 +27,10 @@ from aimedia.logging import (
     configure_diagnostics,
     finish_active,
 )
+
+# Код возврата для ошибки настроек. Контракт `04`/baseline E00 закрепляет `4` как
+# provider/configuration error; непредвиденные ошибки остаются кодом `1`.
+CONFIG_ERROR_EXIT_CODE = 4
 
 app = typer.Typer(
     name="aimedia",
@@ -58,7 +64,40 @@ def _build_settings(
     )
 
 
-def _configure_run(settings: Settings) -> EventLogger:
+def _command_path(ctx: typer.Context) -> str:
+    """Нормализованный путь команды без значений опций.
+
+    В `app_started` запрещено писать сырой `sys.argv`: он содержит значения опций,
+    которыми может быть ключ (например `--log-level <secret>`). Логируется только
+    имя приложения и имя вызванной подкоманды.
+    """
+    parts = [ctx.command_path]
+    if ctx.invoked_subcommand:
+        parts.append(ctx.invoked_subcommand)
+    return " ".join(parts)
+
+
+def _safe_settings_message(exc: Exception) -> str:
+    """Собрать безопасное сообщение об ошибке настроек без значений.
+
+    Печатается только перечень незаполненных полей и общая подсказка: сами значения
+    (в том числе секрет, ошибочно попавший в переменную настройки) в сообщение не
+    попадают.
+    """
+    fields: set[str] = set()
+    if isinstance(exc, ValidationError):
+        for error in exc.errors():
+            location = error.get("loc") or ()
+            if location:
+                fields.add(str(location[-1]))
+    detail = f"поля: {', '.join(sorted(fields))}" if fields else "проверьте значения"
+    return (
+        f"Не удалось загрузить настройки ({detail}). "
+        "Проверьте переменные AIMEDIA_* и файл, указанный в --config."
+    )
+
+
+def _configure_run(settings: Settings, *, command: str) -> EventLogger:
     """Настроить диагностику и записать стартовые события."""
     secret = settings.resolve_api_key()
     logger = configure_diagnostics(
@@ -66,10 +105,7 @@ def _configure_run(settings: Settings) -> EventLogger:
         secrets=(secret,) if secret else (),
     )
     activate(logger)
-    logger.app_started(
-        command=" ".join(sys.argv[1:]) or "(none)",
-        version=__version__,
-    )
+    logger.app_started(command=command, version=__version__)
     logger.config_loaded(settings.sources)
     return logger
 
@@ -104,8 +140,16 @@ def _root(
         raise typer.Exit(code=0)
     if ctx.invoked_subcommand is None:
         return
-    settings = _build_settings(config, data_dir, log_level)
-    _configure_run(settings)
+    try:
+        settings = _build_settings(config, data_dir, log_level)
+    except (ValidationError, SettingsError, tomllib.TOMLDecodeError) as exc:
+        # Ошибка настроек возникает до логгера; её нельзя пробрасывать сырой —
+        # rich напечатал бы трассировку и включённое в неё значение (потенциальный
+        # секрет). Вместо этого — короткое сообщение в stderr и код `4`, а stdout
+        # остаётся чистым (в `--json` там нет мусора).
+        typer.echo(_safe_settings_message(exc), err=True)
+        raise typer.Exit(code=CONFIG_ERROR_EXIT_CODE) from None
+    _configure_run(settings, command=_command_path(ctx))
 
 
 @app.command()

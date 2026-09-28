@@ -16,8 +16,10 @@ import pytest
 from aimedia.logging import (
     REDACTED,
     EventLogger,
+    RedactingFilter,
     configure_diagnostics,
     correlation,
+    format_exc_info,
     format_exception,
     redact,
     redact_text,
@@ -83,6 +85,78 @@ def test_canary_absent_from_stdlib_logging() -> None:
     logging.getLogger("aimedia.test").error("token=%s", CANARY_SECRET)
     assert CANARY_SECRET not in stream.getvalue()
     assert REDACTED in stream.getvalue()
+
+
+def test_format_exc_info_redacts_nested_chain() -> None:
+    """Форматирование `sys.exc_info()` удаляет секрет из вложенной цепочки причин."""
+    try:
+        try:
+            raise RuntimeError(f"inner {CANARY_SECRET}")
+        except RuntimeError as inner:
+            raise ValueError(f"outer {CANARY_SECRET}") from inner
+    except ValueError:
+        import sys
+
+        formatted = format_exc_info(sys.exc_info(), (CANARY_SECRET,))
+    assert CANARY_SECRET not in formatted
+    # Оба звена цепочки (`inner` и `outer`) прошли редакцию.
+    assert formatted.count(REDACTED) == 2
+
+
+def test_canary_absent_from_stdlib_exc_info() -> None:
+    """`Logger.exception`/`exc_info=True` не обходит фильтр редакции.
+
+    Регрессия: `Formatter` строит трассировку после фильтра, поэтому сырой
+    `record.exc_info` утёк бы в stderr. Проверяются оба звена вложенной цепочки и
+    аргументы сообщения.
+    """
+    stream = io.StringIO()
+    configure_diagnostics(level="DEBUG", secrets=(CANARY_SECRET,), stream=stream)
+    logger = logging.getLogger("aimedia.test.exc")
+    try:
+        try:
+            raise RuntimeError(f"inner {CANARY_SECRET}")
+        except RuntimeError as inner:
+            raise ValueError(f"outer {CANARY_SECRET}") from inner
+    except ValueError:
+        logger.exception("command failed: token=%s", CANARY_SECRET)
+
+    written = stream.getvalue()
+    assert CANARY_SECRET not in written
+    assert written.count(REDACTED) == 3
+    assert "Traceback (most recent call last)" in written
+
+
+def test_canary_absent_from_stdlib_exc_info_explicit() -> None:
+    """Явный `exc_info=<tuple>` также редактируется до форматирования."""
+    stream = io.StringIO()
+    configure_diagnostics(level="DEBUG", secrets=(CANARY_SECRET,), stream=stream)
+    logger = logging.getLogger("aimedia.test.exc_tuple")
+    try:
+        raise KeyError(f"missing {CANARY_SECRET}")
+    except KeyError:
+        import sys
+
+        logger.error("lookup failed", exc_info=sys.exc_info())
+    assert CANARY_SECRET not in stream.getvalue()
+    assert REDACTED in stream.getvalue()
+
+
+def test_stdlib_stack_info_is_redacted() -> None:
+    """Текст `stack_info` тоже не остаётся сырым в записи."""
+    record = logging.LogRecord(
+        name="aimedia.test.stack",
+        level=logging.WARNING,
+        pathname=__file__,
+        lineno=1,
+        msg="context",
+        args=(),
+        exc_info=None,
+    )
+    record.stack_info = f"frame {CANARY_SECRET}"
+    assert RedactingFilter((CANARY_SECRET,)).filter(record) is True
+    assert CANARY_SECRET not in str(record.stack_info)
+    assert REDACTED in str(record.stack_info)
 
 
 def test_logger_never_writes_to_stdout(capsysbinary: pytest.CaptureFixture[bytes]) -> None:

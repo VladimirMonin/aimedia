@@ -280,7 +280,7 @@ git ls-files -- .env
 
 ### E01. Запускаемый проект, окружения и базовая наблюдаемость 🧰
 
-**Результат.** Создаётся `src/aimedia`, package metadata, console entry point, `uv.lock`, настройки качества, `.env.example`, `.gitignore` и CI. Появляются Settings, явный data-root override и безопасный logger. Команда версии и краткая справка работают без ключа, БД и сети. Создаются служебный `scripts/quality.py`, шаблон stage report и общий тестовый запрет внешних запросов.
+**Результат.** Создаётся `src/aimedia`, package metadata, console entry point, `uv.lock`, настройки качества, `.env.example`, `.gitignore` и CI. Появляются Settings, явный data-root override и безопасный logger. Команда версии и краткая справка работают без ключа, БД и сети. Создаются служебный `scripts/quality.py`, [шаблон stage report](progress/stage-report.template.json) и общий тестовый запрет внешних запросов.
 
 Build backend выбирается и фиксируется одной реализацией. В metadata пакета объявляются runtime-зависимости, dev-инструменты остаются в development group. Механизм подключения секретов не помещается в domain.
 
@@ -770,6 +770,8 @@ artifacts/quality/<source-sha>/
 ```
 
 В выполненном отчёте вместо `null` находятся реальные значения, а не предполагаемые. Snapshot суммы показывает исходную валюту. Ссылки на CI сохраняются без токенов авторизации.
+
+Готовый каркас этого отчёта с заглушками `NOT_RUN` и без выдуманных pass/evidence — [`progress/stage-report.template.json`](progress/stage-report.template.json).
 
 ### Общий чек-лист закрытия любого этапа 🔎
 

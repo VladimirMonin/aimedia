@@ -18,6 +18,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
+from types import TracebackType
 from typing import Any, TextIO
 
 REDACTED = "[REDACTED]"
@@ -110,6 +111,37 @@ def redact(value: Any, secrets: Sequence[str] = ()) -> Any:
 def format_exception(exc: BaseException, secrets: Sequence[str] = ()) -> str:
     """Отформатировать исключение, удалив из трассировки известные секреты."""
     return redact_text("".join(traceback.format_exception(exc)), secrets)
+
+
+def format_exc_info(
+    exc_info: tuple[type[BaseException], BaseException, TracebackType | None]
+    | tuple[None, None, None],
+    secrets: Sequence[str] = (),
+) -> str:
+    """Отформатировать `sys.exc_info()`-совместимый кортеж с редакцией секретов.
+
+    `traceback.format_exception` разворачивает всю цепочку `__cause__`/`__context__`
+    вместе с аргументами исключений, поэтому одного прохода редакции достаточно и
+    для вложенных исключений. Пустой кортеж `(None, None, None)` даёт пустую строку.
+    """
+    return redact_text("".join(traceback.format_exception(*exc_info)), secrets)
+
+
+def _redact_log_args(args: Any, secrets: Sequence[str]) -> Any:
+    """Отредактировать `record.args`, сохранив тип контейнера.
+
+    `redact()` нормализует `tuple` в `list` ради JSON, но `record.args` участвует в
+    подстановке `msg % args`: смена кортежа на список ломает форматирование и может
+    раскрыть аргументы сырыми. Поэтому кортеж и mapping сохраняют свой тип.
+    """
+    if isinstance(args, tuple):
+        return tuple(_redact_log_args(item, secrets) for item in args)
+    if isinstance(args, Mapping):
+        return {
+            key: REDACTED if _is_sensitive_key(str(key)) else _redact_log_args(value, secrets)
+            for key, value in args.items()
+        }
+    return redact(args, secrets)
 
 
 def _utc_now() -> str:
@@ -237,9 +269,22 @@ class RedactingFilter(logging.Filter):
         self.secrets: tuple[str, ...] = tuple(s for s in secrets if s)
 
     def filter(self, record: logging.LogRecord) -> bool:
+        """Отредактировать все поверхности записи до её форматирования.
+
+        `Formatter` строит трассировку из `record.exc_info`/`record.stack_info` уже
+        после фильтра, поэтому сырой `exc_info` обязан быть заменён заранее
+        отредактированным текстом. Иначе секрет из `except`-ветки попадает в stderr
+        в обход редакции.
+        """
         record.msg = redact_text(str(record.msg), self.secrets)
-        if record.args:
-            record.args = redact(record.args, self.secrets)
+        record.args = _redact_log_args(record.args, self.secrets)
+        if record.exc_info:
+            record.exc_text = format_exc_info(record.exc_info, self.secrets)
+            record.exc_info = None
+        elif record.exc_text:
+            record.exc_text = redact_text(record.exc_text, self.secrets)
+        if record.stack_info:
+            record.stack_info = redact_text(str(record.stack_info), self.secrets)
         return True
 
 
