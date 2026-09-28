@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import struct
+import zlib
 from pathlib import Path
 
 import pytest
@@ -40,6 +41,7 @@ from image_fixtures import (
     png_with_duplicate_ihdr,
     png_with_invalid_ihdr,
     png_with_non_alpha_chunk_name,
+    png_with_raw_scanlines,
     png_with_short_idat,
     png_with_truncated_chunk_header,
     png_with_undecodable_idat,
@@ -66,6 +68,7 @@ from image_fixtures import (
 
 from aimedia.application.inputs import (
     ReferenceLimits,
+    image_probe,
     prepare_reference_images,
     probe_image,
 )
@@ -187,6 +190,75 @@ def test_png_with_invalid_ihdr_is_rejected(tmp_path: Path, ihdr: bytes) -> None:
     _rejects(tmp_path, "bad-ihdr.png", png_with_invalid_ihdr(ihdr))
 
 
+@pytest.mark.parametrize(
+    ("name", "content"),
+    [
+        ("bad-row-filter.png", png_with_raw_scanlines(b"\x05" + bytes(6) + b"\x00" + bytes(6))),
+        ("bad-compression.png", png_with_raw_scanlines((b"\x00" + bytes(6)) * 2, compression=1)),
+        (
+            "bad-filter-method.png",
+            png_with_raw_scanlines((b"\x00" + bytes(6)) * 2, filter_method=1),
+        ),
+    ],
+)
+def test_png_rejects_invalid_filter_and_ihdr_methods(
+    tmp_path: Path, name: str, content: bytes
+) -> None:
+    """Корректные CRC/zlib не маскируют недопустимый фильтр или методы IHDR."""
+    _rejects(tmp_path, name, content)
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        png_with_raw_scanlines((b"\x00" + bytes(6)) * 2, zlib_suffix=b"junk"),
+        png_with_raw_scanlines((b"\x00" + bytes(6)) * 2, zlib_suffix=zlib.compress(b"other")),
+    ],
+)
+def test_png_rejects_trailing_zlib_bytes(tmp_path: Path, content: bytes) -> None:
+    _rejects(tmp_path, "trailing-idat.png", content)
+
+
+def test_png_rejects_truncated_zlib_footer(tmp_path: Path) -> None:
+    raw = (b"\x00" + bytes(6)) * 2
+    ihdr = struct.pack(">IIBBBBB", 2, 2, 8, 2, 0, 0, 0)
+    content = (
+        png_bytes()[:8]
+        + png_chunk(b"IHDR", ihdr)
+        + png_chunk(b"IDAT", zlib.compress(raw)[:-1])
+        + png_chunk(b"IEND", b"")
+    )
+    _rejects(tmp_path, "short-zlib-footer.png", content)
+
+
+def test_png_inflate_is_bounded_and_rejects_oversized_raw(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Маленький IHDR с многомегабайтным raw отклоняется после одного bounded inflate."""
+    content = png_with_raw_scanlines(bytes(8 * 1024 * 1024))
+    real_decompressobj = zlib.decompressobj
+    output_sizes: list[int] = []
+    limits: list[int] = []
+
+    class RecordingInflater:
+        def __init__(self) -> None:
+            self._inner = real_decompressobj()
+
+        def decompress(self, data: bytes, max_length: int = 0) -> bytes:
+            limits.append(max_length)
+            output = self._inner.decompress(data, max_length)
+            output_sizes.append(len(output))
+            return output
+
+        def __getattr__(self, name: str) -> object:
+            return getattr(self._inner, name)
+
+    monkeypatch.setattr(image_probe.zlib, "decompressobj", RecordingInflater)
+    _rejects(tmp_path, "inflation-bomb.png", content)
+    assert limits and all(0 < limit <= 64 * 1024 for limit in limits)
+    assert sum(output_sizes) <= 64 * 1024
+
+
 def test_mime_is_detected_from_content_not_extension(tmp_path: Path) -> None:
     """MIME берётся из байтов: `*.png` с JPEG-содержимым определяется как JPEG."""
     disguised = _write(tmp_path, "actually-jpeg.png", jpeg_bytes())
@@ -303,7 +375,6 @@ def test_jpeg_with_filler_and_restart_markers_is_accepted(tmp_path: Path) -> Non
 def test_multiple_idat_chunks_are_joined(tmp_path: Path) -> None:
     """Разбитый на несколько IDAT PNG собирается обратно корректно."""
     raw = b"\x00" + bytes(6) + b"\x00" + bytes(6)
-    import zlib
 
     ihdr = struct.pack(">IIBBBBB", 2, 2, 8, 2, 0, 0, 0)
     content = (

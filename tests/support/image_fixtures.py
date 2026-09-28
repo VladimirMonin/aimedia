@@ -41,6 +41,25 @@ def png_bytes(width: int = 2, height: int = 2) -> bytes:
     )
 
 
+def png_with_raw_scanlines(
+    raw: bytes,
+    *,
+    width: int = 2,
+    height: int = 2,
+    compression: int = 0,
+    filter_method: int = 0,
+    zlib_suffix: bytes = b"",
+) -> bytes:
+    """PNG с корректным CRC и сжатым raw; поля IHDR/хвост zlib задаёт тест."""
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, compression, filter_method, 0)
+    return (
+        PNG_SIGNATURE
+        + png_chunk(b"IHDR", ihdr)
+        + png_chunk(b"IDAT", zlib.compress(raw) + zlib_suffix)
+        + png_chunk(b"IEND", b"")
+    )
+
+
 def _adam7_raw(width: int, height: int, channels: int = 3) -> bytes:
     """Собрать отфильтрованные scanline'ы Adam7: по строке на непустой проход.
 
