@@ -320,11 +320,11 @@ Peewee records, `httpx.Response`, `Rich.Console` и YAML parser objects не п�
 
 **Коммиты:** C03 `feat(domain): define requests results and execution contracts`; C04 `feat(inputs): preserve ordered prompt and reference snapshots`.
 
-- [ ] Fake provider не подменяет реальный Polza adapter в production registry.
-- [ ] Тест сравнивает итоговый текст, а не только число частей.
-- [ ] Изменение source file после подготовки не меняет сохранённый prompt snapshot.
-- [ ] Batch inputs и несколько prompt sources одного Job не смешаны.
-- [ ] Сигнатуры ports зафиксированы до открытия E03/E04/E05.
+- [x] Fake provider не подменяет реальный Polza adapter в production registry.
+- [x] Тест сравнивает итоговый текст, а не только число частей.
+- [x] Изменение source file после подготовки не меняет сохранённый prompt snapshot.
+- [x] Batch inputs и несколько prompt sources одного Job не смешаны.
+- [x] Сигнатуры ports зафиксированы до открытия E03/E04/E05.
 
 ### E03. YAML Registry и effective capabilities 📚
 
