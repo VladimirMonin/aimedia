@@ -41,6 +41,18 @@ def png_bytes(width: int = 2, height: int = 2) -> bytes:
     )
 
 
+def indexed_png_bytes() -> bytes:
+    """Валидный 1-битный indexed PNG 1x1 с двумя цветами палитры."""
+    ihdr = struct.pack(">IIBBBBB", 1, 1, 1, 3, 0, 0, 0)
+    return (
+        PNG_SIGNATURE
+        + png_chunk(b"IHDR", ihdr)
+        + png_chunk(b"PLTE", b"\x00\x00\x00\xff\xff\xff")
+        + png_chunk(b"IDAT", zlib.compress(b"\x00\x00"))
+        + png_chunk(b"IEND", b"")
+    )
+
+
 def png_with_raw_scanlines(
     raw: bytes,
     *,

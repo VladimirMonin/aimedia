@@ -20,6 +20,8 @@ from pathlib import Path
 
 import pytest
 from image_fixtures import (
+    PNG_SIGNATURE,
+    indexed_png_bytes,
     interlaced_png_bytes,
     interlaced_png_with_bad_filter,
     interlaced_png_with_extra_scanlines,
@@ -240,6 +242,105 @@ def test_png_rejects_invalid_filter_and_ihdr_methods(
 )
 def test_png_rejects_trailing_zlib_bytes(tmp_path: Path, content: bytes) -> None:
     _rejects(tmp_path, "trailing-idat.png", content)
+
+
+def test_indexed_png_with_palette_is_accepted(tmp_path: Path) -> None:
+    path = _write(tmp_path, "indexed.png", indexed_png_bytes())
+
+    prepared = prepare_reference_images([path])
+
+    assert prepared[0].mime_type == "image/png"
+    assert prepared[0].metadata == {"width": 1, "height": 1}
+
+
+def _png_with_palette_chunks(
+    *, bit_depth: int = 8, color_type: int = 3, chunks: tuple[tuple[bytes, bytes], ...]
+) -> bytes:
+    ihdr = struct.pack(">IIBBBBB", 1, 1, bit_depth, color_type, 0, 0, 0)
+    return (
+        PNG_SIGNATURE
+        + png_chunk(b"IHDR", ihdr)
+        + b"".join(png_chunk(kind, data) for kind, data in chunks)
+        + png_chunk(b"IEND", b"")
+    )
+
+
+def test_indexed_png_without_plte_is_rejected(tmp_path: Path) -> None:
+    """CRC/zlib и геометрия IDAT не компенсируют отсутствие обязательной PLTE."""
+    content = _png_with_palette_chunks(chunks=((b"IDAT", zlib.compress(b"\x00\x00")),))
+    _rejects(tmp_path, "missing-plte.png", content)
+
+
+@pytest.mark.parametrize(
+    ("bit_depth", "palette"),
+    [
+        (8, b""),
+        (8, b"\x00\x00"),
+        (8, b"\x00\x00\x00" * 257),
+        (1, b"\x00\x00\x00" * 3),
+    ],
+    ids=["empty", "partial-entry", "over-256", "over-bit-depth"],
+)
+def test_indexed_png_rejects_invalid_palette_length(
+    tmp_path: Path, bit_depth: int, palette: bytes
+) -> None:
+    content = _png_with_palette_chunks(
+        bit_depth=bit_depth,
+        chunks=((b"PLTE", palette), (b"IDAT", zlib.compress(b"\x00\x00"))),
+    )
+    _rejects(tmp_path, "invalid-plte.png", content)
+
+
+@pytest.mark.parametrize(
+    "chunks",
+    [
+        (
+            (b"PLTE", b"\x00\x00\x00"),
+            (b"PLTE", b"\xff\xff\xff"),
+            (b"IDAT", zlib.compress(b"\x00\x00")),
+        ),
+        ((b"IDAT", zlib.compress(b"\x00\x00")), (b"PLTE", b"\x00\x00\x00")),
+    ],
+    ids=["duplicate", "after-idat"],
+)
+def test_indexed_png_rejects_misordered_palette(
+    tmp_path: Path, chunks: tuple[tuple[bytes, bytes], ...]
+) -> None:
+    content = _png_with_palette_chunks(chunks=chunks)
+    _rejects(tmp_path, "misordered-plte.png", content)
+
+
+@pytest.mark.parametrize("color_type", [0, 4], ids=["grayscale", "grayscale-alpha"])
+def test_grayscale_png_rejects_plte(tmp_path: Path, color_type: int) -> None:
+    raw = b"\x00" + bytes(2 if color_type == 4 else 1)
+    content = _png_with_palette_chunks(
+        color_type=color_type,
+        chunks=((b"PLTE", b"\x00\x00\x00"), (b"IDAT", zlib.compress(raw))),
+    )
+    _rejects(tmp_path, "grayscale-plte.png", content)
+
+
+def test_truecolor_png_with_optional_palette_is_accepted(tmp_path: Path) -> None:
+    content = _png_with_palette_chunks(
+        color_type=2,
+        chunks=((b"PLTE", b"\x00\x00\x00"), (b"IDAT", zlib.compress(b"\x00" + bytes(3)))),
+    )
+    path = _write(tmp_path, "truecolor-plte.png", content)
+
+    assert prepare_reference_images([path])[0].mime_type == "image/png"
+
+
+def test_png_rejects_nonconsecutive_idat(tmp_path: Path) -> None:
+    compressed = zlib.compress(b"\x00\x00")
+    content = _png_with_palette_chunks(
+        chunks=(
+            (b"PLTE", b"\x00\x00\x00"),
+            (b"IDAT", compressed[:4]),
+            (b"tEXt", b"note"),
+            (b"IDAT", compressed[4:]),
+        )
+    )
+    _rejects(tmp_path, "nonconsecutive-idat.png", content)
 
 
 def test_png_rejects_truncated_zlib_footer(tmp_path: Path) -> None:

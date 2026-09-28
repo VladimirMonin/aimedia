@@ -142,6 +142,8 @@ def _probe_png(content: bytes) -> tuple[int, int]:
     offset = len(_PNG_SIGNATURE)
     ihdr: tuple[int, int, int, int, int] | None = None
     idat_parts: list[bytes] = []
+    seen_plte = False
+    idat_finished = False
     seen_iend = False
 
     while offset < len(content):
@@ -164,11 +166,32 @@ def _probe_png(content: bytes) -> tuple[int, int]:
             )
         if ihdr is None and chunk_type != b"IHDR":
             raise InvalidImageContentError("PNG повреждён: первым обязан идти IHDR.")
+        if idat_parts and chunk_type != b"IDAT":
+            idat_finished = True
         if chunk_type == b"IHDR":
             if ihdr is not None:
                 raise InvalidImageContentError("PNG повреждён: повторный IHDR.")
             ihdr = _png_ihdr(data)
+        elif chunk_type == b"PLTE":
+            assert ihdr is not None
+            if seen_plte or idat_parts:
+                raise InvalidImageContentError(
+                    "PNG повреждён: PLTE повторяется или стоит после IDAT."
+                )
+            if ihdr[3] in (0, 4):
+                raise InvalidImageContentError("PNG повреждён: PLTE недопустим для grayscale.")
+            entries = length // 3
+            if length == 0 or length % 3 or entries > 256:
+                raise InvalidImageContentError("PNG повреждён: неверная длина PLTE.")
+            if ihdr[3] == 3 and entries > 1 << ihdr[2]:
+                raise InvalidImageContentError("PNG повреждён: PLTE превышает bit depth.")
+            seen_plte = True
         elif chunk_type == b"IDAT":
+            assert ihdr is not None
+            if ihdr[3] == 3 and not seen_plte:
+                raise InvalidImageContentError("PNG повреждён: indexed PNG требует PLTE до IDAT.")
+            if idat_finished:
+                raise InvalidImageContentError("PNG повреждён: IDAT должны идти подряд.")
             idat_parts.append(data)
         elif chunk_type == b"IEND":
             if length != 0:
