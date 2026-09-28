@@ -30,7 +30,7 @@
 | Основная БД | SQLite |
 | ORM | Peewee |
 | Файловое хранилище | Локальная файловая система |
-| Поиск v0.1 | Опционально SQLite FTS5 |
+| Поиск v0.1 | SQLite FTS5 (обязателен, E09) |
 | Vector search | Позже через `sqlite-vec` |
 | Денежная модель | `amount + currency` |
 | Валютная конвертация | Не выполняется |
@@ -189,6 +189,7 @@ erDiagram
         string model_id
         string remote_model_id
         string remote_job_id
+        string operation
         text compiled_prompt
         text request_json
         text response_json
@@ -305,6 +306,7 @@ provider_id
 model_id
 remote_model_id
 remote_job_id
+operation
 ```
 
 ---
@@ -354,6 +356,16 @@ Provider task/generation ID.
 - `jobs sync`;
 - диагностики;
 - связи с provider support.
+
+---
+
+## `operation`
+
+Тип удалённой операции provider (для image — `media`; см. RemoteJobRef в `03`/`05`).
+Он сохраняется в provider snapshot, а не выводится заново по строке ID: когда
+provider вернул операцию, она хранится вместе с `remote_job_id` и позволяет
+восстановить историю и найти правильный remote endpoint после перезапуска CLI.
+Endpoint по одной строке ID не угадывается (baseline E00, D10).
 
 ---
 
@@ -664,6 +676,9 @@ metadata
 
 > **По умолчанию хранить ссылку + hash, без копирования inputs.**
 
+Hash входного файла — обязательное поле истории v0.1 (baseline E00, D15): даже
+режим reference-only без копирования сохраняет `inputs.sha256` и `source_path`.
+
 В будущем можно добавить настройку:
 
 ```text
@@ -914,7 +929,9 @@ name_003.ext
 
 # Hashing 🔐
 
-Для inputs и artifacts рекомендуется SHA-256.
+Для inputs и artifacts — SHA-256. Для `inputs.sha256` это **обязательное** поле
+истории v0.1 (baseline E00, D15); интерфейс artifact допускает `sha256 = NULL`
+только если hash артефакта ещё не вычислен.
 
 ---
 
@@ -1160,14 +1177,15 @@ actual
 
 # Cost reports 📈
 
-Базовые будущие команды:
+Обязательные команды v0.1 (E09):
 
 ```bash
 aimedia jobs costs --today
 aimedia jobs costs --month
 ```
 
-Результат группируется по валюте.
+Результат группируется по валюте; `--json` сохраняет тот же контракт и exit codes,
+что и остальные команды.
 
 ---
 
@@ -1809,7 +1827,7 @@ metadata_json
 
 # FTS5 🔍
 
-FTS5 можно добавить как раннее расширение.
+FTS5 является обязательным компонентом v0.1 (E09); поиск остаётся лексическим.
 
 Полезно индексировать:
 
@@ -2564,7 +2582,7 @@ data preserved
 
 # FTS tests 🔍
 
-Если FTS5 войдёт в раннюю версию:
+FTS5 входит в обязательный scope v0.1 (E09):
 
 - prompt indexing;
 - search result mapping;
@@ -2956,6 +2974,7 @@ usage_json
 cost_amount
 cost_currency
 remote_job_id
+operation
 error fields
 filesystem outputs
 hashes
@@ -3006,7 +3025,8 @@ Reference images сохраняют path/order/hash.
 
 ### Remote recovery
 
-Provider/remote job ID можно восстановить после перезапуска CLI.
+Provider/remote job ID и тип операции (`remote_job_id` + `operation`) можно
+восстановить после перезапуска CLI.
 
 ### Artifact persistence
 

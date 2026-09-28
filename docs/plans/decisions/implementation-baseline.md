@@ -120,11 +120,14 @@
 - **ИП:** `05` допускает разные remote endpoints, ранняя схема `07`/`03` хранит в
   основном ID (`03` RemoteJobRef, `05` RemoteJobRef расширенного вида).
 - **Решение:** каноническое имя поля remote job — `remote_job_id` (не `remote_id`);
-  тип операции хранится в remote ref/snapshot (image = `media`); endpoint по строке
-  ID не угадывается.
+  тип операции `operation` (для image — `media`) хранится в remote ref/provider
+  snapshot (`jobs`); endpoint по строке ID не угадывается. Когда provider вернул
+  операцию, она сохраняется вместе с `remote_job_id`, а не выводится заново при
+  recovery/`sync`.
 - **Документы:** `03`, `05`, `07`, `01`.
 - **Проверка:** контрактный тест remote ref/operation; R07 (история переживает
-  перезапуск с сохранённым operation).
+  перезапуск с сохранёнными prompts, refs — включая `remote_job_id` и `operation` —,
+  cost и artifacts).
 
 ## D11. Деньги и миграции
 
@@ -167,13 +170,15 @@
 
 ## D15. Границы scope
 
-- **ИП:** `01` — FTS5 и статистика расходов «желательно», `--detach`/удаление/манифесты
-  — желательно (`01-product-scope.md`).
+- **ИП:** `01` — FTS5, статистика расходов и hash входных файлов «желательно»,
+  `--detach`/удаление/манифесты — желательно (`01-product-scope.md`).
 - **Решение:** FTS5 и сводка расходов по валютам — **обязательные** (E09);
+  hash входных файлов (SHA-256) — **обязательный** пункт истории (E04/E09);
   `--detach`, удаление истории, универсальные batch manifests, публичные
   maintenance-команды — не реализуются в v0.1.
 - **Документы:** `01`, [release-scope.md](../release-scope.md), `README`.
-- **Проверка:** R20 (поиск и расходы проверяют полезный результат); сверка scope.
+- **Проверка:** R20 (поиск и расходы проверяют полезный результат); R07 (история
+  сохраняет hashes входов до перезапуска); сверка scope.
 
 ## D16. Доказательство поддержки модели
 
@@ -199,12 +204,12 @@
 | D07 | YAML mapping | Mapping в Python adapter; `parameter_map` неактивен | 05, 06 | contract |
 | D08 | Final format | `final_format` отделён от provider output | 04, 06 | R05 |
 | D09 | `--out` | Один конечный файл; `--keep-original` отдельно | 04, 07 | R06 |
-| D10 | Remote operation | `remote_job_id` + `operation`; endpoint не угадывается | 03, 05, 07 | R07 |
+| D10 | Remote operation | `remote_job_id` + сохранённый `operation` в snapshot; endpoint не угадывается | 03, 05, 07 | R07 |
 | D11 | Money/migrations | decimal TEXT ↔ Decimal; суммы в Python; один runner | 07 | R08, R18 |
 | D12 | Raw help | Resolved MD без front matter/директив; ANSI нет | 09 | R17 |
 | D13 | Exit codes | Сохранить 0/2–9; добавить 130 и 1 | 04 | R16 |
 | D14 | Local ownership | Минимальный guard; схема и stale — до E08 | 08 | R24 |
-| D15 | Scope | FTS5 + сводка расходов обязательны; ряд функций не в v0.1 | 01, README | R20 |
+| D15 | Scope | FTS5 + сводка расходов + hash входов обязательны; ряд функций не в v0.1 | 01, README | R07, R20 |
 | D16 | Verified model evidence | YAML ≠ проверенная поддержка; фиксировать remote ID/источник/дату | 01, 06 | R04 |
 
 Все 16 развилок имеют выбранный вариант; открытых блокеров уровня E00 нет.

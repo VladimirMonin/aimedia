@@ -504,7 +504,7 @@ sequenceDiagram
 
     R->>P: submit
     P-->>R: remote_job_id
-    R->>DB: persist remote_job_id + submitted
+    R->>DB: persist remote ref (remote_job_id + operation) + submitted
 
     loop until terminal
         R->>P: get_status
@@ -610,6 +610,7 @@ Job timeout — максимальное время ожидания remote exec
 
 ```text
 remote_job_id
+operation
 last known remote state
 provider
 model

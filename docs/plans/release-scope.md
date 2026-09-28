@@ -33,8 +33,10 @@
 - Text-to-image и image-to-image.
 - Один reference image и несколько reference images в одном запросе.
 - Prompt строкой из CLI и из файла; несколько prompt-файлов.
-- Несколько независимых генераций в одном Job с ограничением параллельности.
-- Batch генерация с ограниченной concurrency и partial-batch outcome.
+- Несколько outputs одного Job/request через `--max-images` — они принадлежат
+  одному provider submit и одному Job.
+- Batch генерация: каждый независимый item — **отдельный** Job;
+  ограниченная concurrency (`--concurrency`) и partial-batch outcome.
 - Выбор модели и явный выбор provider; валидация model capabilities.
 - Основной provider — Polza.
 
@@ -43,17 +45,25 @@
 - Пользовательская output directory (`--out`).
 - Локальные конечные форматы PNG/JPEG/WebP (`final_format`), alias `jpg → jpeg`.
 - Локальная конвертация изображений; локальный WebP ≠ native WebP модели.
-- Hash входных файлов.
+- Hash входных файлов (SHA-256 в `inputs.sha256`) — обязательный пункт истории,
+  а не «Желательно» из `01`.
 
 **История, стоимость, поиск**
 
 - SQLite history: сохранение prompt, параметров, ссылок и hashes входов, remote
-  identifiers, результатов, raw usage, известной фактической стоимости с валютой.
+  identifiers (`remote_job_id` и тип операции `operation` в remote ref/snapshot),
+  результатов, raw usage, известной фактической стоимости с валютой.
+- Восстановление истории после перезапуска: сохранённые `remote_job_id` и
+  `operation` (вместе с hashes входов) позволяют проверить историю нового
+  соединением/процессом, не угадывая remote endpoint по строке ID.
 - Просмотр задания, повтор задания, синхронизация незавершённых заданий.
 - **SQLite FTS5 по истории — обязательный пункт** (переведён из «Желательно»;
   закрывается на E09). Это лексический, а не семантический/морфологический поиск.
+  Обязательная команда — `aimedia jobs search` с позиционным `query` и `--json`.
 - **Сводка расходов по отдельным валютам — обязательный пункт** (переведена из
   «Желательно»; закрывается на E09). Валюты не смешиваются; ноль ≠ неизвестная цена.
+  Обязательная команда — `aimedia jobs costs` с минимальными опциями `--today` и
+  `--month` (границы периода) и `--json`.
 
 **Интерфейс и справка**
 
@@ -101,9 +111,11 @@
 aimedia image generate
 aimedia image batch
 aimedia jobs recent
+aimedia jobs search <query>
 aimedia jobs show
 aimedia jobs retry
 aimedia jobs sync
+aimedia jobs costs
 aimedia models list
 aimedia models show
 aimedia providers list
@@ -112,6 +124,12 @@ aimedia --help
 ```
 
 - Команды чтения и версия работают без API key и без сети.
+- Минимальные options обязательного поиска и сводки расходов: `jobs search <query>`
+  (`--json`) и `jobs costs --today`/`--month` (`--json`). `jobs recent` не получает
+  фильтр по модели в v0.1 (см. (b)), но сохраняет `--limit`, `--status` и `--json`.
+- Человекочитаемый вывод не является источником данных для JSON mode; контракт
+  JSON и exit codes (`0`, `1`, `2`–`9`, `130`) сохраняется для `jobs search` и
+  `jobs costs`.
 - `providers list` различает наличие adapter, наличие конфигурации и фактическую
   проверку авторизации: «configured» не означает «ключ принят сервером».
 - Валидные exit codes: `0`, `1` (internal error), `2`–`9`, `130` (Ctrl+C) —

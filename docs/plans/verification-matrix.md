@@ -22,7 +22,7 @@
 | R04 | Генерация и references работают через Polza | HTTP contracts + live evidence по отдельным режимам | E06/E10 | null | NOT_RUN | null |
 | R05 | Локальный файл соответствует объявленному формату | Decode, dimensions, MIME, byte size и SHA-256 | E05/E07 | null | NOT_RUN | null |
 | R06 | Outputs не перезаписываются при параллельном сохранении | Два simultaneous writers + проверка обоих исходных результатов | E05 | null | NOT_RUN | null |
-| R07 | История переживает перезапуск | Новое соединение/процесс читает сохранённые prompts, refs, cost и artifacts | E04/E08 | null | NOT_RUN | null |
+| R07 | История переживает перезапуск | Новое соединение/процесс читает сохранённые prompts, inputs (path + SHA-256), refs (`remote_job_id` + `operation`), cost и artifacts | E04/E08 | null | NOT_RUN | null |
 | R08 | RUB/USD и unknown/zero не смешиваются | Точные Decimal fixtures + currency grouping + unknown count | E04/E09 | null | NOT_RUN | null |
 | R09 | Поля `cost` и `cost_rub` не удваивают расход | Один billing snapshot с обоими aliases + повторный sync | E06/E08 | null | NOT_RUN | null |
 | R10 | Batch действительно параллелен и ограничен | Контролируемое перекрытие tasks, peak active, submit count и release slots | E08 | null | NOT_RUN | null |
@@ -35,7 +35,7 @@
 | R17 | Справка автономна и соответствует capabilities | Resolved raw/JSON equivalence + installed package outside cwd | E03/E09/E10 | null | NOT_RUN | null |
 | R18 | Миграции сохраняют историю | Upgrade fixture, failure rollback, repeated apply и FK checks | E04 | null | NOT_RUN | null |
 | R19 | Ключ не утёк в продуктовые данные и логи | Canary в request/error → скан stdout/stderr/logs/БД/distributions | E01/E06/E10 | null | NOT_RUN | null |
-| R20 | Local search и расходы проверяют полезный результат | Известный corpus → ожидаемые IDs и точные суммы периода | E09 | null | NOT_RUN | null |
+| R20 | Local search и расходы проверяют полезный результат | Известный corpus → ожидаемые IDs из `jobs search` и точные суммы периода из `jobs costs` (по валютам) | E09 | null | NOT_RUN | null |
 | R21 | Installed tool соответствует релизу | Git peeled SHA ↔ installed VCS commit; версия и package resources | E11 | null | NOT_RUN | null |
 | R22 | Отсутствие ключа не ломает локальные команды | Subprocess help/models/history без ключа и без внешней сети | E01/E09 | null | NOT_RUN | null |
 | R23 | Неполная финализация не маскирует платный failure | Remote success + local error → saved actual cost, error и recoverable ref | E07/E08 | null | NOT_RUN | null |

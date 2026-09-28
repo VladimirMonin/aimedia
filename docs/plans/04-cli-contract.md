@@ -63,9 +63,11 @@ aimedia image generate
 aimedia image batch
 
 aimedia jobs recent
+aimedia jobs search "laboratory robot"
 aimedia jobs show
 aimedia jobs retry
 aimedia jobs sync
+aimedia jobs costs --month
 
 aimedia models list
 aimedia models show
@@ -129,10 +131,11 @@ aimedia
 │
 ├── jobs
 │   ├── recent
+│   ├── search
 │   ├── show
 │   ├── retry
 │   ├── sync
-│   └── search        # если FTS5 входит в раннюю версию
+│   └── costs
 │
 ├── models
 │   ├── list
@@ -681,7 +684,8 @@ scientist-front_003.webp
 
 # `--max-images` 🔢
 
-Указывает желаемое число результатов.
+Указывает желаемое число результатов (outputs) **одного** provider submit — они
+принадлежат одному Job.
 
 Пример:
 
@@ -689,7 +693,8 @@ scientist-front_003.webp
 --max-images 4
 ```
 
-Значение валидируется по capability модели.
+Значение валидируется по capability модели. Это не создаёт несколько Job: несколько
+независимых Jobs — только у `image batch` (см. ниже).
 
 ---
 
@@ -816,9 +821,12 @@ aimedia jobs recent
 ```bash
 aimedia jobs recent --limit 20
 aimedia jobs recent --status failed
-aimedia jobs recent --model seedream-5-pro
 aimedia jobs recent --json
 ```
+
+> [!note]
+> Фильтрация по модели отложена из v0.1 (см. [release-scope.md](release-scope.md),
+> раздел (b)); в v0.1 команда не получает `--model`.
 
 ---
 
@@ -941,15 +949,33 @@ aimedia jobs sync --all
 
 # `jobs search` 🔍
 
-Если FTS5 входит в раннюю реализацию:
+FTS5 входит в обязательный scope v0.1 (E09), поэтому команда обязательна.
 
 ```bash
 aimedia jobs search "laboratory robot"
 ```
 
-В v0.1 поиск может быть lexical-only.
+Минимальные options v0.1:
 
-Semantic search не входит в обязательный CLI-контракт первой версии.
+```bash
+aimedia jobs search "laboratory robot" --json
+```
+
+Поиск lexical-only; semantic search не входит в обязательный CLI-контракт первой версии.
+
+---
+
+# `jobs costs` 📈
+
+Сводка расходов по валютам обязательна в v0.1 (E09).
+
+```bash
+aimedia jobs costs --today
+aimedia jobs costs --month
+```
+
+Минимальные options v0.1 — границы периода `--today`/`--month` и `--json`;
+валюты не смешиваются, unknown/zero отображаются отдельно.
 
 ---
 
@@ -2374,6 +2400,8 @@ aimedia image batch prompts/*.md \
 ```bash
 aimedia jobs recent
 aimedia jobs show 481
+aimedia jobs search "laboratory robot"
+aimedia jobs costs --today
 ```
 
 ### Retry
