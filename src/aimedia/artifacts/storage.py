@@ -2,8 +2,9 @@
 
 Модуль связывает уже проверенные компоненты E05: `prepare_image`/`convert_image`
 (фактические байты и метаданные) и `publish_output` (no-clobber публикация). Он
-не знает ни о БД, ни о provider, ни о событиях: оркестрация Job и безопасные
-события — отдельный слой (C08c2).
+не знает ни о БД, ни о provider; безопасные события `artifact_converted`,
+`artifact_saved`, `artifact_cleanup_failed` (C08c2a) пишутся через
+необязательный `EventLogger`.
 
 Правила хранения (`docs/plans/README.md` → E05, решения baseline D08/D09):
 
@@ -24,12 +25,19 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from pathlib import Path
 
+from aimedia.artifacts.events import (
+    log_artifact_cleanup_failed,
+    log_artifact_converted,
+    log_artifact_saved,
+)
 from aimedia.artifacts.image import PreparedImage, convert_image, prepare_image
 from aimedia.artifacts.output import PublishedOutput, publish_output
 from aimedia.domain.artifacts import Artifact, ArtifactKind, ArtifactRole
 from aimedia.domain.requests import FinalFormat
+from aimedia.logging import EventLogger
 
 OUTPUTS_DIRNAME = "outputs"
 """Каталог managed-результатов внутри data-root (`outputs/<job_id>/`)."""
@@ -50,10 +58,15 @@ class PillowArtifactStorage:
     `data_root` — сконфигурированный app-data root (`Settings.data_dir`); он
     нормализуется в абсолютный путь один раз, а managed-каталог создаётся только
     под `outputs/`. Пользовательские пути adapter не создаёт и не удаляет.
+
+    Необязательный `logger` включает безопасные события `artifact_converted`,
+    `artifact_saved`, `artifact_cleanup_failed` (C08c2a). Диагностика — best-effort:
+    её сбой не превращает успешную публикацию в ошибку.
     """
 
-    def __init__(self, *, data_root: Path) -> None:
+    def __init__(self, *, data_root: Path, logger: EventLogger | None = None) -> None:
         self._data_root = Path(os.path.abspath(data_root))
+        self._logger = logger
 
     def save(
         self,
@@ -81,7 +94,7 @@ class PillowArtifactStorage:
         published = publish_output(prepared.data, directory, name, extension, managed=managed)
 
         local_path = published.path.relative_to(self._data_root) if managed else published.path
-        return Artifact(
+        artifact = Artifact(
             kind=ArtifactKind.IMAGE,
             role=role,
             local_path=local_path,
@@ -90,6 +103,8 @@ class PillowArtifactStorage:
             sha256=published.sha256,
             metadata=self._metadata(prepared, ownership=published.ownership, published=published),
         )
+        self._emit_publish_events(job_id=job_id, role=role, prepared=prepared, published=published)
+        return artifact
 
     def exists(self, artifact: Artifact) -> bool:
         """Существует ли файл артефакта; история остаётся и после его удаления."""
@@ -162,6 +177,63 @@ class PillowArtifactStorage:
                 raise ValueError("Symlinked or junction managed artifact path")
         return candidate
 
+    def _emit_publish_events(
+        self,
+        *,
+        job_id: int,
+        role: ArtifactRole,
+        prepared: PreparedImage,
+        published: PublishedOutput,
+    ) -> None:
+        """Best-effort события после фактической публикации файла.
+
+        События пишутся только когда опубликованный файл уже существует. Сбой
+        диагностики не должен превращать успешную публикацию в ошибку с orphan-
+        файлом или подменять её, а сырой текст исключения в канал не переносится.
+        Ремонт/идентификация артефакта остаётся в возвращаемом `Artifact`.
+        """
+        logger = self._logger
+        if logger is None:
+            return
+        if prepared.converted:
+            self._emit(
+                lambda: log_artifact_converted(
+                    logger,
+                    job_id=job_id,
+                    role=role,
+                    source_format=prepared.source_format,
+                    final_format=prepared.final_format,
+                    width=prepared.width,
+                    height=prepared.height,
+                )
+            )
+        self._emit(
+            lambda: log_artifact_saved(
+                logger,
+                job_id=job_id,
+                role=role,
+                final_format=prepared.final_format,
+                size_bytes=published.size_bytes,
+                width=prepared.width,
+                height=prepared.height,
+            )
+        )
+        if published.cleanup_failed_temp_path is not None:
+            self._emit(lambda: log_artifact_cleanup_failed(logger, job_id=job_id, role=role))
+
+    @staticmethod
+    def _emit(event_call: Callable[[], None]) -> None:
+        """Выполнить best-effort запись события, не подменяя результат публикации.
+
+        Сбой обработчика диагностики проглатывается намеренно: файл уже опубликован,
+        и ложный отказ `save` оставил бы orphan. Текст исключения логгеру не
+        передаётся.
+        """
+        try:
+            event_call()
+        except Exception:
+            return
+
     @staticmethod
     def _metadata(
         prepared: PreparedImage,
@@ -173,7 +245,8 @@ class PillowArtifactStorage:
 
         Сигнал `cleanup_failed_temp_path` публикации сохраняется как булев флаг, а
         не как путь: сырой временный путь не должен попадать в публичную
-        диагностику/отчёты (безопасное событие добавит C08c2).
+        диагностику/отчёты. Безопасное событие `artifact_cleanup_failed` пишется по
+        этому флагу, но сам путь в запись не попадает.
         """
         return {
             "ownership": ownership,
