@@ -173,7 +173,10 @@ class PeeweeJobRepository:
             raise NestedStorageTransactionError("save")
         try:
             with (
-                self._database.atomic(),
+                # Reserve the writer slot before reading previous state. A DEFERRED
+                # read followed by a concurrent commit can fail on upgrade with
+                # SQLITE_BUSY_SNAPSHOT instead of honoring busy_timeout.
+                self._database.atomic("IMMEDIATE"),
                 self._database.bind_ctx(
                     [JobRecord, PromptSourceRecord, InputRecord, ArtifactRecord]
                 ),
