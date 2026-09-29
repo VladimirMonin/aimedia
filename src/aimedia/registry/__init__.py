@@ -43,6 +43,7 @@ from aimedia.registry.models import (
     Verification,
 )
 from aimedia.registry.resolver import ModelResolver, resolve_model
+from aimedia.registry.validator import ValidatedModelRequest, validate_model_request
 
 __all__ = [
     "SUPPORTED_SCHEMA_VERSIONS",
@@ -69,6 +70,7 @@ __all__ = [
     "UnknownModelError",
     "UnsupportedSchemaVersionError",
     "UnsafeYamlTagError",
+    "ValidatedModelRequest",
     "Verification",
     "load_model_file",
     "load_registry",
@@ -76,4 +78,5 @@ __all__ = [
     "parse_model_record",
     "registry_files",
     "resolve_model",
+    "validate_model_request",
 ]
