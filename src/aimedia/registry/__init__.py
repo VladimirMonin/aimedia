@@ -12,8 +12,11 @@ from aimedia.registry.errors import (
     DuplicateModelIdError,
     DuplicateYamlKeyError,
     InvalidModelRecordError,
+    InvalidProviderOverrideError,
     InvalidRegistryFileError,
+    ModelNotAvailableOnProviderError,
     RegistryError,
+    UnknownModelError,
     UnsafeYamlTagError,
     UnsupportedSchemaVersionError,
 )
@@ -28,6 +31,7 @@ from aimedia.registry.loader import (
 from aimedia.registry.models import (
     CapabilityNode,
     DocsRef,
+    EffectiveModelDefinition,
     Family,
     InputLimit,
     ModelRecord,
@@ -38,6 +42,7 @@ from aimedia.registry.models import (
     ProviderBinding,
     Verification,
 )
+from aimedia.registry.resolver import ModelResolver, resolve_model
 
 __all__ = [
     "SUPPORTED_SCHEMA_VERSIONS",
@@ -46,17 +51,22 @@ __all__ = [
     "DuplicateAliasError",
     "DuplicateModelIdError",
     "DuplicateYamlKeyError",
+    "EffectiveModelDefinition",
     "Family",
     "InputLimit",
     "InvalidModelRecordError",
+    "InvalidProviderOverrideError",
     "InvalidRegistryFileError",
+    "ModelNotAvailableOnProviderError",
     "ModelRecord",
+    "ModelResolver",
     "ModelStatus",
     "ParameterOverride",
     "ParameterSpec",
     "ParameterType",
     "ProviderBinding",
     "RegistryError",
+    "UnknownModelError",
     "UnsupportedSchemaVersionError",
     "UnsafeYamlTagError",
     "Verification",
@@ -65,4 +75,5 @@ __all__ = [
     "load_registry_root",
     "parse_model_record",
     "registry_files",
+    "resolve_model",
 ]

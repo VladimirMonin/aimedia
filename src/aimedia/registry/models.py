@@ -273,7 +273,41 @@ class ModelRecord(RegistryModel):
         return self
 
 
+class EffectiveModelDefinition(RegistryModel):
+    """Итоговое описание модели для выбранного provider.
+
+    Строится как `Base Model Definition + Provider Binding Overrides` и является
+    тем объектом, с которым работает последующая validation
+    (`06-model-registry.md`, «Effective Model Definition»), а не сырая запись
+    Registry. `parameters` здесь — уже суженные параметры binding'а, поэтому
+    default гарантированно входит в эффективный допустимый набор.
+
+    `remote_model_id` переносится из binding без переименования: mapping в поля
+    API выполняет provider adapter (решение baseline D07), а не Registry.
+    `verification`/`verified_at` переносятся без изменений как происхождение
+    сведений (документированные данные); отдельного доказательства живой
+    поддержки схема v0.1 не содержит и не выдумывает его.
+    """
+
+    requested_model: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    model_id: CanonicalId
+    provider_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    remote_model_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    family: Family
+    status: ModelStatus
+    aliases: tuple[CanonicalId, ...] = ()
+    capabilities: dict[MetricName, CapabilityValue] = Field(default_factory=dict)
+    inputs: dict[MetricName, InputLimit] = Field(default_factory=dict)
+    outputs: dict[MetricName, InputLimit] = Field(default_factory=dict)
+    parameters: dict[MetricName, ParameterSpec] = Field(default_factory=dict)
+    verification: Verification | None = None
+    verified_at: date | None = None
+    docs: DocsRef | None = None
+
+
 __all__ = [
+    "EffectiveModelDefinition",
     "CanonicalId",
     "CapabilityNode",
     "CapabilityValue",

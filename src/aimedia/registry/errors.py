@@ -123,3 +123,76 @@ class DuplicateAliasError(RegistryError):
             details={"alias": alias, "conflict": conflict},
         )
         self.alias = alias
+
+
+class UnknownModelError(RegistryError):
+    """Запрошенный канонический ID или alias отсутствует в Registry.
+
+    Это отдельная ошибка слоя Registry (как и остальные здесь), а не доменный
+    `aimedia.domain.errors.UnknownModelError`; строковый `code` совпадает с
+    пользовательским `UNKNOWN_MODEL` (`06-model-registry.md`, «Unknown model»).
+    """
+
+    code = "UNKNOWN_MODEL"
+
+    def __init__(self, model_id_or_alias: str, *, path: object | None = None) -> None:
+        super().__init__(
+            f"модель {model_id_or_alias!r} отсутствует в Registry",
+            path=path,
+            details={"model_id_or_alias": model_id_or_alias},
+        )
+        self.model_id_or_alias = model_id_or_alias
+
+
+class ModelNotAvailableOnProviderError(RegistryError):
+    """У модели нет binding к выбранному provider.
+
+    Модель существует, но у этого provider нет `remote_model_id`: разрешать её
+    молча нельзя (`06-model-registry.md`, «Unknown provider binding»).
+    """
+
+    code = "MODEL_NOT_AVAILABLE_ON_PROVIDER"
+
+    def __init__(
+        self,
+        model_id: str,
+        provider_id: str,
+        *,
+        available: Iterable[str] = (),
+        path: object | None = None,
+    ) -> None:
+        available_tuple = tuple(available)
+        super().__init__(
+            f"модель {model_id!r} не настроена для provider {provider_id!r}; "
+            f"доступные providers: {available_tuple}",
+            path=path,
+            details={
+                "model_id": model_id,
+                "provider_id": provider_id,
+                "available": list(available_tuple),
+            },
+        )
+        self.model_id = model_id
+        self.provider_id = provider_id
+        self.available = available_tuple
+
+
+class InvalidProviderOverrideError(RegistryError):
+    """Provider override нарушает правило сужения базовой модели.
+
+    Binding может только ограничивать базовую capability: расширение набора
+    значений или границ, несовместимый default и override несуществующего
+    параметра — ошибка схемы, а не «победа override»
+    (`06-model-registry.md`, «Принцип override»; `docs/plans/README.md`, E03).
+    """
+
+    code = "INVALID_PROVIDER_OVERRIDE"
+
+    def __init__(self, parameter: str, reason: str, *, path: object | None = None) -> None:
+        super().__init__(
+            f"недопустимое сужение параметра {parameter!r}: {reason}",
+            path=path,
+            details={"parameter": parameter, "reason": reason},
+        )
+        self.parameter = parameter
+        self.reason = reason
