@@ -28,7 +28,7 @@ from aimedia.domain.base import (
     Sha256Hex,
     UtcDatetime,
 )
-from aimedia.domain.costs import Cost, CurrencyTotal, Usage, total_by_currency
+from aimedia.domain.costs import Cost, CostReport, CurrencyTotal, Usage, total_by_currency
 from aimedia.domain.errors import (
     DomainError,
     DomainErrorCode,
@@ -56,6 +56,7 @@ from aimedia.domain.job import Job, JobRecovery, JobRelation, JobResult
 from aimedia.domain.ports import (
     ArtifactStorage,
     CancellableProviderGateway,
+    CostReportRepository,
     JobRepository,
     PollingProviderGateway,
     ProviderGateway,
@@ -96,6 +97,8 @@ __all__ = [
     "CancellableProviderGateway",
     "CompiledPrompt",
     "Cost",
+    "CostReport",
+    "CostReportRepository",
     "CurrencyCode",
     "CurrencyTotal",
     "DomainError",

@@ -60,8 +60,18 @@ terminal — `completed`/`failed`/`cancelled` (инвариант 13).
 - Отсутствие `Cost` (`cost is None`, `Job.has_known_cost is False`) — неизвестная
   цена; `Decimal("0")` — известная цена. Эти состояния не сводятся друг к другу (D11).
 - `ExactDecimal` отклоняет `float` и `bool`: деньги не проходят через двоичную дробь.
-- Суммы по валюте считаются в Python (`total_by_currency`), а не SQL `SUM()`;
-  RUB и USD не складываются и не конвертируются.
+- Суммы по валюте считаются точно независимо от текущей Decimal precision в
+  Python (`total_by_currency`), а не SQL `SUM()`; RUB и USD не складываются и не
+  конвертируются.
+- `CostReport` — неизменяемый DTO read-only отчёта: `totals` по валютам,
+  `total_jobs`, отдельные счётчики ненулевой известной стоимости, известного нуля
+  и неизвестной цены. `CurrencyTotal.job_count` включает известный ноль. Порт
+  `CostReportRepository.aggregate(start, end)` принимает только timezone-aware
+  границы UTC-интервала `[start, end)` по `Job.created_at`; adapter
+  `PeeweeCostReportRepository` читает одну строку на Job, сравнивает разобранные
+  timestamps в Python и не превращает `usage.raw` в новое списание. Повреждённые
+  timestamp/стоимость/валюта дают безопасную типизированную storage-ошибку без
+  раскрытия содержимого строки.
 
 ## Сериализация домена (проверяется `tests/unit/test_serialization.py`)
 
@@ -78,7 +88,7 @@ terminal — `completed`/`failed`/`cancelled` (инвариант 13).
 `src/aimedia/domain/ports.py` содержит контракты, реализуемые снаружи:
 `ProviderGateway` (минимальный, обязательный `submit`), `PollingProviderGateway`
 (опрос), `CancellableProviderGateway` (явная отмена), `JobRepository`,
-`ArtifactStorage`.
+`ArtifactStorage`, `CostReportRepository` (read-only агрегирование расходов).
 
 - В портах **нет** методов-заглушек с `NotImplementedError`. Возможность provider
   выражается отдельным протоколом и `ProviderCapabilities`; application проверяет

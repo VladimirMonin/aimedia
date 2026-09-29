@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import Decimal, localcontext
 
 import pytest
 from pydantic import ValidationError
@@ -19,6 +19,7 @@ from aimedia.domain import (
     ArtifactRole,
     CompiledPrompt,
     Cost,
+    CurrencyTotal,
     DomainError,
     ImageGenerationRequest,
     InvalidJobStateTransitionError,
@@ -423,6 +424,41 @@ def test_exact_decimal_addition_avoids_binary_error() -> None:
     )
     assert total[0].amount == Decimal("0.3")
     assert total[0].job_count == 2
+
+
+def test_total_by_currency_accumulates_exactly_under_low_decimal_precision() -> None:
+    costs = [
+        Cost(amount=value, currency="USD")
+        for value in ("123456789012345678901234567890.1234", "0.0831", "-0.1", "0")
+    ]
+    with localcontext() as context:
+        context.prec = 6
+        actual = total_by_currency(costs)
+    assert actual == (
+        CurrencyTotal(
+            currency="USD", amount=Decimal("123456789012345678901234567890.1065"), job_count=4
+        ),
+    )
+
+
+def test_total_by_currency_handles_over_4300_digits_under_low_precision() -> None:
+    huge = "9" * 4400
+    costs = [
+        Cost(amount=f"{huge}.125", currency="USD"),
+        Cost(amount="0.875", currency="USD"),
+        Cost(amount=f"-{huge}.125", currency="RUB"),
+        Cost(amount=f"{huge}.125", currency="RUB"),
+        Cost(amount=f"1{'0' * 4400}.000", currency="EUR"),
+        Cost(amount="-0.001", currency="EUR"),
+    ]
+    with localcontext() as context:
+        context.prec = 6
+        totals = total_by_currency(costs)
+    assert totals == (
+        CurrencyTotal(currency="EUR", amount=Decimal(f"{huge}.999"), job_count=2),
+        CurrencyTotal(currency="RUB", amount=Decimal("0.000"), job_count=2),
+        CurrencyTotal(currency="USD", amount=Decimal(f"1{'0' * 4400}.000"), job_count=2),
+    )
 
 
 def test_currencies_are_not_summed_together() -> None:

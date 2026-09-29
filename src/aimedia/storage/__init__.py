@@ -12,6 +12,7 @@ C07a добавляет к ним `usage_recorded` и `cost_recorded`, кото�
 
 from __future__ import annotations
 
+from aimedia.storage.costs import PeeweeCostReportRepository
 from aimedia.storage.database import (
     DEFAULT_BUSY_TIMEOUT_MS,
     DEFAULT_CONNECT_TIMEOUT_SECONDS,
@@ -26,6 +27,7 @@ from aimedia.storage.database import (
 from aimedia.storage.errors import (
     DatabaseBusyError,
     DatabaseOwnershipError,
+    InvalidStoredCostReportError,
     InvalidStoredJobStatusError,
     MigrationDefinitionError,
     MigrationFailedError,
@@ -89,6 +91,7 @@ __all__ = [
     "DEFAULT_DATABASE_FILENAME",
     "EngineVersions",
     "InputRecord",
+    "InvalidStoredCostReportError",
     "InvalidStoredJobStatusError",
     "JOB_CREATED_EVENT",
     "JOB_STATE_CHANGED_EVENT",
@@ -105,6 +108,7 @@ __all__ = [
     "MigrationOutcome",
     "NestedStorageTransactionError",
     "PromptSourceRecord",
+    "PeeweeCostReportRepository",
     "PeeweeJobRepository",
     "REMOTE_REF_SAVED_EVENT",
     "SCHEMA_TABLES",

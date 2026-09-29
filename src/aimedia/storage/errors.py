@@ -20,6 +20,13 @@ class NestedStorageTransactionError(StorageError):
         self.operation = operation
 
 
+class InvalidStoredCostReportError(StorageError):
+    """Сохранённая строка отчёта невалидна; не раскрывать её содержимое."""
+
+    def __init__(self) -> None:
+        super().__init__("Сохранённая строка отчёта расходов некорректна")
+
+
 class InvalidStoredJobStatusError(StorageError):
     """Сохранённый статус Job не принадлежит доменному набору состояний."""
 

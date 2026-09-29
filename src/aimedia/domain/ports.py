@@ -14,6 +14,7 @@ application проверяет наличие возможности, а не л
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol, Self, runtime_checkable
 
@@ -21,7 +22,7 @@ from pydantic import model_validator
 
 from aimedia.domain.artifacts import Artifact, ArtifactKind, ArtifactRole, RemoteArtifact
 from aimedia.domain.base import DomainModel
-from aimedia.domain.costs import Cost, Usage
+from aimedia.domain.costs import Cost, CostReport, Usage
 from aimedia.domain.job import Job
 from aimedia.domain.refs import (
     ProviderCapabilities,
@@ -148,6 +149,17 @@ class JobRepository(Protocol):
         Используется командой `jobs recent` и поиском незавершённых заданий для
         `jobs sync`.
         """
+        ...
+
+
+@runtime_checkable
+class CostReportRepository(Protocol):
+    """Прочитать расходы по сохранённым Job, не изменяя историю."""
+
+    def aggregate(
+        self, *, start: datetime | None = None, end: datetime | None = None
+    ) -> CostReport:
+        """Суммы по валютам за UTC-интервал создания Job [start, end)."""
         ...
 
 
