@@ -44,7 +44,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, cast
 
-from peewee import Database, OperationalError
+from peewee import OperationalError, SqliteDatabase
 
 from aimedia.domain.artifacts import Artifact, ArtifactKind, ArtifactRole
 from aimedia.domain.costs import Cost, Usage
@@ -61,6 +61,7 @@ from aimedia.domain.refs import ModelRef, ProviderRef, RemoteJobRef, RemoteOpera
 from aimedia.domain.requests import ImageGenerationRequest, JobKind
 from aimedia.domain.state import JobStatus
 from aimedia.logging import EventLogger
+from aimedia.storage.database import DatabaseManager
 from aimedia.storage.errors import (
     DatabaseBusyError,
     InvalidStoredJobStatusError,
@@ -159,16 +160,22 @@ def _optional_path(value: str | None) -> Path | None:
 class PeeweeJobRepository:
     """Синхронное хранение Job поверх Peewee (`JobRepository`).
 
-    Repository не открывает соединений: подключённая база передаётся ему
-    вызывающим слоем (`open_database`), поэтому владелец соединения остаётся один.
+    Repository не открывает соединений: менеджер проверяет владение и открытое
+    состояние при каждом публичном вызове.
     Диагностика (`job_created`, `job_state_changed`, `remote_ref_saved`) включается
     необязательным `logger` в `save` (E04, C06c1). Ожидаемая блокировка SQLite
     (`busy_timeout` истёк) становится типизированной `DatabaseBusyError`: локальный
     отказ записи не смешивается с отказом provider.
     """
 
-    def __init__(self, database: Database) -> None:
-        self._database = database
+    def __init__(self, manager: DatabaseManager) -> None:
+        if not isinstance(manager, DatabaseManager):
+            raise TypeError("PeeweeJobRepository требует DatabaseManager")
+        self._manager = manager
+
+    @property
+    def _database(self) -> SqliteDatabase:
+        return self._manager.database
 
     def save(self, job: Job, *, logger: EventLogger | None = None) -> Job:
         """Создать или обновить Job и вернуть сохранённое состояние с `id`.

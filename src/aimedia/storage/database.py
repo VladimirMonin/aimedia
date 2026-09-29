@@ -1,8 +1,8 @@
 """Владение соединением SQLite и его pragmas (`07-storage-history-costs.md`).
 
 `DatabaseManager` отвечает за один локальный SQLite-файл: соединение, pragmas,
-жизненный цикл и запуск единственного migration runner. Repositories получают базу
-через `database`/`connection` и не открывают соединений сами.
+жизненный цикл и запуск единственного migration runner. Repositories получают
+менеджер и проверяют владельца и открытое состояние при каждом вызове.
 
 Границы, которые нельзя ослаблять:
 
@@ -30,7 +30,7 @@ import peewee
 from peewee import SqliteDatabase
 
 from aimedia.logging import EventLogger
-from aimedia.storage.errors import DatabaseOwnershipError, StorageError
+from aimedia.storage.errors import DatabaseClosedError, DatabaseOwnershipError, StorageError
 from aimedia.storage.events import log_database_opened
 from aimedia.storage.migrations import MigrationOutcome, apply_migrations
 
@@ -183,15 +183,16 @@ class DatabaseManager:
 
     @property
     def database(self) -> SqliteDatabase:
-        """База для запросов repositories; доступна только владельцу потока."""
+        """База для запросов repositories; доступна только открытому владельцу."""
         self._ensure_owner()
+        if self._owner_thread is None or self._database.is_closed():
+            raise DatabaseClosedError()
         return self._database
 
     @property
     def connection(self) -> sqlite3.Connection:
         """Фактическое соединение sqlite3 (диагностика и проверки pragmas)."""
-        self._ensure_owner()
-        return cast(sqlite3.Connection, self._database.connection())
+        return cast(sqlite3.Connection, self.database.connection())
 
     def migrate(self, *, logger: EventLogger | None = None) -> MigrationOutcome:
         """Довести схему до последней известной версии.
@@ -199,8 +200,7 @@ class DatabaseManager:
         Необязательный `logger` включает события `migration_started/completed/failed`
         (E04, C06c1); без него миграции работают молча.
         """
-        self._ensure_owner()
-        return apply_migrations(self._database, logger=logger)
+        return apply_migrations(self.database, logger=logger)
 
     def open(self, *, logger: EventLogger | None = None) -> MigrationOutcome:
         """Открыть соединение и применить миграции; при ошибке закрыть его.

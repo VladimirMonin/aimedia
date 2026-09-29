@@ -65,7 +65,7 @@ def test_short_concurrent_repository_updates_commit_without_busy_snapshot(tmp_pa
     second_begin_attempted = Event()
     begin_sql: list[str] = []
     try:
-        repository = PeeweeJobRepository(first.database)
+        repository = PeeweeJobRepository(first)
         first_job = repository.save(_job())
         second_job = repository.save(_job())
         assert first_job.id is not None and second_job.id is not None
@@ -93,7 +93,7 @@ def test_short_concurrent_repository_updates_commit_without_busy_snapshot(tmp_pa
         def other_writer() -> Job:
             manager = _open(path, 3000)
             try:
-                return PausingRepository(manager.database).save(first_update)
+                return PausingRepository(manager).save(first_update)
             finally:
                 manager.close()
 
@@ -120,7 +120,7 @@ def test_expired_busy_timeout_rolls_back_and_explicit_local_save_succeeds(tmp_pa
     retry = Event()
     first_result: Queue[DatabaseBusyError] = Queue()
     try:
-        repository = PeeweeJobRepository(first.database)
+        repository = PeeweeJobRepository(first)
         original = repository.save(_job())
         assert original.id is not None
         updated = original.model_copy(update={"remote_ref": _job("known-remote-id").remote_ref})
@@ -128,7 +128,7 @@ def test_expired_busy_timeout_rolls_back_and_explicit_local_save_succeeds(tmp_pa
         def other_writer() -> tuple[int | None, int | None]:
             manager = _open(path, 80)
             try:
-                other = PeeweeJobRepository(manager.database)
+                other = PeeweeJobRepository(manager)
                 ready.set()
                 if not attempt.wait(5):
                     raise TimeoutError("first attempt was not started")

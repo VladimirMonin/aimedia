@@ -16,6 +16,10 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+from threading import Thread
+from unittest.mock import patch
+
+import pytest
 
 from aimedia.domain import (
     Artifact,
@@ -39,7 +43,13 @@ from aimedia.domain import (
     RemoteOperation,
     Usage,
 )
-from aimedia.storage import PeeweeJobRepository, open_database
+from aimedia.storage import (
+    DatabaseClosedError,
+    DatabaseOwnershipError,
+    PeeweeCostReportRepository,
+    PeeweeJobRepository,
+    open_database,
+)
 
 DATABASE_FILENAME = "database.sqlite3"
 CREATED_AT = datetime(2026, 9, 28, 8, 0, tzinfo=UTC)
@@ -213,7 +223,7 @@ def test_completed_job_survives_close_and_reopen(tmp_path: Path) -> None:
 
     first = open_database(path)
     try:
-        saved = PeeweeJobRepository(first.database).save(job)
+        saved = PeeweeJobRepository(first).save(job)
         assert saved.id is not None
         job_id = saved.id
     finally:
@@ -221,7 +231,7 @@ def test_completed_job_survives_close_and_reopen(tmp_path: Path) -> None:
 
     second = open_database(path)
     try:
-        restored = PeeweeJobRepository(second.database).get(job_id)
+        restored = PeeweeJobRepository(second).get(job_id)
     finally:
         second.close()
 
@@ -245,7 +255,7 @@ def test_artifact_collections_and_prompt_order_are_preserved(tmp_path: Path) -> 
     """Порядок источников и принадлежность артефактов result сохраняются точно."""
     manager = open_database(_database_path(tmp_path))
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         job_id = repository.save(_completed_job()).id
         assert job_id is not None
         restored = repository.get(job_id)
@@ -277,7 +287,7 @@ def test_remote_operation_is_restored_with_remote_job_id(tmp_path: Path) -> None
     """Remote ID и тип операции восстанавливаются вместе, без угадывания endpoint."""
     manager = open_database(_database_path(tmp_path))
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         job_id = repository.save(_completed_job()).id
         assert job_id is not None
         restored = repository.get(job_id)
@@ -299,7 +309,7 @@ def test_failed_job_keeps_partial_metadata(tmp_path: Path) -> None:
     """Failed Job сохраняет error, usage, cost и partial artifact, оставаясь failed."""
     manager = open_database(_database_path(tmp_path))
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         job_id = repository.save(_failed_job()).id
         assert job_id is not None
         restored = repository.get(job_id)
@@ -334,7 +344,7 @@ def test_two_jobs_do_not_share_children_and_recent_order_is_newest_first(
     """Дочерние строки Job изолированы, а список последних идёт от новых к старым."""
     manager = open_database(_database_path(tmp_path))
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         first_id = repository.save(_completed_job()).id
         second_id = repository.save(_failed_job()).id
         assert first_id is not None
@@ -375,7 +385,7 @@ def test_resaving_job_updates_in_place(tmp_path: Path) -> None:
     """Повторный save того же Job обновляет строку, а не добавляет вторую."""
     manager = open_database(_database_path(tmp_path))
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         job_id = repository.save(_completed_job()).id
         assert job_id is not None
 
@@ -400,6 +410,65 @@ def test_get_missing_job_returns_none(tmp_path: Path) -> None:
     """Несуществующий ID — `None`, а не исключение Peewee."""
     manager = open_database(_database_path(tmp_path))
     try:
-        assert PeeweeJobRepository(manager.database).get(999) is None
+        assert PeeweeJobRepository(manager).get(999) is None
     finally:
         manager.close()
+
+
+def test_repositories_refuse_foreign_thread_and_closed_manager(tmp_path: Path) -> None:
+    """Каждый публичный вызов проверяет manager до Peewee autoconnect и записи."""
+    path = _database_path(tmp_path)
+    manager = open_database(path)
+    repository = PeeweeJobRepository(manager)
+    report = PeeweeCostReportRepository(manager)
+    job = _failed_job()
+    try:
+        saved = repository.save(job)
+        assert saved.id is not None
+        operations = (
+            lambda: repository.save(job),
+            lambda: repository.get(saved.id),
+            repository.list_recent,
+            report.aggregate,
+            lambda: manager.database,
+            lambda: manager.connection,
+        )
+        with patch.object(manager._database, "connect", wraps=manager._database.connect) as connect:
+            errors: list[Exception] = []
+
+            def use_from_other_thread() -> None:
+                for operation in operations:
+                    try:
+                        operation()
+                    except Exception as exc:
+                        errors.append(exc)
+
+            thread = Thread(target=use_from_other_thread)
+            thread.start()
+            thread.join(timeout=5)
+            assert not thread.is_alive()
+            assert len(errors) == len(operations)
+            assert all(isinstance(exc, DatabaseOwnershipError) for exc in errors)
+            connect.assert_not_called()
+
+        assert manager.database.execute_sql('SELECT COUNT(*) FROM "jobs"').fetchone() == (1,)
+        manager.close()
+        with patch.object(manager._database, "connect", wraps=manager._database.connect) as connect:
+            for operation in operations:
+                with pytest.raises(DatabaseClosedError):
+                    operation()
+            connect.assert_not_called()
+        assert not manager.is_open
+    finally:
+        manager.close()
+
+    with open_database(path) as reopened:
+        assert reopened.database.execute_sql('SELECT COUNT(*) FROM "jobs"').fetchone() == (1,)
+
+
+def test_repositories_require_manager_not_raw_database(tmp_path: Path) -> None:
+    with open_database(_database_path(tmp_path)) as manager:
+        with pytest.raises(TypeError):
+            PeeweeJobRepository(manager.database)  # type: ignore[arg-type]
+        with pytest.raises(TypeError):
+            PeeweeCostReportRepository(manager.database)  # type: ignore[arg-type]

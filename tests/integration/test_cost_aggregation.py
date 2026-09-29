@@ -69,8 +69,8 @@ def _job(*, created_at: datetime = DAY, cost: Cost | None = None, failed: bool =
 def test_cost_report_exact_grouped_and_repeated_sync(tmp_path: Path) -> None:
     manager = open_database(tmp_path / "report.sqlite3")
     try:
-        repository = PeeweeJobRepository(manager.database)
-        report = PeeweeCostReportRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
+        report = PeeweeCostReportRepository(manager)
         first = repository.save(_job(cost=Cost(amount="0.1", currency="RUB")))
         repository.save(_job(cost=Cost(amount="0.2", currency="RUB"), failed=True))
         repository.save(_job(cost=Cost(amount="0.0831", currency="USD")))
@@ -100,8 +100,8 @@ def test_cost_report_exact_grouped_and_repeated_sync(tmp_path: Path) -> None:
 def test_cost_report_utc_half_open_boundaries_and_read_only(tmp_path: Path) -> None:
     manager = open_database(tmp_path / "report.sqlite3")
     try:
-        repository = PeeweeJobRepository(manager.database)
-        report = PeeweeCostReportRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
+        report = PeeweeCostReportRepository(manager)
         for moment in (
             DAY - timedelta(microseconds=1),
             DAY,
@@ -147,13 +147,13 @@ def test_cost_report_corrupt_snapshot_is_safe_and_read_only(
 ) -> None:
     manager = open_database(tmp_path / "report.sqlite3")
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         repository.save(_job(cost=Cost(amount="1.23", currency="RUB")))
         manager.database.execute_sql(
             f'UPDATE "jobs" SET "{column}" = ? WHERE "id" = 1', (corrupt_value,)
         )
         before = manager.database.execute_sql('SELECT * FROM "jobs"').fetchall()
-        report = PeeweeCostReportRepository(manager.database)
+        report = PeeweeCostReportRepository(manager)
         with pytest.raises(InvalidStoredCostReportError) as caught:
             report.aggregate()
         assert corrupt_value not in "".join(format_exception(caught.value))
@@ -167,8 +167,8 @@ def test_cost_report_corrupt_snapshot_is_safe_and_read_only(
 def test_cost_report_persists_and_sums_over_4300_digits(tmp_path: Path) -> None:
     manager = open_database(tmp_path / "report.sqlite3")
     try:
-        repository = PeeweeJobRepository(manager.database)
-        report = PeeweeCostReportRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
+        report = PeeweeCostReportRepository(manager)
         huge = "9" * 4400
         repository.save(_job(cost=Cost(amount=f"{huge}.125", currency="USD")))
         repository.save(_job(cost=Cost(amount="0.875", currency="USD")))
@@ -189,8 +189,8 @@ def test_cost_report_persists_and_sums_over_4300_digits(tmp_path: Path) -> None:
 def test_cost_report_accumulates_exactly_under_low_decimal_precision(tmp_path: Path) -> None:
     manager = open_database(tmp_path / "report.sqlite3")
     try:
-        repository = PeeweeJobRepository(manager.database)
-        report = PeeweeCostReportRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
+        report = PeeweeCostReportRepository(manager)
         for amount in ("123456789012345678901234567890.1234", "0.0831", "-0.1", "0"):
             repository.save(_job(cost=Cost(amount=amount, currency="USD")))
         with localcontext() as context:

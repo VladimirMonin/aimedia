@@ -88,9 +88,7 @@ def test_decimal_text_roundtrip_without_float(tmp_path: Path, amount: str) -> No
     path = tmp_path / "billing.sqlite3"
     first = open_database(path)
     try:
-        saved = PeeweeJobRepository(first.database).save(
-            _job(cost=Cost(amount=amount, currency="rub"))
-        )
+        saved = PeeweeJobRepository(first).save(_job(cost=Cost(amount=amount, currency="rub")))
         assert saved.id is not None
         job_id = saved.id
         raw = first.database.execute_sql(
@@ -102,7 +100,7 @@ def test_decimal_text_roundtrip_without_float(tmp_path: Path, amount: str) -> No
         first.close()
     second = open_database(path)
     try:
-        restored = PeeweeJobRepository(second.database).get(job_id)
+        restored = PeeweeJobRepository(second).get(job_id)
     finally:
         second.close()
     assert raw == (amount, "RUB", "text")
@@ -114,7 +112,7 @@ def test_decimal_text_roundtrip_without_float(tmp_path: Path, amount: str) -> No
 def test_unknown_zero_and_currencies_remain_separate_snapshots(tmp_path: Path) -> None:
     manager = open_database(tmp_path / "billing.sqlite3")
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         ids = [
             repository.save(_job(cost=cost)).id
             for cost in (None, Cost(amount="0", currency="RUB"), Cost(amount="0.1", currency="USD"))
@@ -137,7 +135,7 @@ def test_repeated_billing_sync_updates_one_job_without_duplicate_events(tmp_path
     logger = EventLogger(stream=logger_stream, min_level="DEBUG")
     manager = open_database(tmp_path / "billing.sqlite3")
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         created = repository.save(_job(), logger=logger)
         assert created.id is not None
         usage = Usage(input_tokens=2, total_tokens=3, raw={"provider_private": CANARY})
@@ -182,7 +180,7 @@ def test_two_owners_log_each_committed_billing_snapshot(tmp_path: Path) -> None:
     second_committed = Event()
     first_logged = Event()
     try:
-        original = PeeweeJobRepository(first_manager.database).save(_job())
+        original = PeeweeJobRepository(first_manager).save(_job())
         assert original.id is not None
         first_update = original.model_copy(
             update={"cost": Cost(amount="0.1", currency="RUB"), "usage": Usage(input_tokens=1)}
@@ -227,21 +225,19 @@ def test_two_owners_log_each_committed_billing_snapshot(tmp_path: Path) -> None:
             try:
                 if not second_may_write.wait(5):
                     raise TimeoutError("first owner did not commit")
-                return SecondRepository(manager.database).save(second_update, logger=logger)
+                return SecondRepository(manager).save(second_update, logger=logger)
             finally:
                 manager.close()
 
         with ThreadPoolExecutor(max_workers=1) as pool:
             future = pool.submit(write_second)
             try:
-                first_saved = FirstRepository(first_manager.database).save(
-                    first_update, logger=logger
-                )
+                first_saved = FirstRepository(first_manager).save(first_update, logger=logger)
             finally:
                 second_may_write.set()
                 first_logged.set()
             second_saved = future.result(timeout=5)
-        final = PeeweeJobRepository(first_manager.database).get(original.id)
+        final = PeeweeJobRepository(first_manager).get(original.id)
     finally:
         second_may_write.set()
         first_logged.set()
@@ -268,7 +264,7 @@ def test_failed_after_remote_success_keeps_known_billing_and_partial_artifact(
 ) -> None:
     manager = open_database(tmp_path / "billing.sqlite3")
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         usage = Usage(output_units=1.5, raw={"provider_payload": {"opaque": CANARY}})
         saved = repository.save(
             _job(cost=Cost(amount="0.2", currency="USD"), usage=usage, failed=True)
@@ -300,7 +296,7 @@ def test_events_only_after_commit_and_without_raw_or_correlation(tmp_path: Path)
     child = logger.child(command=CANARY, provider=CANARY, remote_job_id=CANARY, job_id=CANARY)
     manager = open_database(tmp_path / "billing.sqlite3")
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         with correlation(command=CANARY, provider=CANARY, remote_job_id=CANARY):
             with manager.database.atomic():
                 with pytest.raises(NestedStorageTransactionError):
@@ -341,7 +337,7 @@ def test_old_tainted_billing_columns_do_not_flow_into_change_events(tmp_path: Pa
     logger = EventLogger(stream=stream, min_level="DEBUG")
     manager = open_database(tmp_path / "billing.sqlite3")
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         created = repository.save(_job())
         assert created.id is not None
         manager.database.execute_sql(

@@ -26,6 +26,7 @@ from aimedia.storage.database import (
 )
 from aimedia.storage.errors import (
     DatabaseBusyError,
+    DatabaseClosedError,
     DatabaseOwnershipError,
     InvalidStoredCostReportError,
     InvalidStoredJobStatusError,
@@ -84,6 +85,7 @@ __all__ = [
     "COST_RECORDED_EVENT",
     "DATABASE_OPENED_EVENT",
     "DatabaseBusyError",
+    "DatabaseClosedError",
     "DatabaseManager",
     "DatabaseOwnershipError",
     "DEFAULT_BUSY_TIMEOUT_MS",

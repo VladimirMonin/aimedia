@@ -42,6 +42,13 @@ class DatabaseOwnershipError(StorageError):
     """
 
 
+class DatabaseClosedError(StorageError):
+    """Соединение storage не открыто; запрос не должен подключать Peewee повторно."""
+
+    def __init__(self) -> None:
+        super().__init__("Соединение storage закрыто")
+
+
 # Первичные коды SQLite, означающие ожидаемую блокировку: `SQLITE_BUSY` и
 # `SQLITE_LOCKED`. Расширенные коды (`SQLITE_BUSY_SNAPSHOT`, `SQLITE_BUSY_TIMEOUT`,
 # `SQLITE_LOCKED_SHAREDCACHE`) содержат первичный код в младшем байте.

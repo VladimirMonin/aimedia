@@ -5,10 +5,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from peewee import Database
+from peewee import SqliteDatabase
 from pydantic import ValidationError
 
 from aimedia.domain.costs import Cost, CostReport, CurrencyTotal, _add_exact_decimals
+from aimedia.storage.database import DatabaseManager
 from aimedia.storage.errors import InvalidStoredCostReportError
 from aimedia.storage.models import JobRecord
 
@@ -24,19 +25,27 @@ def _utc_boundary(value: datetime | None) -> datetime | None:
 class PeeweeCostReportRepository:
     """Суммировать только сохранённые billing snapshots, по одной строке на Job.
 
-    Используется переданное владельцем соединение; метод не открывает соединений
-    и не пишет ни в SQLite, ни в историю событий. Фильтрация выполняется по
-    разобранным datetime: текстовые ISO timestamps с различной точностью нельзя
+    Менеджер проверяет владельца и открытое состояние при каждом вызове; метод
+    не открывает соединений и не пишет ни в SQLite, ни в историю событий.
+    Фильтрация выполняется по разобранным datetime: текстовые ISO timestamps
+    с различной точностью нельзя
     безопасно сравнивать лексикографически в SQL.
     """
 
-    def __init__(self, database: Database) -> None:
-        self._database = database
+    def __init__(self, manager: DatabaseManager) -> None:
+        if not isinstance(manager, DatabaseManager):
+            raise TypeError("PeeweeCostReportRepository требует DatabaseManager")
+        self._manager = manager
+
+    @property
+    def _database(self) -> SqliteDatabase:
+        return self._manager.database
 
     def aggregate(
         self, *, start: datetime | None = None, end: datetime | None = None
     ) -> CostReport:
         """Вернуть суммы по валютам за полуоткрытый UTC-интервал создания Job."""
+        database = self._database
         lower = _utc_boundary(start)
         upper = _utc_boundary(end)
         if lower is not None and upper is not None and lower > upper:
@@ -44,7 +53,7 @@ class PeeweeCostReportRepository:
 
         grouped: dict[str, tuple[Decimal, int]] = {}
         total_jobs = known_priced_jobs = known_zero_jobs = unknown_cost_jobs = 0
-        with self._database.bind_ctx([JobRecord]):
+        with database.bind_ctx([JobRecord]):
             rows = JobRecord.select(
                 JobRecord.created_at, JobRecord.cost_amount, JobRecord.cost_currency
             ).tuples()

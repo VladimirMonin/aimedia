@@ -21,6 +21,7 @@ from peewee import Database, IntegrityError, OperationalError
 from aimedia.storage import (
     LATEST_SCHEMA_VERSION,
     MIGRATIONS,
+    DatabaseClosedError,
     DatabaseManager,
     DatabaseOwnershipError,
     Migration,
@@ -105,6 +106,27 @@ def test_repeated_apply_is_noop(tmp_path: Path) -> None:
         assert outcome.previous_version == LATEST_SCHEMA_VERSION
         assert outcome.current_version == LATEST_SCHEMA_VERSION
         assert applied_migrations(manager.database) == before
+    finally:
+        manager.close()
+
+
+def test_migrate_after_close_does_not_autoconnect(tmp_path: Path) -> None:
+    """`migrate()` на закрытом менеджере не открывает Peewee и не меняет схему."""
+    path = _database_path(tmp_path)
+    manager = open_database(path)
+    manager.close()
+
+    with pytest.raises(DatabaseClosedError):
+        manager.migrate()
+
+    assert manager._database.is_closed()
+    with sqlite3.connect(path) as connection:
+        assert connection.execute('SELECT COUNT(*) FROM "schema_migrations"').fetchone() == (1,)
+
+    try:
+        outcome = manager.open()
+        assert outcome.applied == ()
+        assert manager.is_open
     finally:
         manager.close()
 

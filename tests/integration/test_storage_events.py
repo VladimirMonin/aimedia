@@ -256,7 +256,7 @@ def test_logging_is_optional_for_storage_operations(tmp_path: Path) -> None:
     """Без `logger` storage работает молча: ни открытие, ни миграции, ни save не падают."""
     manager = open_database(_database_path(tmp_path))
     try:
-        saved = PeeweeJobRepository(manager.database).save(_created_job())
+        saved = PeeweeJobRepository(manager).save(_created_job())
         assert saved.id is not None
         assert manager.migrate().applied == ()
     finally:
@@ -440,7 +440,7 @@ def test_save_with_unknown_id_writes_no_event(tmp_path: Path) -> None:
     logger, stream = _logger()
     manager = open_database(_database_path(tmp_path))
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         with pytest.raises(ValueError):
             repository.save(_created_job().model_copy(update={"id": 999}), logger=logger)
     finally:
@@ -454,7 +454,7 @@ def test_job_created_reports_identity_without_prompt_or_paths(tmp_path: Path) ->
     logger, stream = _logger()
     manager = open_database(_database_path(tmp_path))
     try:
-        saved = PeeweeJobRepository(manager.database).save(_created_job(), logger=logger)
+        saved = PeeweeJobRepository(manager).save(_created_job(), logger=logger)
     finally:
         manager.close()
 
@@ -475,7 +475,7 @@ def test_job_state_changed_reports_status_pair_and_is_not_repeated(tmp_path: Pat
     logger, stream = _logger()
     manager = open_database(_database_path(tmp_path))
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         job_id = repository.save(_created_job(), logger=logger).id
         assert job_id is not None
 
@@ -497,7 +497,7 @@ def test_save_rejects_tainted_stored_status_without_write_or_event(tmp_path: Pat
     logger, stream = _logger()
     manager = open_database(_database_path(tmp_path))
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         job_id = repository.save(_created_job()).id
         assert job_id is not None
         tainted_status = f"{CANARY_PROMPT}-{CANARY_SOURCE_PATH.as_posix()}-raw-token"
@@ -551,7 +551,7 @@ def test_remote_ref_saved_reports_operation_and_is_not_repeated(tmp_path: Path) 
     )
     manager = open_database(_database_path(tmp_path))
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         job_id = repository.save(_created_job(), logger=logger).id
         assert job_id is not None
 
@@ -601,7 +601,7 @@ def test_storage_events_omit_tainted_remote_id_from_child_and_correlation(
     ):
         manager = open_database(_database_path(tmp_path), logger=child)
         try:
-            repository = PeeweeJobRepository(manager.database)
+            repository = PeeweeJobRepository(manager)
             job_id = repository.save(_created_job(), logger=child).id
             assert job_id is not None
             repository.save(_running_job(job_id, remote_ref=remote_ref), logger=child)
@@ -654,7 +654,7 @@ def test_save_in_outer_transaction_fails_without_success_event_or_row(tmp_path: 
     logger, stream = _logger()
     manager = open_database(_database_path(tmp_path))
     try:
-        repository = PeeweeJobRepository(manager.database)
+        repository = PeeweeJobRepository(manager)
         with pytest.raises(RuntimeError, match="rollback sentinel"):
             with manager.database.atomic():
                 with pytest.raises(NestedStorageTransactionError, match="save"):
