@@ -1974,6 +1974,10 @@ inputs/
 
 Для будущей backup-команды использовать SQLite backup API.
 
+> [!important]
+> Полный инвариант согласованной копии БД и managed artifacts — в
+> [`backup-contract.md`](backup-contract.md). Это политика E05+, а не функция v0.1.0.
+
 ---
 
 # Возможная команда `backup` 🔒

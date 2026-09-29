@@ -370,6 +370,8 @@ Provider-specific renaming выполняет adapter согласно реше�
 
 **Коммиты:** C06 `feat(storage): persist jobs snapshots and migrations`; C07 `feat(costs): preserve decimal amounts and currency boundaries`.
 
+**Резервное копирование:** согласованная копия БД (WAL) и managed artifacts — не функция v0.1.0, а инвариант для E05+. Пока backup-команды нет, поддерживается только quiescent offline manual backup; один `database.sqlite3` под WAL копировать нельзя. Контракт — в [`backup-contract.md`](backup-contract.md).
+
 - [ ] Используется ровно один migration runner; установленная версия Peewee проверена.
 - [ ] Нет транзакции, удерживаемой через `await` сетевого вызова.
 - [ ] Не включён `check_same_thread=False` или thread offload «на всякий случай» без тестов ownership соединения.
