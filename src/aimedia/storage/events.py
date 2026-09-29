@@ -1,19 +1,22 @@
-"""Безопасные диагностические события storage (E04, C06c1).
+"""Безопасные диагностические события storage (E04, C06c1/C07a).
 
 События описаны в `docs/plans/README.md` (E04) и `docs/plans/logging-contract.md`:
 `database_opened`, `migration_started/completed/failed`, `job_created`,
-`job_state_changed`, `remote_ref_saved`. Группы `usage_recorded`, `cost_recorded`
-принадлежат C06c2/C07 и здесь не пишутся.
+`job_state_changed`, `remote_ref_saved`, `usage_recorded`, `cost_recorded`.
 
 Используются только поля записи из `aimedia.logging.EVENT_FIELDS`: локальный
 числовой `job_id`, enum `remote_operation` и структурированные `details` с
-версиями/статусами. Свободный текст в `details` не пишется.
+версиями/статусами/счётчиками. Свободный текст в `details` не пишется.
 
 Границы содержимого (то же правило, что у событий Registry):
 
 - в запись попадают только ID, статусы, версии и счётчики: локальный `job_id`,
   `kind`, `status`, `schema_version`, `previous_version`/`current_version`,
   номера применённых миграций и тип удалённой операции;
+- `usage_recorded` несёт только нормализованные целочисленные счётчики usage и
+  число полей `raw`, но не сам сырой provider blob;
+- `cost_recorded` несёт Decimal-строку без экспоненты и проверенный доменный код
+  валюты: сырая строка истории не становится значением события;
 - не попадают: текст prompt (`compiled_prompt`), пути (путь файла БД, prompt-файлов
   и artifacts), значения и текст SQL, полный текст исключения и его трассировка;
 - имена миграций и provider ID могут содержать произвольный текст и не пишутся;
@@ -29,8 +32,13 @@ storage работает без диагностического канала. �
 from __future__ import annotations
 
 from collections.abc import Sequence
+from decimal import Decimal
 from enum import StrEnum
 
+from pydantic import TypeAdapter, ValidationError
+
+from aimedia.domain.base import CurrencyCode, ExactDecimal
+from aimedia.domain.costs import Usage
 from aimedia.domain.refs import RemoteOperation
 from aimedia.domain.requests import JobKind
 from aimedia.domain.state import JobStatus
@@ -43,6 +51,8 @@ MIGRATION_FAILED_EVENT = "migration_failed"
 JOB_CREATED_EVENT = "job_created"
 JOB_STATE_CHANGED_EVENT = "job_state_changed"
 REMOTE_REF_SAVED_EVENT = "remote_ref_saved"
+USAGE_RECORDED_EVENT = "usage_recorded"
+COST_RECORDED_EVENT = "cost_recorded"
 
 # Ни одно поле корреляции child/context не доказано безопасным для storage.
 _STORAGE_CORRELATION_FIELDS = (
@@ -54,6 +64,22 @@ _STORAGE_CORRELATION_FIELDS = (
 )
 _JOB_CORRELATION_FIELDS = ("command", "provider", "remote_operation", "remote_job_id")
 _REMOTE_REF_CORRELATION_FIELDS = ("command", "provider", "remote_job_id")
+
+# Доменные аннотации денег переиспользуются как единственный источник правил:
+# `ExactDecimal` отклоняет float/bool и нечисловые строки, `CurrencyCode` принимает
+# только три латинские буквы и нормализует регистр.
+_AMOUNT_ADAPTER: TypeAdapter[Decimal] = TypeAdapter(ExactDecimal)
+_CURRENCY_ADAPTER: TypeAdapter[str] = TypeAdapter(CurrencyCode)
+
+# Ключи `*_tokens` редактируются общим logger как потенциальный секрет.
+# Безопасные имена input/output/total_count обозначают именно token counts;
+# float-оценки (`output_units`, `duration_seconds`) в событие не идут.
+_USAGE_COUNT_FIELDS = (
+    ("input_tokens", "input_count"),
+    ("output_tokens", "output_count"),
+    ("total_tokens", "total_count"),
+    ("characters", "characters"),
+)
 
 
 def _canonical_enum_value[EventEnum: StrEnum](
@@ -72,6 +98,28 @@ def _local_job_id(value: int) -> str:
     if type(value) is not int:
         raise ValueError("Invalid storage event job ID")
     return str(value)
+
+
+def _amount_text(value: Decimal | str | int) -> str:
+    """Decimal-строка без экспоненты; недоверенное значение не попадает в запись.
+
+    Проверка делегируется доменной аннотации `ExactDecimal`. Причина отказа не
+    выводится: `ValidationError` повторяет входное значение в своём сообщении, а
+    событие не должно переносить его даже в трассировку.
+    """
+    try:
+        amount = _AMOUNT_ADAPTER.validate_python(value)
+    except ValidationError:
+        raise ValueError("Invalid storage event cost amount") from None
+    return format(amount, "f")
+
+
+def _currency_code(value: str) -> str:
+    """Проверенный доменный код валюты; сырая строка в отказ не повторяется."""
+    try:
+        return _CURRENCY_ADAPTER.validate_python(value)
+    except ValidationError:
+        raise ValueError("Invalid storage event currency code") from None
 
 
 def log_database_opened(
@@ -234,7 +282,71 @@ def log_remote_ref_saved(
     )
 
 
+def log_usage_recorded(
+    logger: EventLogger | None,
+    *,
+    job_id: int,
+    usage: Usage,
+) -> None:
+    """Записать сохранение usage: счётчики и число полей raw, без сырого blob.
+
+    Событие подтверждает, что снимок usage записан в единственную строку Job, и
+    одновременно не переносит provider payload в диагностический канал: `raw`
+    заменяется числом полей, а float-метрики не пишутся вовсе.
+    """
+    if logger is None:
+        return
+    if not isinstance(usage, Usage):
+        raise ValueError("Invalid storage event usage")
+    safe_job_id = _local_job_id(job_id)
+    details: dict[str, object] = {}
+    for name, event_name in _USAGE_COUNT_FIELDS:
+        value = getattr(usage, name)
+        if value is not None:
+            # Frozen Pydantic models may still be copied without validation; never
+            # pass an unverified payload into the diagnostics channel.
+            if type(value) is not int:
+                raise ValueError("Invalid storage event usage count")
+            details[event_name] = value
+    if type(usage.raw) is not dict:
+        raise ValueError("Invalid storage event raw usage")
+    details["raw_field_count"] = len(usage.raw)
+    logger.event(
+        USAGE_RECORDED_EVENT,
+        job_id=safe_job_id,
+        omit_correlation_fields=_JOB_CORRELATION_FIELDS,
+        details=details,
+    )
+
+
+def log_cost_recorded(
+    logger: EventLogger | None,
+    *,
+    job_id: int,
+    amount: Decimal | str | int,
+    currency: str,
+) -> None:
+    """Записать сохранение фактической стоимости: Decimal-строка и код валюты.
+
+    Оба значения проходят доменную проверку (`Amount`/`CurrencyCode`), поэтому
+    событие несёт нормализованные значения, а не сырые строки истории: валюта
+    приводится к верхнему регистру, сумма — к форме без экспоненты.
+    """
+    if logger is None:
+        return
+    safe_amount = _amount_text(amount)
+    safe_currency = _currency_code(currency)
+    safe_job_id = _local_job_id(job_id)
+    logger.event(
+        COST_RECORDED_EVENT,
+        job_id=safe_job_id,
+        omit_correlation_fields=_JOB_CORRELATION_FIELDS,
+        details={"amount": safe_amount, "currency": safe_currency},
+    )
+
+
 __all__ = [
+    "COST_RECORDED_EVENT",
     "DATABASE_OPENED_EVENT",
     "JOB_CREATED_EVENT",
     "JOB_STATE_CHANGED_EVENT",
@@ -242,6 +354,8 @@ __all__ = [
     "MIGRATION_FAILED_EVENT",
     "MIGRATION_STARTED_EVENT",
     "REMOTE_REF_SAVED_EVENT",
+    "USAGE_RECORDED_EVENT",
+    "log_cost_recorded",
     "log_database_opened",
     "log_job_created",
     "log_job_state_changed",
@@ -249,4 +363,5 @@ __all__ = [
     "log_migration_failed",
     "log_migration_started",
     "log_remote_ref_saved",
+    "log_usage_recorded",
 ]

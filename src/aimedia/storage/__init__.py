@@ -6,6 +6,8 @@
 соединения с pragmas; repositories и денежные агрегаты — C06b/C07. C06c1 добавляет
 необязательные безопасные события `database_opened`, `migration_started/completed/
 failed`, `job_created`, `job_state_changed`, `remote_ref_saved` (`storage/events.py`).
+C07a добавляет к ним `usage_recorded` и `cost_recorded`, которые пишутся после
+финального commit сохранения usage/cost.
 """
 
 from __future__ import annotations
@@ -33,6 +35,7 @@ from aimedia.storage.errors import (
     is_database_busy,
 )
 from aimedia.storage.events import (
+    COST_RECORDED_EVENT,
     DATABASE_OPENED_EVENT,
     JOB_CREATED_EVENT,
     JOB_STATE_CHANGED_EVENT,
@@ -40,6 +43,8 @@ from aimedia.storage.events import (
     MIGRATION_FAILED_EVENT,
     MIGRATION_STARTED_EVENT,
     REMOTE_REF_SAVED_EVENT,
+    USAGE_RECORDED_EVENT,
+    log_cost_recorded,
     log_database_opened,
     log_job_created,
     log_job_state_changed,
@@ -47,6 +52,7 @@ from aimedia.storage.events import (
     log_migration_failed,
     log_migration_started,
     log_remote_ref_saved,
+    log_usage_recorded,
 )
 from aimedia.storage.migrations import (
     LATEST_SCHEMA_VERSION,
@@ -73,6 +79,7 @@ from aimedia.storage.repository import PeeweeJobRepository
 __all__ = [
     "ALL_MODELS",
     "ArtifactRecord",
+    "COST_RECORDED_EVENT",
     "DATABASE_OPENED_EVENT",
     "DatabaseBusyError",
     "DatabaseManager",
@@ -104,11 +111,13 @@ __all__ = [
     "SchemaMigrationRecord",
     "SchemaTooNewError",
     "StorageError",
+    "USAGE_RECORDED_EVENT",
     "applied_migrations",
     "apply_migrations",
     "current_schema_version",
     "default_pragmas",
     "is_database_busy",
+    "log_cost_recorded",
     "log_database_opened",
     "log_job_created",
     "log_job_state_changed",
@@ -116,6 +125,7 @@ __all__ = [
     "log_migration_failed",
     "log_migration_started",
     "log_remote_ref_saved",
+    "log_usage_recorded",
     "open_database",
     "parse_version",
     "validate_migrations",

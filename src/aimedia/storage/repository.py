@@ -67,7 +67,13 @@ from aimedia.storage.errors import (
     NestedStorageTransactionError,
     is_database_busy,
 )
-from aimedia.storage.events import log_job_created, log_job_state_changed, log_remote_ref_saved
+from aimedia.storage.events import (
+    log_cost_recorded,
+    log_job_created,
+    log_job_state_changed,
+    log_remote_ref_saved,
+    log_usage_recorded,
+)
 from aimedia.storage.models import (
     ArtifactRecord,
     InputRecord,
@@ -85,13 +91,19 @@ RESULT_ARTIFACT_POSITIONS_KEY = "_result_artifact_positions"
 class _StoredJobState:
     """Ранее сохранённое состояние строки Job для сравнения с новым.
 
-    Хранятся только те поля, по которым меняются события (`status` и пара
-    `remote_job_id` + `operation`); полный агрегат здесь не нужен.
+    Хранятся только те поля, по которым меняются события: `status`, пара
+    `remote_job_id` + `operation` и сырые значения usage/cost. Сравнение идёт по
+    тому же тексту, который repository записывает в колонки, поэтому «повторно
+    сохранено без изменений» не дублирует событие, даже когда спаренный snapshot
+    пришёл из строки БД, а не из домена.
     """
 
     status: JobStatus
     remote_job_id: str | None
     operation: str | None
+    usage_json: str | None
+    cost_amount: str | None
+    cost_currency: str | None
 
 
 def _dump_json(value: object) -> str:
@@ -102,6 +114,16 @@ def _dump_json(value: object) -> str:
     режимом `mode="json"` доменной сериализации.
     """
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+
+
+def _usage_json(usage: Usage) -> str:
+    """Тот же текст, которым usage записывается в `usage_json`: сравнение и запись — одно."""
+    return _dump_json(usage.model_dump(mode="json"))
+
+
+def _cost_amount_text(cost: Cost) -> str:
+    """Тот же текст, которым сумма записывается в `cost_amount` (TEXT, без float)."""
+    return format(cost.amount, "f")
 
 
 def _load_json(text: str | None) -> Any:
@@ -156,6 +178,8 @@ class PeeweeJobRepository:
         Job. Повторный `save` того же Job с `id` обновляет его, а не создаёт
         вторую запись истории.
 
+        Снимок сохранённого Job читается в той же транзакции после записи всех
+        дочерних строк: следующий владелец SQLite не подменит его до события.
         События пишутся **после** commit и только по фактическому изменению:
         повторное сохранение неизменённого Job не повторяет `job_created`,
         `job_state_changed` или `remote_ref_saved`. Поэтому запись в поток не
@@ -185,13 +209,13 @@ class PeeweeJobRepository:
                 record = self._upsert_job_row(job)
                 self._replace_children(record, job)
                 job_id = record.id
+                saved = self.get(job_id)
+                if saved is None:
+                    raise ValueError(f"Job {job_id} не найден сразу после сохранения")
         except OperationalError as exc:
             if not is_database_busy(exc):
                 raise
             raise DatabaseBusyError() from exc
-        saved = self.get(job_id)
-        if saved is None:
-            raise ValueError(f"Job {job_id} не найден сразу после сохранения")
         self._log_save(logger, previous=previous, saved=saved)
         return saved
 
@@ -215,6 +239,9 @@ class PeeweeJobRepository:
             status=JobStatus(record.status),
             remote_job_id=record.remote_job_id,
             operation=record.operation,
+            usage_json=record.usage_json,
+            cost_amount=record.cost_amount,
+            cost_currency=record.cost_currency,
         )
 
     def _log_save(
@@ -245,6 +272,8 @@ class PeeweeJobRepository:
                 current_status=saved.status.value,
             )
         self._log_remote_ref(logger, previous=previous, saved=saved)
+        self._log_usage(logger, previous=previous, saved=saved)
+        self._log_cost(logger, previous=previous, saved=saved)
 
     @staticmethod
     def _log_remote_ref(
@@ -270,6 +299,50 @@ class PeeweeJobRepository:
             job_id=job_id,
             operation=operation,
         )
+
+    @staticmethod
+    def _log_usage(
+        logger: EventLogger | None,
+        *,
+        previous: _StoredJobState | None,
+        saved: Job,
+    ) -> None:
+        """Записать `usage_recorded` при появлении или изменении usage.
+
+        Сравнение идёт с той же строкой, что записана в `usage_json`, поэтому
+        повторный save неизменённого Job (в том числе после `get`, когда доменное
+        значение уже прошло round trip) не дублирует событие.
+        """
+        job_id = saved.id
+        usage = saved.usage
+        if job_id is None or usage is None:  # pragma: no cover - см. `_log_save`
+            return
+        if previous is not None and previous.usage_json == _usage_json(usage):
+            return
+        log_usage_recorded(logger, job_id=job_id, usage=usage)
+
+    @staticmethod
+    def _log_cost(
+        logger: EventLogger | None,
+        *,
+        previous: _StoredJobState | None,
+        saved: Job,
+    ) -> None:
+        """Записать `cost_recorded` при появлении или изменении стоимости.
+
+        Известный ноль (`0`) отличается от неизвестной цены (`cost is None`):
+        последняя события не пишет, а не сообщает нулевой расход.
+        """
+        job_id = saved.id
+        cost = saved.cost
+        if job_id is None or cost is None:  # pragma: no cover - см. `_log_save`
+            return
+        if previous is not None and (
+            previous.cost_amount == _cost_amount_text(cost)
+            and previous.cost_currency == cost.currency
+        ):
+            return
+        log_cost_recorded(logger, job_id=job_id, amount=cost.amount, currency=cost.currency)
 
     def get(self, job_id: int) -> Job | None:
         """Прочитать Job по локальному ID; `None`, если такого Job нет."""
@@ -323,10 +396,8 @@ class PeeweeJobRepository:
             "compiled_prompt_source_count": prompt.source_count if prompt is not None else None,
             "request_json": _dump_json(job.request.model_dump(mode="json")),
             "response_json": self._response_snapshot(job.result, result_positions),
-            "usage_json": (
-                _dump_json(job.usage.model_dump(mode="json")) if job.usage is not None else None
-            ),
-            "cost_amount": format(cost.amount, "f") if cost is not None else None,
+            "usage_json": _usage_json(job.usage) if job.usage is not None else None,
+            "cost_amount": _cost_amount_text(cost) if cost is not None else None,
             "cost_currency": cost.currency if cost is not None else None,
             "error_code": job.error.code if job.error is not None else None,
             "error_message": job.error.message if job.error is not None else None,
