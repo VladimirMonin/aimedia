@@ -46,6 +46,7 @@ from aimedia.storage.models import (
     PromptSourceRecord,
     SchemaMigrationRecord,
 )
+from aimedia.storage.repository import PeeweeJobRepository
 
 __all__ = [
     "ALL_MODELS",
@@ -66,6 +67,7 @@ __all__ = [
     "MigrationFailedError",
     "MigrationOutcome",
     "PromptSourceRecord",
+    "PeeweeJobRepository",
     "SCHEMA_TABLES",
     "SchemaMigrationRecord",
     "SchemaTooNewError",
