@@ -22,8 +22,8 @@ definition параметр — `UNSUPPORTED_PARAMETER` (раздел «Unknown 
 наоборот.
 
 В сообщениях и `details` нет prompt и содержимого изображений — только имя
-параметра, запрошенное значение, документированный набор/граница и число
-reference images.
+параметра, статус модели, запрошенное значение, документированный набор/граница
+и число reference images.
 """
 
 from __future__ import annotations
@@ -46,6 +46,7 @@ from aimedia.registry.events import log_model_validation_failed
 from aimedia.registry.models import (
     CapabilityNode,
     EffectiveModelDefinition,
+    ModelStatus,
     ParameterSpec,
     ParameterType,
 )
@@ -114,6 +115,11 @@ def _validate(
 ) -> None:
     """Выполнить последовательность проверок request против effective definition."""
     _validate_binding(effective, request)
+    if effective.status is ModelStatus.DISABLED:
+        raise UnsupportedCapabilityError(
+            f"Модель {effective.model_id!r} отключена и недоступна для генерации.",
+            details={"model": effective.model_id, "status": effective.status.value},
+        )
     parameters = effective.parameters
 
     _validate_enum_parameter(parameters, "resolution", request.resolution)
@@ -122,7 +128,7 @@ def _validate(
     _validate_enum_parameter(parameters, "output_format", request.output_format)
     _validate_numeric_parameter(parameters, "seed", request.seed)
 
-    _validate_reference_images(effective.capabilities, len(request.images))
+    _validate_reference_images(effective, len(request.images))
     _validate_max_images(effective, request.max_images)
 
 
@@ -215,43 +221,43 @@ def _validate_numeric_parameter(
         )
 
 
-def _validate_reference_images(
-    capabilities: Mapping[str, bool | CapabilityNode],
-    count: int,
-) -> None:
-    """Проверить число reference images по capability модели.
-
-    Отсутствующая capability означает неизвестное ограничение: число не
-    выдумывается, и произвольное количество не отклоняется. Известная `supported:
-    true` без `max` тоже не ограничивает число. В `details` попадает только
-    количество, без содержимого изображений.
-    """
-    cap = capabilities.get(_REFERENCE_CAPABILITY)
-    if cap is None:
-        return
-    if isinstance(cap, bool):
-        if not cap and count:
-            raise UnsupportedCapabilityError(
-                "Модель не поддерживает reference images.",
-                details={"parameter": "--image", "requested": count},
-            )
-        return
-    if not cap.supported:
-        if count:
-            raise UnsupportedCapabilityError(
-                "Модель не поддерживает reference images.",
-                details={"parameter": "--image", "requested": count},
-            )
-        return
-    if cap.max is not None and count > cap.max:
-        raise TooManyReferenceImagesError(
-            f"Запрошено {count} reference images, допустимо не более {cap.max}.",
-            details={"requested": count, "max_references": cap.max},
+def _validate_reference_images(effective: EffectiveModelDefinition, count: int) -> None:
+    """Проверить все документированные границы reference images из effective definition."""
+    cap = effective.capabilities.get(_REFERENCE_CAPABILITY)
+    if count and (cap is False or isinstance(cap, CapabilityNode) and not cap.supported):
+        raise UnsupportedCapabilityError(
+            "Модель не поддерживает reference images.",
+            details={"parameter": "--image", "requested": count},
         )
-    if cap.min is not None and count < cap.min:
+
+    image_input = effective.inputs.get("images")
+    maximums = [
+        bound
+        for bound in (
+            cap.max if isinstance(cap, CapabilityNode) else None,
+            image_input.max if image_input is not None else None,
+        )
+        if bound is not None
+    ]
+    minimums = [
+        bound
+        for bound in (
+            cap.min if isinstance(cap, CapabilityNode) else None,
+            image_input.min if image_input is not None else None,
+        )
+        if bound is not None
+    ]
+    maximum = min(maximums) if maximums else None
+    if maximum is not None and count > maximum:
+        raise TooManyReferenceImagesError(
+            f"Запрошено {count} reference images, допустимо не более {maximum}.",
+            details={"requested": count, "max_references": maximum},
+        )
+    minimum = max(minimums) if minimums else None
+    if minimum is not None and count < minimum:
         raise InvalidParameterValueError(
-            f"Запрошено {count} reference images, требуется не менее {cap.min}.",
-            details={"parameter": "--image", "requested": count, "min_references": cap.min},
+            f"Запрошено {count} reference images, требуется не менее {minimum}.",
+            details={"parameter": "--image", "requested": count, "min_references": minimum},
         )
 
 

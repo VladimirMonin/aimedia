@@ -186,6 +186,8 @@ def _merged_enum_values(
         return spec.values
     # enum-инвариант гарантирует непустой `values` у базовой модели.
     assert spec.values is not None
+    if not override.values:
+        raise InvalidProviderOverrideError(name, "override оставляет enum без значений")
     if not set(override.values).issubset(set(spec.values)):
         raise InvalidProviderOverrideError(name, "override расширяет набор значений enum")
     return override.values

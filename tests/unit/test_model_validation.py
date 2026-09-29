@@ -37,6 +37,7 @@ from aimedia.domain import (
 from aimedia.registry import (
     CapabilityNode,
     EffectiveModelDefinition,
+    InputLimit,
     ModelResolver,
     ModelStatus,
     ParameterOverride,
@@ -66,6 +67,8 @@ def _record(
     aliases: tuple[str, ...] = (),
     parameters: dict[str, ParameterSpec] | None = None,
     capabilities: dict[str, bool | CapabilityNode] | None = None,
+    inputs: dict[str, InputLimit] | None = None,
+    status: ModelStatus = ModelStatus.ACTIVE,
     binding: ProviderBinding | None = None,
 ) -> ModelRecord:
     return ModelRecord(
@@ -73,9 +76,10 @@ def _record(
         model_id=model_id,
         name=f"Synthetic {model_id}",
         family="image",
-        status=ModelStatus.ACTIVE,
+        status=status,
         aliases=aliases,
         capabilities=capabilities or {},
+        inputs=inputs or {},
         parameters=parameters if parameters is not None else {"resolution": _resolution_enum()},
         providers={provider_id: binding or ProviderBinding(remote_model_id="synthetic/remote")},
     )
@@ -85,12 +89,16 @@ def _effective(
     *,
     parameters: dict[str, ParameterSpec] | None = None,
     capabilities: dict[str, bool | CapabilityNode] | None = None,
+    inputs: dict[str, InputLimit] | None = None,
+    status: ModelStatus = ModelStatus.ACTIVE,
     aliases: tuple[str, ...] = (),
     binding: ProviderBinding | None = None,
 ) -> EffectiveModelDefinition:
     record = _record(
         parameters=parameters,
         capabilities=capabilities,
+        inputs=inputs,
+        status=status,
         aliases=aliases,
         binding=binding,
     )
@@ -212,6 +220,44 @@ def test_too_many_reference_images_stops_before_submit() -> None:
     assert error.details == {"requested": 3, "max_references": 2}
 
 
+def test_inputs_images_max_is_enforced_even_when_capability_has_no_bound() -> None:
+    effective = _effective(
+        capabilities={"reference_images": True}, inputs={"images": InputLimit(max=1)}
+    )
+    submits, error = _submit_count_after_validation(effective, _request(images=_image_refs(2)))
+    assert submits == 0
+    assert isinstance(error, TooManyReferenceImagesError)
+    assert error.details == {"requested": 2, "max_references": 1}
+
+
+@pytest.mark.parametrize(
+    "cap_min, cap_max, input_min, input_max",
+    [(2, 3, 1, 2), (1, 2, 2, 3)],
+)
+def test_reference_images_use_stricter_capability_and_input_bounds(
+    cap_min: int, cap_max: int, input_min: int, input_max: int
+) -> None:
+    effective = _effective(
+        capabilities={"reference_images": CapabilityNode(supported=True, min=cap_min, max=cap_max)},
+        inputs={"images": InputLimit(min=input_min, max=input_max)},
+    )
+    with pytest.raises(TooManyReferenceImagesError) as above:
+        validate_model_request(effective, _request(images=_image_refs(3)))
+    assert above.value.details["max_references"] == 2
+    with pytest.raises(InvalidParameterValueError) as below:
+        validate_model_request(effective, _request(images=_image_refs(1)))
+    assert below.value.details["min_references"] == 2
+    validated = validate_model_request(effective, _request(images=_image_refs(2)))
+    assert validated.model_id == "synthetic-image"
+
+
+def test_inputs_images_min_is_enforced_without_capability_bound() -> None:
+    effective = _effective(inputs={"images": InputLimit(min=1)})
+    with pytest.raises(InvalidParameterValueError) as excinfo:
+        validate_model_request(effective, _request(images=[]))
+    assert excinfo.value.details["min_references"] == 1
+
+
 def test_reference_images_below_min_are_rejected() -> None:
     """Число reference images ниже capability min отклоняется."""
     effective = _effective(
@@ -308,6 +354,24 @@ def test_alias_resolves_to_canonical_and_is_accepted() -> None:
     validated = validate_model_request(effective, _request(model_id="syn-img"))
     assert validated.model_id == "synthetic-image"
     assert validated.effective.requested_model == "synthetic-image"
+
+
+@pytest.mark.parametrize(
+    "status", [ModelStatus.ACTIVE, ModelStatus.EXPERIMENTAL, ModelStatus.DEPRECATED]
+)
+def test_non_disabled_statuses_remain_valid(status: ModelStatus) -> None:
+    effective = _effective(status=status)
+    assert validate_model_request(effective, _request()).model_id == "synthetic-image"
+
+
+def test_disabled_model_stops_before_submit() -> None:
+    effective = _effective(status=ModelStatus.DISABLED)
+    submits, error = _submit_count_after_validation(effective, _request())
+    assert submits == 0
+    assert isinstance(error, UnsupportedCapabilityError)
+    assert error.code == "UNSUPPORTED_CAPABILITY"
+    assert error.details == {"model": "synthetic-image", "status": "disabled"}
+    assert "отключена" in error.message
 
 
 def test_provider_mismatch_is_rejected() -> None:

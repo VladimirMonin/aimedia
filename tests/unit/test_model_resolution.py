@@ -115,12 +115,28 @@ def test_enum_override_narrows_values() -> None:
 
 def test_enum_override_cannot_widen_values() -> None:
     """Override, расширяющий набор значений, отклоняется, а не «побеждает»."""
-    binding = _binding("synthetic/remote", {"resolution": ParameterOverride(values=("1K", "8K"))})
+    binding = _binding(
+        "synthetic/remote",
+        {"resolution": ParameterOverride(values=("1K", "8K"))},
+    )
     resolver = ModelResolver([_record(providers={"polza": binding})])
     with pytest.raises(InvalidProviderOverrideError) as excinfo:
         resolver.resolve("synthetic-image", "polza")
     assert excinfo.value.parameter == "resolution"
     assert excinfo.value.code == "INVALID_PROVIDER_OVERRIDE"
+
+
+def test_empty_enum_override_without_default_raises_typed_error() -> None:
+    spec = ParameterSpec(type=ParameterType.ENUM, values=("1K", "2K"))
+    binding = _binding("synthetic/remote", {"resolution": ParameterOverride(values=())})
+    resolver = ModelResolver(
+        [_record(parameters={"resolution": spec}, providers={"polza": binding})]
+    )
+    with pytest.raises(InvalidProviderOverrideError) as excinfo:
+        resolver.resolve("synthetic-image", "polza")
+    assert excinfo.value.parameter == "resolution"
+    assert excinfo.value.code == "INVALID_PROVIDER_OVERRIDE"
+    assert "без значений" in excinfo.value.reason
 
 
 def test_override_default_outside_narrowed_set_is_rejected() -> None:

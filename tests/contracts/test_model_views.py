@@ -11,23 +11,29 @@ WebP не объявляется native-возможностью модели.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import UTC, date, datetime
 
 import pytest
+from fake_provider import FakeImageProvider
 
 from aimedia.domain import (
     CompiledPrompt,
     FinalFormat,
     ImageGenerationRequest,
+    InputKind,
+    InputRef,
     InvalidParameterValueError,
     Job,
     JobKind,
     ModelRef,
     ProviderRef,
+    TooManyReferenceImagesError,
 )
 from aimedia.registry import (
     CapabilityNode,
+    InputLimit,
     ModelResolver,
     ModelStatus,
     ParameterOverride,
@@ -56,6 +62,7 @@ def _record(
     model_id: str = "synthetic-image",
     aliases: tuple[str, ...] = (),
     capabilities: dict[str, bool | CapabilityNode] | None = None,
+    inputs: dict[str, InputLimit] | None = None,
     parameters: dict[str, ParameterSpec] | None = None,
     binding: ProviderBinding | None = None,
     verification_source: str | None = None,
@@ -76,6 +83,7 @@ def _record(
         status=ModelStatus.ACTIVE,
         aliases=aliases,
         capabilities=capabilities or {},
+        inputs=inputs or {},
         parameters=parameters if parameters is not None else {"resolution": _resolution_enum()},
         providers={"polza": binding or ProviderBinding(remote_model_id="synthetic/remote")},
         verification=verification,
@@ -119,6 +127,35 @@ def test_provider_override_changes_both_validation_and_json() -> None:
 
     validated = validate_model_request(effective, _request(resolution="1K"))
     assert validated.model_id == "synthetic-image"
+
+
+def test_inputs_image_limit_matches_json_and_blocks_submit() -> None:
+    effective = _effective(
+        _record(
+            capabilities={"reference_images": CapabilityNode(supported=True, max=4)},
+            inputs={"images": InputLimit(min=0, max=1)},
+        )
+    )
+    payload = json.loads(build_model_view(effective).model_dump_json())
+    assert payload["inputs"]["images"]["max"] == 1
+    assert payload["capabilities"]["reference_images"]["max"] == 4
+    request = ImageGenerationRequest(
+        provider=ProviderRef(id="polza"),
+        model=ModelRef(id="synthetic-image"),
+        prompt=PROMPT,
+        images=[
+            InputRef(kind=InputKind.IMAGE, path=f"ref-{index}.png", position=index)
+            for index in range(2)
+        ],
+    )
+    provider = FakeImageProvider()
+    try:
+        validate_model_request(effective, request)
+    except TooManyReferenceImagesError as exc:
+        assert exc.details["max_references"] == payload["inputs"]["images"]["max"]
+    else:
+        asyncio.run(provider.submit(request))
+    assert provider.submit_count == 0
 
 
 def test_help_and_json_render_same_narrowed_values() -> None:
