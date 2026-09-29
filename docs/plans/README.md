@@ -372,12 +372,21 @@ Provider-specific renaming выполняет adapter согласно реше�
 
 **Резервное копирование:** согласованная копия БД (WAL) и managed artifacts — не функция v0.1.0, а инвариант для E05+. Пока backup-команды нет, поддерживается только quiescent offline manual backup; один `database.sqlite3` под WAL копировать нельзя. Контракт — в [`backup-contract.md`](backup-contract.md).
 
-- [ ] Используется ровно один migration runner; установленная версия Peewee проверена.
-- [ ] Нет транзакции, удерживаемой через `await` сетевого вызова.
-- [ ] Не включён `check_same_thread=False` или thread offload «на всякий случай» без тестов ownership соединения.
-- [ ] Failure после remote success сохраняет известные usage/cost.
-- [ ] Данные БД, WAL и artifacts рассматриваются согласованно при backup, а не копируются вслепую.
-- [ ] Новая схема распознаётся старой программой как неподдерживаемая, а не мигрируется назад автоматически.
+- [x] Используется ровно один migration runner; установленная версия Peewee проверена.
+- [x] Нет транзакции, удерживаемой через `await` сетевого вызова.
+- [x] Не включён `check_same_thread=False` или thread offload «на всякий случай» без тестов ownership соединения.
+- [x] Failure после remote success сохраняет известные usage/cost.
+- [x] Данные БД, WAL и artifacts рассматриваются согласованно при backup, а не копируются вслепую.
+- [x] Новая схема распознаётся старой программой как неподдерживаемая, а не мигрируется назад автоматически.
+
+**Приёмка E04:** committed SHA `e13b56921844910f15bc6d5037d993d48d65442e`
+проверен из чистого клона с `uv sync --locked --offline`: 81 целевой и 561
+полный offline-тест, Ruff, mypy, quality quick/full/release, CLI smoke и сборка
+wheel/sdist — exit 0; независимый нативный SOL6-review — `PASS`. Backup-критерий
+означает согласованный ручной протокол, **не** работающую backup-команду;
+сохранение cost/usage после remote success проверено симуляцией без live provider.
+Неизвестные production Polza model IDs остаются отдельным блокером реальной
+генерации, но не офлайн-приёмки хранилища.
 
 ### E05. Локальные artifacts и честная конвертация 🖼️
 
