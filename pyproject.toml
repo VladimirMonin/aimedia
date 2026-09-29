@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 authors = [{ name = "aimedia" }]
 dependencies = [
+    "peewee>=3.19,<4",
     "platformdirs>=4.3",
     "pydantic>=2.9",
     "pydantic-settings>=2.5",
@@ -60,4 +61,10 @@ files = ["src/aimedia"]
 
 [[tool.mypy.overrides]]
 module = ["typer.*"]
+ignore_missing_imports = true
+
+# Peewee поставляет стабы только отдельным пакетом; закреплённая версия 3.19 не
+# типизирована. Adapter storage сам проверяет границу типов на входе/выходе.
+[[tool.mypy.overrides]]
+module = ["peewee", "peewee.*", "playhouse.*"]
 ignore_missing_imports = true
