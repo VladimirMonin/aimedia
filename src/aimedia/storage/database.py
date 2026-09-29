@@ -29,7 +29,9 @@ from typing import Self, cast
 import peewee
 from peewee import SqliteDatabase
 
+from aimedia.logging import EventLogger
 from aimedia.storage.errors import DatabaseOwnershipError, StorageError
+from aimedia.storage.events import log_database_opened
 from aimedia.storage.migrations import MigrationOutcome, apply_migrations
 
 # Закреплённый диапазон Peewee (`pyproject.toml`: `peewee>=3.19,<4`). Runner
@@ -191,19 +193,35 @@ class DatabaseManager:
         self._ensure_owner()
         return cast(sqlite3.Connection, self._database.connection())
 
-    def migrate(self) -> MigrationOutcome:
-        """Довести схему до последней известной версии."""
-        self._ensure_owner()
-        return apply_migrations(self._database)
+    def migrate(self, *, logger: EventLogger | None = None) -> MigrationOutcome:
+        """Довести схему до последней известной версии.
 
-    def open(self) -> MigrationOutcome:
-        """Открыть соединение и применить миграции; при ошибке закрыть его."""
+        Необязательный `logger` включает события `migration_started/completed/failed`
+        (E04, C06c1); без него миграции работают молча.
+        """
+        self._ensure_owner()
+        return apply_migrations(self._database, logger=logger)
+
+    def open(self, *, logger: EventLogger | None = None) -> MigrationOutcome:
+        """Открыть соединение и применить миграции; при ошибке закрыть его.
+
+        После успешной миграции пишется `database_opened` с версией схемы и
+        версиями движка. Путь к файлу БД в событие не попадает.
+        """
         self.connect()
         try:
-            return self.migrate()
+            outcome = self.migrate(logger=logger)
         except Exception:
             self.close()
             raise
+        versions = self.engine_versions
+        log_database_opened(
+            logger,
+            schema_version=outcome.current_version,
+            peewee_version=None if versions is None else versions.peewee,
+            sqlite_version=None if versions is None else versions.sqlite,
+        )
+        return outcome
 
     def __enter__(self) -> Self:
         self.open()
@@ -223,16 +241,18 @@ def open_database(
     *,
     busy_timeout_ms: int = DEFAULT_BUSY_TIMEOUT_MS,
     connect_timeout_seconds: float = DEFAULT_CONNECT_TIMEOUT_SECONDS,
+    logger: EventLogger | None = None,
 ) -> DatabaseManager:
     """Открыть базу по пути и довести схему до актуальной версии.
 
     Единственная точка входа composition root: после неё repositories работают с
-    уже подключённой и мигрированной базой.
+    уже подключённой и мигрированной базой. Необязательный `logger` передаётся
+    дальше в миграции и включает `database_opened`.
     """
     manager = DatabaseManager(
         path,
         busy_timeout_ms=busy_timeout_ms,
         connect_timeout_seconds=connect_timeout_seconds,
     )
-    manager.open()
+    manager.open(logger=logger)
     return manager

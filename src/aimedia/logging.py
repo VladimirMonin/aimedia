@@ -322,14 +322,21 @@ class EventLogger:
         details: Mapping[str, Any] | None = None,
         exc: BaseException | None = None,
         duration_ms: int | None = None,
+        omit_correlation_fields: Sequence[str] = (),
         **overrides: Any,
     ) -> dict[str, Any]:
-        """Собрать и (при достаточном уровне) записать событие, вернув запись."""
+        """Собрать и (при достаточном уровне) записать событие, вернув запись.
+
+        `omit_correlation_fields` удаляет унаследованные поля для событий, где
+        значение нельзя безопасно брать из context или correlation.
+        """
         effective: dict[str, Any] = {
             name: getattr(self.context, name) for name in _CORRELATION_FIELDS
         }
         effective.update(_correlation_snapshot())
         effective.update({k: v for k, v in overrides.items() if v is not None})
+        for name in omit_correlation_fields:
+            effective.pop(name, None)
 
         safe_details = redact(dict(details or {}), self.secrets)
         if exc is not None:

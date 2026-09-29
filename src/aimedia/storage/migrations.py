@@ -33,10 +33,17 @@ from datetime import UTC, datetime
 
 from peewee import Database
 
+from aimedia.logging import EventLogger
 from aimedia.storage.errors import (
     MigrationDefinitionError,
     MigrationFailedError,
+    NestedStorageTransactionError,
     SchemaTooNewError,
+)
+from aimedia.storage.events import (
+    log_migration_completed,
+    log_migration_failed,
+    log_migration_started,
 )
 from aimedia.storage.models import (
     ALL_MODELS,
@@ -132,14 +139,27 @@ def _utc_now_text() -> str:
 
 
 def apply_migrations(
-    database: Database, migrations: Sequence[Migration] = MIGRATIONS
+    database: Database,
+    migrations: Sequence[Migration] = MIGRATIONS,
+    *,
+    logger: EventLogger | None = None,
 ) -> MigrationOutcome:
     """Довести схему до последней известной версии и вернуть результат.
 
     Функция синхронна и не открывает соединение сама: база передаётся уже
     подключённой, pragmas (`foreign_keys`, `journal_mode`, `busy_timeout`) к этому
     моменту выставлены владельцем соединения.
+
+    Необязательный `logger` включает события `migration_started/completed/failed`
+    (E04, C06c1). События пишутся вне транзакции миграции: `started` — до неё,
+    `completed` — после commit, `failed` — после отката. Поэтому запись в поток не
+    удерживает SQLite transaction и не удлиняет её. Прогон без ожидающих шагов
+    событий не пишет: повторный запуск миграций остаётся no-op и не засоряет INFO.
+    Внешняя транзакция запрещена до любых DDL и событий: внутренние commit
+    миграций иначе могли бы быть отменены внешним rollback.
     """
+    if database.transaction_depth() > 0:
+        raise NestedStorageTransactionError("apply_migrations")
     ordered = validate_migrations(migrations)
     latest = ordered[-1].version
 
@@ -159,10 +179,17 @@ def apply_migrations(
             f"ожидался непрерывный ряд {expected_versions}"
         )
 
+    pending = [migration for migration in ordered if migration.version > current]
+    if pending:
+        log_migration_started(
+            logger,
+            previous_version=current,
+            target_version=latest,
+            pending_migrations=len(pending),
+        )
+
     applied: list[int] = []
-    for migration in ordered:
-        if migration.version <= current:
-            continue
+    for migration in pending:
         try:
             with database.atomic(), database.bind_ctx(ALL_MODELS):
                 migration.apply(database)
@@ -174,12 +201,22 @@ def apply_migrations(
                     ).execute()
         except Exception as exc:
             # Ошибка не записывается как успех: транзакция откатила и DDL, и запись
-            # версии. Исходная причина сохраняется в цепочке исключений.
+            # версии. Исходная причина сохраняется в цепочке исключений, а событие
+            # отказа несёт только номер шага — без имени, текста ошибки и SQL.
+            log_migration_failed(logger, version=migration.version)
             raise MigrationFailedError(version=migration.version, name=migration.name) from exc
         applied.append(migration.version)
 
-    return MigrationOutcome(
+    outcome = MigrationOutcome(
         previous_version=current,
         current_version=latest,
         applied=tuple(applied),
     )
+    if pending:
+        log_migration_completed(
+            logger,
+            previous_version=outcome.previous_version,
+            current_version=outcome.current_version,
+            applied=outcome.applied,
+        )
+    return outcome

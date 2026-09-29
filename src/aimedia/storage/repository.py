@@ -38,12 +38,13 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, cast
 
-from peewee import Database
+from peewee import Database, OperationalError
 
 from aimedia.domain.artifacts import Artifact, ArtifactKind, ArtifactRole
 from aimedia.domain.costs import Cost, Usage
@@ -59,6 +60,14 @@ from aimedia.domain.job import Job, JobRecovery, JobRelation, JobResult
 from aimedia.domain.refs import ModelRef, ProviderRef, RemoteJobRef, RemoteOperation
 from aimedia.domain.requests import ImageGenerationRequest, JobKind
 from aimedia.domain.state import JobStatus
+from aimedia.logging import EventLogger
+from aimedia.storage.errors import (
+    DatabaseBusyError,
+    InvalidStoredJobStatusError,
+    NestedStorageTransactionError,
+    is_database_busy,
+)
+from aimedia.storage.events import log_job_created, log_job_state_changed, log_remote_ref_saved
 from aimedia.storage.models import (
     ArtifactRecord,
     InputRecord,
@@ -70,6 +79,19 @@ from aimedia.storage.models import (
 # Начинается с подчёркивания, чтобы не пересечься с provider metadata: это
 # структурная запись repository, а не часть нормализованного ответа provider.
 RESULT_ARTIFACT_POSITIONS_KEY = "_result_artifact_positions"
+
+
+@dataclass(frozen=True)
+class _StoredJobState:
+    """Ранее сохранённое состояние строки Job для сравнения с новым.
+
+    Хранятся только те поля, по которым меняются события (`status` и пара
+    `remote_job_id` + `operation`); полный агрегат здесь не нужен.
+    """
+
+    status: JobStatus
+    remote_job_id: str | None
+    operation: str | None
 
 
 def _dump_json(value: object) -> str:
@@ -117,30 +139,134 @@ class PeeweeJobRepository:
 
     Repository не открывает соединений: подключённая база передаётся ему
     вызывающим слоем (`open_database`), поэтому владелец соединения остаётся один.
+    Диагностика (`job_created`, `job_state_changed`, `remote_ref_saved`) включается
+    необязательным `logger` в `save` (E04, C06c1). Ожидаемая блокировка SQLite
+    (`busy_timeout` истёк) становится типизированной `DatabaseBusyError`: локальный
+    отказ записи не смешивается с отказом provider.
     """
 
     def __init__(self, database: Database) -> None:
         self._database = database
 
-    def save(self, job: Job) -> Job:
+    def save(self, job: Job, *, logger: EventLogger | None = None) -> Job:
         """Создать или обновить Job и вернуть сохранённое состояние с `id`.
 
         Агрегат пишется целиком в одной транзакции: строка Job, дочерние строки
         (prompt sources, inputs, artifacts) и, при retry, ссылка на родительский
         Job. Повторный `save` того же Job с `id` обновляет его, а не создаёт
         вторую запись истории.
+
+        События пишутся **после** commit и только по фактическому изменению:
+        повторное сохранение неизменённого Job не повторяет `job_created`,
+        `job_state_changed` или `remote_ref_saved`. Поэтому запись в поток не
+        удерживает SQLite transaction и не удлиняет её.
+
+        Истёкший `busy_timeout` — это `DatabaseBusyError` без частично записанной
+        истории: транзакция откатывается целиком, а повтор остаётся решением
+        вызывающего слоя (никакого скрытого retry и тем более повторного
+        remote submit).
+
+        Save внутри внешней транзакции запрещён: иначе событие могло бы быть
+        записано до окончательного commit внешнего владельца транзакции.
         """
-        with (
-            self._database.atomic(),
-            self._database.bind_ctx([JobRecord, PromptSourceRecord, InputRecord, ArtifactRecord]),
-        ):
-            record = self._upsert_job_row(job)
-            self._replace_children(record, job)
-            job_id = record.id
+        if self._database.transaction_depth() > 0:
+            raise NestedStorageTransactionError("save")
+        try:
+            with (
+                self._database.atomic(),
+                self._database.bind_ctx(
+                    [JobRecord, PromptSourceRecord, InputRecord, ArtifactRecord]
+                ),
+            ):
+                previous = self._stored_state(job)
+                record = self._upsert_job_row(job)
+                self._replace_children(record, job)
+                job_id = record.id
+        except OperationalError as exc:
+            if not is_database_busy(exc):
+                raise
+            raise DatabaseBusyError() from exc
         saved = self.get(job_id)
         if saved is None:
             raise ValueError(f"Job {job_id} не найден сразу после сохранения")
+        self._log_save(logger, previous=previous, saved=saved)
         return saved
+
+    @staticmethod
+    def _stored_state(job: Job) -> _StoredJobState | None:
+        """Прочитать сохранённое состояние строки до её перезаписи.
+
+        `None` означает новую строку истории: либо у Job ещё нет `id`, либо строки
+        с таким `id` нет (тогда `_upsert_job_row` поднимет ошибку до событий).
+        """
+        if job.id is None:
+            return None
+        record = JobRecord.get_or_none(JobRecord.id == job.id)
+        if record is None:
+            return None
+        # SQLite CharField не ограничивает значения enum; проверять до любой
+        # перезаписи, иначе произвольный текст строки уйдёт в previous_status.
+        if record.status not in {status.value for status in JobStatus}:
+            raise InvalidStoredJobStatusError()
+        return _StoredJobState(
+            status=JobStatus(record.status),
+            remote_job_id=record.remote_job_id,
+            operation=record.operation,
+        )
+
+    def _log_save(
+        self,
+        logger: EventLogger | None,
+        *,
+        previous: _StoredJobState | None,
+        saved: Job,
+    ) -> None:
+        """Записать события сохранения: ID, статусы и remote ref, без деталей Job."""
+        if logger is None:
+            return
+        job_id = saved.id
+        if job_id is None:  # pragma: no cover - save всегда возвращает сохранённый id
+            return
+        if previous is None:
+            log_job_created(
+                logger,
+                job_id=job_id,
+                kind=saved.kind.value,
+                status=saved.status.value,
+            )
+        elif previous.status != saved.status:
+            log_job_state_changed(
+                logger,
+                job_id=job_id,
+                previous_status=previous.status.value,
+                current_status=saved.status.value,
+            )
+        self._log_remote_ref(logger, previous=previous, saved=saved)
+
+    @staticmethod
+    def _log_remote_ref(
+        logger: EventLogger | None,
+        *,
+        previous: _StoredJobState | None,
+        saved: Job,
+    ) -> None:
+        """Записать `remote_ref_saved`, если ссылка появилась или изменилась."""
+        job_id = saved.id
+        remote_ref = saved.remote_ref
+        if job_id is None or remote_ref is None:  # pragma: no cover - см. `_log_save`
+            return
+        operation = remote_ref.operation
+        unchanged = previous is not None and (
+            previous.remote_job_id == remote_ref.remote_job_id
+            and previous.operation == (None if operation is None else operation.value)
+        )
+        if unchanged:
+            return
+        log_remote_ref_saved(
+            logger,
+            job_id=job_id,
+            operation=operation,
+        )
 
     def get(self, job_id: int) -> Job | None:
         """Прочитать Job по локальному ID; `None`, если такого Job нет."""
