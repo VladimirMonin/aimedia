@@ -88,6 +88,15 @@ def test_multiple_documents_are_rejected() -> None:
         parse_model_record(text)
 
 
+@pytest.mark.parametrize("second_document", ["---\n", "---\nnull\n"])
+def test_empty_second_document_is_rejected(second_document: str) -> None:
+    text = "schema_version: 1\nid: a\nname: A\nfamily: image\nstatus: active\n"
+    text += second_document
+    with pytest.raises(InvalidRegistryFileError, match="один документ, найдено 2") as excinfo:
+        parse_model_record(text)
+    assert excinfo.value.code == "INVALID_REGISTRY_FILE"
+
+
 def test_non_mapping_document_is_rejected() -> None:
     """Документ-список не является записью Registry."""
     with pytest.raises(InvalidRegistryFileError):

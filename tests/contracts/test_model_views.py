@@ -63,6 +63,7 @@ def _record(
     aliases: tuple[str, ...] = (),
     capabilities: dict[str, bool | CapabilityNode] | None = None,
     inputs: dict[str, InputLimit] | None = None,
+    outputs: dict[str, InputLimit] | None = None,
     parameters: dict[str, ParameterSpec] | None = None,
     binding: ProviderBinding | None = None,
     verification_source: str | None = None,
@@ -84,6 +85,7 @@ def _record(
         aliases=aliases,
         capabilities=capabilities or {},
         inputs=inputs or {},
+        outputs=outputs or {},
         parameters=parameters if parameters is not None else {"resolution": _resolution_enum()},
         providers={"polza": binding or ProviderBinding(remote_model_id="synthetic/remote")},
         verification=verification,
@@ -153,6 +155,28 @@ def test_inputs_image_limit_matches_json_and_blocks_submit() -> None:
         validate_model_request(effective, request)
     except TooManyReferenceImagesError as exc:
         assert exc.details["max_references"] == payload["inputs"]["images"]["max"]
+    else:
+        asyncio.run(provider.submit(request))
+    assert provider.submit_count == 0
+
+
+def test_outputs_images_limit_matches_json_and_blocks_submit() -> None:
+    effective = _effective(_record(outputs={"images": InputLimit(min=1, max=1)}))
+    payload = json.loads(build_model_view(effective).model_dump_json())
+    assert payload["outputs"]["images"]["min"] == 1
+    assert payload["outputs"]["images"]["max"] == 1
+
+    request = ImageGenerationRequest(
+        provider=ProviderRef(id="polza"),
+        model=ModelRef(id="synthetic-image"),
+        prompt=PROMPT,
+        max_images=2,
+    )
+    provider = FakeImageProvider()
+    try:
+        validate_model_request(effective, request)
+    except InvalidParameterValueError as exc:
+        assert exc.details["max"] == payload["outputs"]["images"]["max"]
     else:
         asyncio.run(provider.submit(request))
     assert provider.submit_count == 0

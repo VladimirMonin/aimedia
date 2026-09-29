@@ -224,13 +224,17 @@ def _validate_numeric_parameter(
 def _validate_reference_images(effective: EffectiveModelDefinition, count: int) -> None:
     """Проверить все документированные границы reference images из effective definition."""
     cap = effective.capabilities.get(_REFERENCE_CAPABILITY)
-    if count and (cap is False or isinstance(cap, CapabilityNode) and not cap.supported):
+    image_input = effective.inputs.get("images")
+    if count and (
+        cap is False
+        or (isinstance(cap, CapabilityNode) and not cap.supported)
+        or (image_input is not None and image_input.supported is False)
+    ):
         raise UnsupportedCapabilityError(
             "Модель не поддерживает reference images.",
             details={"parameter": "--image", "requested": count},
         )
 
-    image_input = effective.inputs.get("images")
     maximums = [
         bound
         for bound in (
@@ -262,7 +266,7 @@ def _validate_reference_images(effective: EffectiveModelDefinition, count: int) 
 
 
 def _validate_max_images(effective: EffectiveModelDefinition, max_images: int) -> None:
-    """Проверить число выходных изображений по параметру или capability модели."""
+    """Проверить число выходных изображений по документированным границам модели."""
     spec = effective.parameters.get(_MAX_IMAGES_PARAMETER)
     if spec is not None and spec.max is not None and max_images > spec.max:
         raise InvalidParameterValueError(
@@ -270,6 +274,29 @@ def _validate_max_images(effective: EffectiveModelDefinition, max_images: int) -
             f"больше допустимого {spec.max!r}.",
             details={"parameter": _MAX_IMAGES_PARAMETER, "value": max_images, "max": spec.max},
         )
+
+    image_output = effective.outputs.get("images")
+    if image_output is not None:
+        if image_output.max is not None and max_images > image_output.max:
+            raise InvalidParameterValueError(
+                f"Значение {max_images!r} для параметра {_MAX_IMAGES_PARAMETER!r} "
+                f"больше допустимого {image_output.max!r}.",
+                details={
+                    "parameter": _MAX_IMAGES_PARAMETER,
+                    "value": max_images,
+                    "max": image_output.max,
+                },
+            )
+        if image_output.min is not None and max_images < image_output.min:
+            raise InvalidParameterValueError(
+                f"Значение {max_images!r} для параметра {_MAX_IMAGES_PARAMETER!r} "
+                f"меньше допустимого {image_output.min!r}.",
+                details={
+                    "parameter": _MAX_IMAGES_PARAMETER,
+                    "value": max_images,
+                    "min": image_output.min,
+                },
+            )
 
     cap = effective.capabilities.get(_MULTIPLE_OUTPUTS_CAPABILITY)
     if cap is None:

@@ -68,6 +68,7 @@ def _record(
     parameters: dict[str, ParameterSpec] | None = None,
     capabilities: dict[str, bool | CapabilityNode] | None = None,
     inputs: dict[str, InputLimit] | None = None,
+    outputs: dict[str, InputLimit] | None = None,
     status: ModelStatus = ModelStatus.ACTIVE,
     binding: ProviderBinding | None = None,
 ) -> ModelRecord:
@@ -80,6 +81,7 @@ def _record(
         aliases=aliases,
         capabilities=capabilities or {},
         inputs=inputs or {},
+        outputs=outputs or {},
         parameters=parameters if parameters is not None else {"resolution": _resolution_enum()},
         providers={provider_id: binding or ProviderBinding(remote_model_id="synthetic/remote")},
     )
@@ -90,6 +92,7 @@ def _effective(
     parameters: dict[str, ParameterSpec] | None = None,
     capabilities: dict[str, bool | CapabilityNode] | None = None,
     inputs: dict[str, InputLimit] | None = None,
+    outputs: dict[str, InputLimit] | None = None,
     status: ModelStatus = ModelStatus.ACTIVE,
     aliases: tuple[str, ...] = (),
     binding: ProviderBinding | None = None,
@@ -98,6 +101,7 @@ def _effective(
         parameters=parameters,
         capabilities=capabilities,
         inputs=inputs,
+        outputs=outputs,
         status=status,
         aliases=aliases,
         binding=binding,
@@ -268,6 +272,22 @@ def test_reference_images_below_min_are_rejected() -> None:
     assert excinfo.value.details["min_references"] == 1
 
 
+def test_inputs_images_supported_false_rejects_refs_without_capability() -> None:
+    effective = _effective(inputs={"images": InputLimit(supported=False)})
+    submits, error = _submit_count_after_validation(effective, _request(images=_image_refs(1)))
+    assert submits == 0
+    assert isinstance(error, UnsupportedCapabilityError)
+    assert error.details == {"parameter": "--image", "requested": 1}
+    assert validate_model_request(effective, _request()).model_id == "synthetic-image"
+
+
+def test_inputs_images_unknown_support_does_not_reject_refs() -> None:
+    effective = _effective(inputs={"images": InputLimit(supported=None)})
+    assert validate_model_request(effective, _request(images=_image_refs(2))).model_id == (
+        "synthetic-image"
+    )
+
+
 def test_unsupported_reference_capability_rejects_any_image() -> None:
     """Модель без поддержки reference images отклоняет их передачу."""
     effective = _effective(capabilities={"reference_images": CapabilityNode(supported=False)})
@@ -413,6 +433,28 @@ def test_max_images_checked_against_parameter_bound() -> None:
     with pytest.raises(InvalidParameterValueError) as excinfo:
         validate_model_request(effective, _request(max_images=6))
     assert excinfo.value.details == {"parameter": "max_images", "value": 6, "max": 4}
+
+
+def test_outputs_images_max_rejects_without_parameter_or_capability() -> None:
+    effective = _effective(outputs={"images": InputLimit(max=1)})
+    submits, error = _submit_count_after_validation(effective, _request(max_images=2))
+    assert submits == 0
+    assert isinstance(error, InvalidParameterValueError)
+    assert error.details == {"parameter": "max_images", "value": 2, "max": 1}
+
+
+def test_outputs_images_min_rejects_below_documented_bound() -> None:
+    effective = _effective(outputs={"images": InputLimit(min=2)})
+    submits, error = _submit_count_after_validation(effective, _request(max_images=1))
+    assert submits == 0
+    assert isinstance(error, InvalidParameterValueError)
+    assert error.details == {"parameter": "max_images", "value": 1, "min": 2}
+    assert validate_model_request(effective, _request(max_images=2)).model_id == "synthetic-image"
+
+
+def test_outputs_images_unknown_bounds_do_not_invent_limits() -> None:
+    effective = _effective(outputs={"images": InputLimit()})
+    assert validate_model_request(effective, _request(max_images=3)).model_id == "synthetic-image"
 
 
 def test_max_images_checked_against_multiple_outputs_capability() -> None:

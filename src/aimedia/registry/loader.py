@@ -136,7 +136,6 @@ def _load_single_document(text: str, *, path: Path | None) -> Any:
         raise UnsafeYamlTagError(exc.tag, path=path, line=exc.details.get("line")) from exc
     except yaml.YAMLError as exc:
         raise InvalidRegistryFileError(f"некорректный YAML: {exc}", path=path) from exc
-    documents = [document for document in documents if document is not None]
     if len(documents) != 1:
         raise InvalidRegistryFileError(
             f"файл Registry должен содержать один документ, найдено {len(documents)}",
@@ -150,15 +149,15 @@ def _load_single_document(text: str, *, path: Path | None) -> Any:
 def _validate_tags(text: str, *, path: Path | None) -> None:
     """Проверить теги по скомпонованному дереву до конструирования объектов.
 
-    `yaml.compose` даёт теги всех узлов (явных и неявно разрешённых); вызов идёт
-    до `yaml.load_all`, чтобы запрещённый тег не успел создать объект.
+    `yaml.compose_all` даёт теги всех узлов (явных и неявно разрешённых); вызов
+    идёт до `yaml.load_all`, чтобы запрещённый тег не успел создать объект.
     """
     try:
-        node = yaml.compose(text, Loader=_DataOnlyLoader)
+        for node in yaml.compose_all(text, Loader=_DataOnlyLoader):
+            if node is not None:
+                _check_tags(node, path=path)
     except yaml.YAMLError as exc:
         raise InvalidRegistryFileError(f"некорректный YAML: {exc}", path=path) from exc
-    if node is not None:
-        _check_tags(node, path=path)
 
 
 def _normalise_id_key(raw: dict[str, Any], *, path: Path | None) -> dict[str, Any]:
