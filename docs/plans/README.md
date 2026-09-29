@@ -344,10 +344,12 @@ Provider-specific renaming выполняет adapter согласно реше�
 
 **Коммит:** C05 `feat(registry): validate models aliases and provider constraints`.
 
-- [ ] Все production YAML проходят единую schema; нет permissive fallback для битого файла.
-- [ ] Изменение Registry меняет validation и model JSON согласованно.
-- [ ] Удаление модели не ломает чтение старой Job history.
-- [ ] Ни один API ID или лимит не перенесён из условного примера без проверки.
+- [x] Все production YAML проходят единую schema; нет permissive fallback для битого файла.
+- [x] Изменение Registry меняет validation и model JSON согласованно.
+- [x] Удаление модели не ломает чтение старой Job history.
+- [x] Ни один API ID или лимит не перенесён из условного примера без проверки.
+
+**Ограничение:** встроенный production-каталог пока пуст: авторитетные Polza model IDs и лимиты не подтверждены. Это не блокирует офлайн-контракт E03, но блокирует утверждение, что реальная генерация готова.
 
 ### E04. SQLite, миграции, история и деньги 🗄️
 
