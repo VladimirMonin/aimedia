@@ -14,10 +14,13 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import UTC, date, datetime
+from pathlib import Path
 
 import pytest
 from fake_provider import FakeImageProvider
+from image_fixtures import jpeg_bytes, png_bytes
 
+from aimedia.application.inputs import prepare_reference_images
 from aimedia.domain import (
     CompiledPrompt,
     FinalFormat,
@@ -30,6 +33,8 @@ from aimedia.domain import (
     ModelRef,
     ProviderRef,
     TooManyReferenceImagesError,
+    UnsupportedCapabilityError,
+    UnsupportedInputFormatError,
 )
 from aimedia.registry import (
     CapabilityNode,
@@ -160,6 +165,100 @@ def test_inputs_image_limit_matches_json_and_blocks_submit() -> None:
     assert provider.submit_count == 0
 
 
+def test_prompt_max_chars_matches_json_and_blocks_submit() -> None:
+    effective = _effective(_record(inputs={"prompt": InputLimit(max_chars=7)}))
+    payload = json.loads(build_model_view(effective).model_dump_json())
+    prompt = CompiledPrompt(text="abc\n\ndef", source_count=2)
+    request = ImageGenerationRequest(
+        provider=ProviderRef(id="polza"),
+        model=ModelRef(id="synthetic-image"),
+        prompt=prompt,
+    )
+    provider = FakeImageProvider()
+
+    assert payload["inputs"]["prompt"]["max_chars"] == 7
+    try:
+        validate_model_request(effective, request)
+    except InvalidParameterValueError as exc:
+        assert exc.details == {
+            "parameter": "prompt",
+            "length": len(prompt.text),
+            "max_chars": payload["inputs"]["prompt"]["max_chars"],
+        }
+        assert prompt.text not in str(exc)
+    else:
+        asyncio.run(provider.submit(request))
+    assert provider.submit_count == 0
+
+
+def test_input_formats_match_json_and_block_jpeg_submit(tmp_path: Path) -> None:
+    effective = _effective(_record(inputs={"images": InputLimit(formats=("png",))}))
+    payload = json.loads(build_model_view(effective).model_dump_json())
+    png_path = tmp_path / "ref.png"
+    jpeg_path = tmp_path / "ref.jpg"
+    png_path.write_bytes(png_bytes())
+    jpeg_path.write_bytes(jpeg_bytes())
+    images = prepare_reference_images([png_path, jpeg_path])
+    request = ImageGenerationRequest(
+        provider=ProviderRef(id="polza"),
+        model=ModelRef(id="synthetic-image"),
+        prompt=PROMPT,
+        images=list(images),
+    )
+    provider = FakeImageProvider()
+
+    assert payload["inputs"]["images"]["formats"] == ["png"]
+    assert [image.mime_type for image in images] == ["image/png", "image/jpeg"]
+    try:
+        validate_model_request(effective, request)
+    except UnsupportedInputFormatError as exc:
+        assert exc.details == {
+            "parameter": "--image",
+            "mime_type": "image/jpeg",
+            "allowed_formats": payload["inputs"]["images"]["formats"],
+        }
+        assert str(jpeg_path) not in str(exc)
+    else:
+        asyncio.run(provider.submit(request))
+    assert provider.submit_count == 0
+    assert validate_model_request(effective, request.model_copy(update={"images": [images[0]]}))
+
+
+def test_max_images_override_min_matches_json_and_blocks_submit() -> None:
+    binding = ProviderBinding(
+        remote_model_id="synthetic/narrowed",
+        parameter_overrides={"max_images": ParameterOverride(min=2)},
+    )
+    effective = _effective(
+        _record(
+            parameters={"max_images": ParameterSpec(type=ParameterType.INTEGER, min=1, max=4)},
+            binding=binding,
+        )
+    )
+    payload = json.loads(build_model_view(effective).model_dump_json())
+    request = ImageGenerationRequest(
+        provider=ProviderRef(id="polza"),
+        model=ModelRef(id="synthetic-image"),
+        prompt=PROMPT,
+        max_images=1,
+    )
+    provider = FakeImageProvider()
+
+    assert payload["parameters"]["max_images"]["min"] == 2
+    try:
+        validate_model_request(effective, request)
+    except InvalidParameterValueError as exc:
+        assert exc.details == {
+            "parameter": "max_images",
+            "value": 1,
+            "min": payload["parameters"]["max_images"]["min"],
+        }
+    else:
+        asyncio.run(provider.submit(request))
+    assert provider.submit_count == 0
+    assert validate_model_request(effective, request.model_copy(update={"max_images": 2})).request
+
+
 def test_outputs_images_limit_matches_json_and_blocks_submit() -> None:
     effective = _effective(_record(outputs={"images": InputLimit(min=1, max=1)}))
     payload = json.loads(build_model_view(effective).model_dump_json())
@@ -179,6 +278,97 @@ def test_outputs_images_limit_matches_json_and_blocks_submit() -> None:
         assert exc.details["max"] == payload["outputs"]["images"]["max"]
     else:
         asyncio.run(provider.submit(request))
+    assert provider.submit_count == 0
+
+
+@pytest.mark.parametrize(
+    ("section", "name", "limit", "expected_error", "details"),
+    [
+        (
+            "inputs",
+            "images",
+            InputLimit(required=True),
+            InvalidParameterValueError,
+            {"parameter": "--image", "requested": 0, "min_references": 1},
+        ),
+        (
+            "inputs",
+            "prompt",
+            InputLimit(supported=False),
+            UnsupportedCapabilityError,
+            {"parameter": "prompt"},
+        ),
+        (
+            "outputs",
+            "images",
+            InputLimit(supported=False),
+            UnsupportedCapabilityError,
+            {"parameter": "max_images"},
+        ),
+    ],
+)
+def test_required_and_unsupported_io_view_matches_pre_submit_validation(
+    section: str, name: str, limit: InputLimit, expected_error: type[Exception], details: dict
+) -> None:
+    effective = _effective(_record(**{section: {name: limit}}))
+    payload = json.loads(build_model_view(effective).model_dump_json())
+    assert payload[section][name]["required"] == limit.required
+    assert payload[section][name]["supported"] == limit.supported
+    provider = FakeImageProvider()
+    request = _request()
+    try:
+        validate_model_request(effective, request)
+    except expected_error as exc:
+        assert exc.details == details
+        assert PROMPT.text not in str(exc)
+    else:
+        asyncio.run(provider.submit(request))
+    assert provider.submit_count == 0
+
+
+def test_multiple_outputs_min_view_matches_pre_submit_validation() -> None:
+    effective = _effective(
+        _record(capabilities={"multiple_outputs": CapabilityNode(supported=True, min=2, max=4)})
+    )
+    payload = json.loads(build_model_view(effective).model_dump_json())
+    assert payload["capabilities"]["multiple_outputs"]["min"] == 2
+    request = _request().model_copy(update={"max_images": 1})
+    provider = FakeImageProvider()
+    try:
+        validate_model_request(effective, request)
+    except InvalidParameterValueError as exc:
+        assert exc.details["min"] == payload["capabilities"]["multiple_outputs"]["min"]
+    else:
+        asyncio.run(provider.submit(request))
+    assert provider.submit_count == 0
+
+
+def test_required_parameter_and_string_length_view_match_pre_submit_validation() -> None:
+    effective = _effective(
+        _record(
+            parameters={
+                "quality": ParameterSpec(type=ParameterType.STRING, required=True, max_length=4)
+            }
+        )
+    )
+    payload = json.loads(build_model_view(effective).model_dump_json())
+    assert payload["parameters"]["quality"]["required"] is True
+    assert payload["parameters"]["quality"]["default"] is None
+    assert payload["parameters"]["quality"]["max_length"] == 4
+    provider = FakeImageProvider()
+    missing = _request()
+    too_long = missing.model_copy(update={"quality": "secret-value"})
+    for request, expected in (
+        (missing, {"parameter": "quality", "required": True}),
+        (too_long, {"parameter": "quality", "length": 12, "max_length": 4}),
+    ):
+        try:
+            validate_model_request(effective, request)
+        except InvalidParameterValueError as exc:
+            assert exc.details == expected
+            assert "secret-value" not in str(exc)
+        else:
+            asyncio.run(provider.submit(request))
     assert provider.submit_count == 0
 
 

@@ -32,6 +32,7 @@ from aimedia.domain import (
     UnknownModelError,
     UnknownProviderError,
     UnsupportedCapabilityError,
+    UnsupportedInputFormatError,
     UnsupportedParameterError,
 )
 from aimedia.registry import (
@@ -224,6 +225,27 @@ def test_too_many_reference_images_stops_before_submit() -> None:
     assert error.details == {"requested": 3, "max_references": 2}
 
 
+def test_documented_image_formats_reject_missing_mime_without_path_details() -> None:
+    effective = _effective(inputs={"images": InputLimit(formats=("png",))})
+    submits, error = _submit_count_after_validation(effective, _request(images=_image_refs(1)))
+    assert submits == 0
+    assert isinstance(error, UnsupportedInputFormatError)
+    assert error.details == {
+        "parameter": "--image",
+        "mime_type": None,
+        "allowed_formats": ["png"],
+    }
+    assert "ref-0.png" not in str(error)
+
+
+def test_undocumented_prompt_and_image_formats_remain_unrestricted() -> None:
+    effective = _effective(inputs={"prompt": InputLimit(), "images": InputLimit()})
+    request = _request(images=_image_refs(1)).model_copy(
+        update={"prompt": CompiledPrompt(text="x" * 1000, source_count=1)}
+    )
+    assert validate_model_request(effective, request).request is request
+
+
 def test_inputs_images_max_is_enforced_even_when_capability_has_no_bound() -> None:
     effective = _effective(
         capabilities={"reference_images": True}, inputs={"images": InputLimit(max=1)}
@@ -253,6 +275,23 @@ def test_reference_images_use_stricter_capability_and_input_bounds(
     assert below.value.details["min_references"] == 2
     validated = validate_model_request(effective, _request(images=_image_refs(2)))
     assert validated.model_id == "synthetic-image"
+
+
+def test_inputs_images_required_rejects_zero_references_before_submit() -> None:
+    effective = _effective(inputs={"images": InputLimit(required=True)})
+    submits, error = _submit_count_after_validation(effective, _request())
+    assert submits == 0
+    assert isinstance(error, InvalidParameterValueError)
+    assert error.details == {"parameter": "--image", "requested": 0, "min_references": 1}
+
+
+def test_inputs_prompt_unsupported_rejects_mandatory_prompt_before_submit() -> None:
+    effective = _effective(inputs={"prompt": InputLimit(supported=False)})
+    submits, error = _submit_count_after_validation(effective, _request())
+    assert submits == 0
+    assert isinstance(error, UnsupportedCapabilityError)
+    assert error.details == {"parameter": "prompt"}
+    assert PROMPT.text not in str(error)
 
 
 def test_inputs_images_min_is_enforced_without_capability_bound() -> None:
@@ -337,6 +376,55 @@ def test_absent_capability_does_not_invent_limit() -> None:
     effective = _effective(capabilities={})
     validated = validate_model_request(effective, _request(images=_image_refs(2)))
     assert validated.provider_id == FAKE_PROVIDER_ID
+
+
+@pytest.mark.parametrize("name", ["resolution", "aspect_ratio", "quality", "output_format", "seed"])
+def test_required_representable_parameter_without_default_rejects_missing_value(name: str) -> None:
+    parameter_type = ParameterType.INTEGER if name == "seed" else ParameterType.STRING
+    effective = _effective(parameters={name: ParameterSpec(type=parameter_type, required=True)})
+    submits, error = _submit_count_after_validation(effective, _request())
+    assert submits == 0
+    assert isinstance(error, InvalidParameterValueError)
+    assert error.details == {"parameter": name, "required": True}
+
+
+@pytest.mark.parametrize(
+    ("name", "default"),
+    [("resolution", "2K"), ("quality", "high"), ("seed", 4)],
+)
+def test_required_representable_parameter_with_documented_default_accepts_missing_value(
+    name: str, default: str | int
+) -> None:
+    parameter_type = ParameterType.INTEGER if name == "seed" else ParameterType.STRING
+    effective = _effective(
+        parameters={name: ParameterSpec(type=parameter_type, required=True, default=default)}
+    )
+    request = _request()
+    assert validate_model_request(effective, request).request is request
+
+
+def test_required_unrepresentable_parameter_is_not_invented() -> None:
+    effective = _effective(
+        parameters={"voice": ParameterSpec(type=ParameterType.STRING, required=True)}
+    )
+    assert validate_model_request(effective, _request()).model_id == "synthetic-image"
+
+
+def test_string_parameter_max_length_rejects_without_leaking_content() -> None:
+    secret = "private-prompt-or-secret"
+    effective = _effective(
+        parameters={"quality": ParameterSpec(type=ParameterType.STRING, max_length=4)}
+    )
+    request = _request().model_copy(update={"quality": secret})
+    submits, error = _submit_count_after_validation(effective, request)
+    assert submits == 0
+    assert isinstance(error, InvalidParameterValueError)
+    assert error.details == {"parameter": "quality", "length": len(secret), "max_length": 4}
+    assert secret not in str(error)
+    assert (
+        validate_model_request(effective, request.model_copy(update={"quality": "best"})).model_id
+        == "synthetic-image"
+    )
 
 
 def test_unknown_limit_without_bound_stays_accepted() -> None:
@@ -435,6 +523,14 @@ def test_max_images_checked_against_parameter_bound() -> None:
     assert excinfo.value.details == {"parameter": "max_images", "value": 6, "max": 4}
 
 
+def test_outputs_images_unsupported_rejects_single_image_before_submit() -> None:
+    effective = _effective(outputs={"images": InputLimit(supported=False)})
+    submits, error = _submit_count_after_validation(effective, _request())
+    assert submits == 0
+    assert isinstance(error, UnsupportedCapabilityError)
+    assert error.details == {"parameter": "max_images"}
+
+
 def test_outputs_images_max_rejects_without_parameter_or_capability() -> None:
     effective = _effective(outputs={"images": InputLimit(max=1)})
     submits, error = _submit_count_after_validation(effective, _request(max_images=2))
@@ -462,6 +558,15 @@ def test_max_images_checked_against_multiple_outputs_capability() -> None:
     effective = _effective(capabilities={"multiple_outputs": CapabilityNode(supported=True, max=4)})
     with pytest.raises(InvalidParameterValueError):
         validate_model_request(effective, _request(max_images=6))
+
+
+def test_multiple_outputs_min_rejects_below_documented_bound_before_submit() -> None:
+    effective = _effective(capabilities={"multiple_outputs": CapabilityNode(supported=True, min=2)})
+    submits, error = _submit_count_after_validation(effective, _request(max_images=1))
+    assert submits == 0
+    assert isinstance(error, InvalidParameterValueError)
+    assert error.details == {"parameter": "max_images", "value": 1, "min": 2}
+    assert validate_model_request(effective, _request(max_images=2)).model_id == "synthetic-image"
 
 
 def test_multiple_outputs_unsupported_rejects_more_than_one() -> None:
