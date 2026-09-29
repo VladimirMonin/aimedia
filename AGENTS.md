@@ -31,6 +31,7 @@
 | [DOCS.commit_messages](instructions/DOCS.commit_messages.instructions.md) | Подготовка staging, проверок и локального Git commit |
 | [TEST.offline_quality](instructions/TEST.offline-quality.instructions.md) | Изменение tests/, scripts/quality.py, конфигурации pytest/Ruff/mypy или CI; обязательные offline-гейты, сетевая изоляция и изоляция секретов |
 | [CORE.domain-boundary](instructions/CORE.domain-boundary.instructions.md) | Изменение `src/aimedia/domain/`, provider/storage ports, статусов Job, денежных значений, DTO запросов/результатов, `tests/architecture/`, `tests/support/` или доменных тестов |
+| [REGISTRY.model-catalog](instructions/REGISTRY.model-catalog.instructions.md) | Изменение `src/aimedia/registry/`, `tests/contracts/`, `tests/unit/test_registry_*.py` или `tests/security/test_registry_data_only.py`: загрузка YAML, resolution/override, единый источник значений для validation и help/JSON, происхождение сведений и безопасные события Registry |
 | [APP.inputs-preparation](instructions/APP.inputs-preparation.instructions.md) | Изменение `src/aimedia/application/` (prompt compiler, подготовка reference images), `tests/unit/test_prompt_compiler.py`, `tests/unit/test_input_preparation.py`, `tests/support/image_fixtures.py` |
 | [CORE.code_intelligence](instructions/CORE.code_intelligence.instructions.md) | Поиск реализации, символов, связей, структурных паттернов и оценка влияния |
 

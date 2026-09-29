@@ -25,6 +25,8 @@ from aimedia.registry import (
     ModelStatus,
     ParameterType,
     UnsupportedSchemaVersionError,
+    builtin_registry_dir,
+    load_builtin_registry,
     load_model_file,
     load_registry,
     load_registry_root,
@@ -397,6 +399,22 @@ def test_load_model_file_and_root(tmp_path: Path) -> None:
 def test_load_registry_root_missing_directory_is_empty(tmp_path: Path) -> None:
     """Отсутствующий каталог даёт пустой набор, а не исключение."""
     assert load_registry_root(tmp_path / "absent") == ()
+
+
+def test_builtin_catalog_is_strict_and_empty() -> None:
+    """Встроенный каталог пуст и не содержит синтетических ID вне тестов.
+
+    На E03 нет authoritative remote ID/лимитов из документации, поэтому
+    production YAML не выдумываются: пустой набор — это ограничение «not
+    verified», а не подмена синтетическими записями (`release-scope.md`).
+    """
+    assert load_builtin_registry() == ()
+    assert registry_files(builtin_registry_dir()) == ()
+
+
+def test_builtin_registry_dir_is_resolved_from_package_resource() -> None:
+    """Путь берётся из package resource, а не из относительного `Path('./registry')`."""
+    assert builtin_registry_dir().name == "data"
 
 
 def test_invalid_yaml_syntax_is_rejected() -> None:

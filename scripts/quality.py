@@ -42,6 +42,7 @@ REQUIRED_SUITES: tuple[str, ...] = (
     "tests/cli",
     "tests/tooling",
     "tests/security",
+    "tests/contracts",
 )
 
 # Отдельный код возврата, когда обязательный набор тестов отсутствует.

@@ -45,7 +45,7 @@ JUnit/coverage XML и live-evidence добавляются вместе с со�
 Список `REQUIRED_SUITES` в `scripts/quality.py` расширяется вместе с появлением
 реальных каталогов тестов; добавлять несуществующий suite заранее запрещено.
 Сейчас обязательны `tests/unit`, `tests/architecture`, `tests/cli`, `tests/tooling`,
-`tests/security`.
+`tests/security`, `tests/contracts`.
 
 Каталог `tests/support/` содержит тестовые doubles (fake provider) — это **не** suite
 и не входит в `REQUIRED_SUITES`; pytest его не собирает. Он становится импортируемым

@@ -32,6 +32,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from aimedia.domain.errors import (
+    DomainError,
     InvalidParameterValueError,
     TooManyReferenceImagesError,
     UnknownModelError,
@@ -40,6 +41,8 @@ from aimedia.domain.errors import (
     UnsupportedParameterError,
 )
 from aimedia.domain.requests import ImageGenerationRequest
+from aimedia.logging import EventLogger
+from aimedia.registry.events import log_model_validation_failed
 from aimedia.registry.models import (
     CapabilityNode,
     EffectiveModelDefinition,
@@ -82,6 +85,8 @@ class ValidatedModelRequest:
 def validate_model_request(
     effective: EffectiveModelDefinition,
     request: ImageGenerationRequest,
+    *,
+    logger: EventLogger | None = None,
 ) -> ValidatedModelRequest:
     """Проверить request против effective definition и вернуть её для adapter.
 
@@ -90,7 +95,24 @@ def validate_model_request(
     :class:`InvalidParameterValueError`, :class:`TooManyReferenceImagesError`,
     :class:`UnsupportedCapabilityError`. Ни одна из них не является отказом
     provider: submit ещё не выполнялся.
+
+    Необязательный `logger` включает событие `model_validation_failed` ровно на
+    границе application: в запись попадают только код ошибки и имя параметра,
+    без prompt, содержимого изображений и путей источников.
     """
+    try:
+        _validate(effective, request)
+    except DomainError as exc:
+        log_model_validation_failed(logger, exc)
+        raise
+    return ValidatedModelRequest(request=request, effective=effective)
+
+
+def _validate(
+    effective: EffectiveModelDefinition,
+    request: ImageGenerationRequest,
+) -> None:
+    """Выполнить последовательность проверок request против effective definition."""
     _validate_binding(effective, request)
     parameters = effective.parameters
 
@@ -102,8 +124,6 @@ def validate_model_request(
 
     _validate_reference_images(effective.capabilities, len(request.images))
     _validate_max_images(effective, request.max_images)
-
-    return ValidatedModelRequest(request=request, effective=effective)
 
 
 def _validate_binding(
