@@ -10,8 +10,10 @@ from aimedia.artifacts.image import (
     UnsupportedImageInputError,
     UnsupportedImageModeError,
     convert_image,
+    prepare_image,
 )
 from aimedia.artifacts.output import PublishedOutput, publish_output
+from aimedia.artifacts.storage import PillowArtifactStorage
 
 __all__ = [
     "MAX_INPUT_BYTES",
@@ -23,6 +25,8 @@ __all__ = [
     "PublishedOutput",
     "UnsupportedImageInputError",
     "UnsupportedImageModeError",
+    "PillowArtifactStorage",
     "convert_image",
+    "prepare_image",
     "publish_output",
 ]

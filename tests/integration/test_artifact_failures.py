@@ -1,13 +1,17 @@
-"""Publication failures leave only caller-owned preexisting output files."""
+"""Publication and artifact-save failures leave only caller-owned preexisting files."""
 
 import errno
 import hashlib
 import os
+from io import BytesIO
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
-from aimedia.artifacts import output, publish_output
+from aimedia.artifacts import PillowArtifactStorage, output, publish_output
+from aimedia.artifacts.image import ImageConversionError
+from aimedia.domain import ArtifactRole, FinalFormat
 
 
 def test_interrupted_partial_write_does_not_publish(tmp_path, monkeypatch):
@@ -105,3 +109,43 @@ def test_unavailable_exclusive_link_refuses_without_fallback(tmp_path, monkeypat
     assert exc.value.errno == errno.EOPNOTSUPP
     assert list(tmp_path.iterdir()) == [existing]
     assert existing.read_bytes() == b"user file"
+
+
+def _valid_png() -> bytes:
+    buffer = BytesIO()
+    Image.new("RGB", (4, 3), (12, 34, 56)).save(buffer, "PNG")
+    return buffer.getvalue()
+
+
+def test_save_rejects_non_image_without_artifact_or_file(tmp_path):
+    storage = PillowArtifactStorage(data_root=tmp_path)
+
+    with pytest.raises(ImageConversionError):
+        storage.save(job_id=1, content=b"not an image at all", final_format=FinalFormat.PNG)
+
+    assert not (tmp_path / "outputs").exists()
+
+
+def test_save_original_role_rejects_non_image_without_artifact(tmp_path):
+    storage = PillowArtifactStorage(data_root=tmp_path)
+
+    with pytest.raises(ImageConversionError):
+        storage.save(job_id=1, content=b"garbage bytes", role=ArtifactRole.ORIGINAL)
+
+    assert not (tmp_path / "outputs").exists()
+
+
+def test_save_write_failure_leaves_no_published_file(tmp_path, monkeypatch):
+    storage = PillowArtifactStorage(data_root=tmp_path)
+
+    def disk_full(fd, data):
+        raise OSError(errno.ENOSPC, "No space left on device")
+
+    monkeypatch.setattr(output.os, "write", disk_full)
+    with pytest.raises(OSError) as exc:
+        storage.save(job_id=1, content=_valid_png(), final_format=FinalFormat.PNG)
+
+    assert exc.value.errno == errno.ENOSPC
+    managed_dir = tmp_path / "outputs" / "1"
+    assert managed_dir.is_dir()
+    assert list(managed_dir.iterdir()) == []

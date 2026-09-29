@@ -121,6 +121,50 @@ class PreparedImage:
     alpha_flattened: bool
 
 
+def _check_input_limits(data: bytes, *, max_bytes: int, max_pixels: int) -> None:
+    """Проверить границы аргументов и размер байтов до декодирования.
+
+    Границы проверяются здесь, а не у вызывающей стороны, чтобы нулевой лимит не
+    превратился в молчаливое «любой размер допустим»; общий шаг вызывают и
+    конвертация, и сохранение исходных байтов.
+    """
+    if max_bytes <= 0 or max_pixels <= 0:
+        raise ValueError("Лимиты конвертации должны быть положительными")
+    if not data:
+        raise UnsupportedImageInputError("Пустые байты не являются изображением.")
+    if len(data) > max_bytes:
+        raise ImageTooLargeError(f"Размер изображения превышает предел {max_bytes} байт.")
+
+
+def prepare_image(
+    data: bytes,
+    *,
+    max_bytes: int = MAX_INPUT_BYTES,
+    max_pixels: int = MAX_INPUT_PIXELS,
+) -> PreparedImage:
+    """Проверить и полностью декодировать байты, не меняя формат контейнера.
+
+    Границы аргументов проверяются здесь, а не у вызывающей стороны, чтобы
+    нулевой лимит не превратился в молчаливое «любой размер допустим».
+    Формат и метаданные определяются фактическим содержимым, а `data`
+    возвращаются неизменными: `converted` всегда `False`, `final_format`
+    совпадает с фактическим `source_format`.
+    """
+    _check_input_limits(data, max_bytes=max_bytes, max_pixels=max_pixels)
+    image, source_format = _decode_source(data, max_pixels=max_pixels)
+    width, height = image.size
+    return PreparedImage(
+        data=data,
+        mime_type=_MIME_TYPE_BY_FINAL[source_format],
+        source_format=source_format,
+        final_format=source_format,
+        width=width,
+        height=height,
+        converted=False,
+        alpha_flattened=False,
+    )
+
+
 def convert_image(
     data: bytes,
     *,
@@ -133,12 +177,7 @@ def convert_image(
     Границы аргументов проверяются здесь, а не у вызывающей стороны, чтобы
     нулевой лимит не превратился в молчаливое «любой размер допустим».
     """
-    if max_bytes <= 0 or max_pixels <= 0:
-        raise ValueError("Лимиты конвертации должны быть положительными")
-    if not data:
-        raise UnsupportedImageInputError("Пустые байты не являются изображением.")
-    if len(data) > max_bytes:
-        raise ImageTooLargeError(f"Размер изображения превышает предел {max_bytes} байт.")
+    _check_input_limits(data, max_bytes=max_bytes, max_pixels=max_pixels)
 
     image, source_format = _decode_source(data, max_pixels=max_pixels)
     width, height = image.size
