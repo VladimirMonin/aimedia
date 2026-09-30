@@ -13,8 +13,8 @@
 
 | Поле | Значение |
 |---|---|
-| База документального среза | `main` / `628af333c8e0fac5239c249291963bb8a2b8d64f` (не динамический HEAD после commit) |
-| Рабочее дерево | **dirty**: срез E06 C09c1 без commit; targeted-тесты C09c1 падают (см. «E06») |
+| Последний проверенный source SHA среза E06 | `c794c0bcf0356b88e1388202b9717016b2d7ad95` (C09c1, **не** приёмка E06) |
+| Незавершённое | C09c2 (CDN), подтверждённые model bindings и приёмка E06; статус worktree проверяется Git, а не этой статичной строкой |
 | Обязательный объём и отложенное | [`release-scope.md`](release-scope.md) + change notes `CN-01`–`CN-03` |
 | Требования R01–R24 | [`verification-matrix.md`](verification-matrix.md) |
 | Решения развилок E00 | [`decisions/implementation-baseline.md`](decisions/implementation-baseline.md) (D01–D16) |
@@ -68,48 +68,27 @@ E04–E05 — разделы «Приёмка E04» и «Приёмка E05» в
 |---|---|---|---|
 | C09a | `5979189` | Сопоставление image request со схемой Media API (remote model ID, prompt, порядок refs, лимиты до base64) | 804 offline passed; 88 targeted contract passed; quality full (Ruff lint/format, mypy, pytest) exit 0; SOL6 review OK |
 | C09b | `628af33` | Чистый response parser: статусы, безопасные URL/ID, `Decimal` (`cost_rub` приоритетнее alias), unknown ≠ zero | 938 offline passed; 134 targeted contract passed; quality full exit 0; SOL6 review OK |
+| HTTP runtime lock | `b99dc25` | `httpx` 0.28.1 и зависимости зафиксированы после разрешённой загрузки публичных PyPI wheels | Чистый clone: `uv sync --locked --offline` и quality quick, 938 тестов, exit 0 |
+| C09c1 | `c794c0bcf0356b88e1388202b9717016b2d7ad95` | Один `POST` submit и отдельные `GET` status/result через инжектируемый client; safety-cap, безопасный ID, redaction и `SUBMIT_UNCERTAIN` для неопределённого платного исхода; инструкция [`PROVIDER.polza-media`](../../instructions/PROVIDER.polza-media.instructions.md) | Чистый clone **этого SHA**: `uv sync --locked --offline` = 0, quality full = 0 (1019 offline passed, Ruff/mypy = 0); SOL6 `E06 C09c1 PRECOMMIT: OK` по предкоммитному diff. Это приёмка **среза**, не всего E06 |
 
 Committed contract-тесты: `tests/contracts/test_polza_requests.py`,
-`test_polza_responses.py`, `test_polza_costs.py`.
-
-### Что лежит в dirty worktree (не принято)
-
-| Артефакт | Состояние | Содержимое |
-|---|---|---|
-| `src/aimedia/providers/polza/gateway.py` | untracked, 439 строк | C09c1: HTTP gateway submit/status, инжектируемый `httpx.AsyncClient`, `follow_redirects=False`, `SUBMIT_UNCERTAIN` без второго POST, redacted ошибки; **без** скачивания remote artifact |
-| `tests/contracts/test_polza_gateway.py` | untracked, 868 строк | Contract-тесты этого gateway |
-| `pyproject.toml`, `uv.lock` | modified | `httpx>=0.27,<0.29` в runtime-зависимостях; в lock добавлены wheel `httpx` 0.28.1 и его зависимостей (`anyio`, `certifi`, `h11`, `httpcore`, `idna`) из публичного PyPI |
-| `src/aimedia/providers/polza/{__init__.py,media/__init__.py,media/request.py,media/response.py}` | modified | Подключение gateway и уточнения mapper/parser внутри того же среза |
-
-### Проверки dirty-среза: разрешённый PyPI sync, затем offline 🧪
-
-| Команда | Exit | Результат |
-|---|---|---|
-| `uv sync --locked --no-config --default-index https://pypi.org/simple` | `0` | `httpx` 0.28.1 и `anyio` 4.15.1 разрешены и скачаны (выполнено родителем; сеть — только авторизованный публичный PyPI) |
-| `uv run --locked --offline --no-env-file python -c "import httpx, anyio"` | `0` | offline-импорт работает; версии `httpx` 0.28.1 / `anyio` 4.15.1 |
-| `uv run --locked --offline --no-env-file python -m mypy src/aimedia` | `0` | `Success: no issues found in 54 source files` |
-| `uv run --locked --offline --no-env-file python -m pytest tests/contracts/test_polza_gateway.py -q` | `1` | **27 failed, 34 passed** (2.70s): преимущественно `httpx.StreamConsumed`, также ошибка конструктора тестового `ReadError` и assertion-диффы |
-
-Вывод для статуса: зависимость от wheel на публичном PyPI **решена** (sync и
-offline-импорт — exit 0), типы сходятся, но C09c1 **не принят**: его
-MockTransport-тесты падают (в основном `httpx.StreamConsumed` — повторное чтение
-stream/response или тест-дабл).
-Незакоммиченный срез сохраняется как есть; ни одна из строк выше не равна `PASSED`
-для контракта E06.
+`test_polza_responses.py`, `test_polza_costs.py`, `test_polza_gateway.py`.
+Summary clean-clone gate хранится локально вне Git в
+`artifacts/quality/c794c0bcf0356b88e1388202b9717016b2d7ad95/summary.json`;
+воспроизводимый источник — commit SHA и команда.
 
 ### Что ещё должно появиться до закрытия E06
 
-- Исправление C09c1: причины падений targeted-тестов (`httpx.StreamConsumed`,
-  `RequestError.__init__` в тест-дабле) устраняются в коде/тесте, а не
-  skip-маркерами; после этого — targeted-прогон и quality на чистом clone.
 - C09c2: безопасное получение remote artifact/CDN (bearer не уходит на чужой host,
   обрабатывается redirect/SSRF), затем отдельный срез скачивания и декодирования.
 - `tests/contracts/test_polza_errors.py` и `tests/security/test_download_auth.py` —
   сейчас этих файлов **нет** (приведены в плане E06, не реализованы).
 - `tests/live/test_polza_smoke.py` и `tests/live/` — каталога нет; live-прогон не
   выполнялся, ключ не читался.
-- Подтверждённых production model IDs нет: встроенный каталог остаётся пустым
-  (ограничение E03), поэтому чек-лист E06 открыт.
+- Production bindings и верхние цены не подтверждены: встроенный каталог остаётся
+  пустым (ограничение E03). Публичная документация указывает кандидатов
+  `qwen/image-2.1` и `google/gemini-3.1-flash-image-preview`, но не доказывает
+  доступность конкретных режимов или стоимость платного вызова.
 - Приёмка wheel/sdist и installed-CLI smoke для E06 **не** выполнялась — это слот E10.
 
 ## E07–E11: ещё не начато ⏳
@@ -141,8 +120,8 @@ E07–E11 **не** содержат реализации, tests и evidence: ф�
 | ID | Блокер | Что блокирует | Что требуется, чтобы снять | Владелец |
 |---|---|---|---|---|
 | B1 | Авторитетные Polza model IDs, поддержка режимов/соотношений и верхняя цена не подтверждены | Закрытие E06, live-часть E07/E10, gate G3, любые заявления о поддержке модели | Официальный ID + подтверждённый режим + оценка цены до вызова, затем ограниченный live | владелец + исполнитель |
-| B2 | C09c1 не принят: `gateway.py`/`test_polza_gateway.py` не закоммичены и их targeted-тесты падают (exit 1; 27 failed / 34 passed, в основном `httpx.StreamConsumed`). Зависимость/wheel `httpx` уже решена (sync и offline-импорт exit 0), поэтому блокер — сам срез, не lock | Закрытие E06, зависимый E07 | Исправить потоковое чтение/тест-даблы, получить зелёный targeted-прогон, закоммитить срез и прогнать quality на чистом clone, затем независимый review | исполнитель + интегратор |
-| B3 | Нет clean-clone приёмки для E06: dirty tree не даёт `source_sha`/`tree_clean` | E06 → E07, ворота G2 | Коммит с зафиксированным SHA и offline-gates того же SHA | интегратор |
+| B2 | **RESOLVED для C09c1**: `c794c0b`, 1019 offline passed в чистом clone, SOL6 предкоммитный review OK | — | C09c2 и E06 в целом остаются открытыми | исполнитель + интегратор |
+| B3 | Есть clean-clone gate для C09c1, но ещё нет полного frozen candidate для E06 (CDN и bindings отсутствуют) | E06 → E07, ворота G2 | Зафиксировать законченный E06 source SHA и прогнать применимые offline-gates на нём | интегратор |
 | B4 | Нет GitHub owner и явного разрешения на создание repo/push/tag/release | E11 | Точное имя owner и отдельное разрешение | владелец |
 | B5 | Live-бюджет расходуется только по заранее согласованному плану (≤ 200 ₽ суммарно, без автоматического платного retry) | Генерация asset, E10 live | Согласованный список вызовов на каждую модель/режим | владелец |
 | B6 | Правка принятой спецификации под `CN-01` не сделана (07/03/backup-contract/матрица); инструкция владельца уже обновлена | Закрытие CN-01 без расхождения с спецификацией | Отдельная задача обновления `07-storage-history-costs.md` и связанных документов | исполнитель |
@@ -153,11 +132,11 @@ E07–E11 **не** содержат реализации, tests и evidence: ф�
 
 ## Критерии релиза (ворота G0–G7) 🚦
 
-| Ворота | Критерий | Состояние на HEAD `628af33` |
+| Ворота | Критерий | Состояние после проверенного среза `c794c0b` (не E06 final) |
 |---|---|---|
 | G0 | Нет незакрытого решения, от которого зависит реализация | Частично: E00 baseline D01–D16 принят, `CN-01`–`CN-03` зафиксированы; `CN-01` требует будущей задачи по спецификации |
 | G1 | Функции согласованного scope существуют и интегрированы | Не выполнено: E07–E09 не начаты |
-| G2 | Обязательные offline-assertions выполнены на кандидате | Не выполнено для E06+: кандидата нет |
+| G2 | Обязательные offline-assertions выполнены на кандидате | C09c1: clean-clone full 1019 passed; E06/release candidate ещё нет |
 | G3 | Есть live evidence заявленных моделей/режимов | Не выполнено: `NOT_RUN` |
 | G4 | Собранные distributions и установленный пакет работают вне checkout | Не выполнено для текущего HEAD (приёмка E04/E05 не переносится на новые срезы) |
 | G5 | Reviewer проверил evidence на одном SHA | Не выполнено для кандидата |
@@ -177,7 +156,7 @@ E07–E11 **не** содержат реализации, tests и evidence: ф�
 | E03 | `4a068c51…` | да | `PASSED` (quick/full) | SOL6 `PASS` | trailer `e76d541`; артефакты вне Git |
 | E04 | `e13b5692…` | да | `PASSED` (quick/full/release) | SOL6 `PASS` | вне Git |
 | E05 | `701d2d83…` | да | `PASSED` (quick/full/release) | SOL6 `PASS` | вне Git |
-| E06 | `null` (срез не закоммичен) | нет (dirty) | `NOT_RUN` для quality; частично: mypy = 0 (54 файла), offline-импорт = 0, targeted gateway-тесты = exit 1 (27 failed / 34 passed) | review только для C09a/C09b | `null` |
+| E06 | `null` для **всего этапа**; промежуточный C09c1: `c794c0bcf0356b88e1388202b9717016b2d7ad95` | да для clone C09c1, этап не готов | C09c1: full `PASSED` (1019); release `NOT_RUN`; E06 final `NOT_RUN` | SOL6 `PRECOMMIT OK` для C09c1; финальный E06 review `NOT_RUN` | локально `artifacts/quality/c794c0bcf0356b88e1388202b9717016b2d7ad95/summary.json`; commit `c794c0b` |
 | E07–E11 | `null` | `null` | `NOT_RUN` | — | `null` |
 
 Поля заполняются по [`progress/stage-report.template.json`](progress/stage-report.template.json);
@@ -186,9 +165,9 @@ pytest node ID и статус только после прогона на ко�
 
 ## Границы достоверности 🔬
 
-- Доска не объявляет E06–E11 реализованными и не заменяет приёмку: незакоммиченный
-  `gateway.py`, будущие тесты и частичные зелёные прогоны (sync/import/mypy) не
-  являются evidence; падающий targeted-прогон C09c1 (exit 1) — тем более.
+- Доска не объявляет E06–E11 реализованными и не заменяет приёмку: commit C09c1,
+  clean-clone full gate и SOL6 предкоммитный review доказывают только шлюз без CDN,
+  а не завершение Polza adapter, production bindings или release candidate.
 - Production model IDs, цены и режимы не подтверждены; YAML-запись и fixture не
   доказывают живую поддержку.
 - `SKIPPED`, `XFAILED`, `NOT_RUN`, `NOT_COLLECTED` не равны `PASSED`; строка без
