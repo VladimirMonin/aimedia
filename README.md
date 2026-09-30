@@ -41,6 +41,16 @@ uv run --locked --no-env-file aimedia image generate --prompt "A watercolor labo
 
 ```bash
 uv run --locked --no-env-file aimedia image batch prompts/*.md --model qwen-image-2-1 --allow-experimental --concurrency 3 --json
+```
+
+Несколько outputs **одного** Job/POST — отдельный documented experimental MIE
+count binding (text-only 1K, NOT_LIVE_VERIFIED), не batch и не alias GPT Image 2.5.
+Qwen/Gemini `--max-images > 1` остаётся fail-closed. RUB 4/image относится только к
+MIE 1K, не к total Job и не к неквалифицированному token-priced OpenAI маршруту.
+Reference URLs и higher resolutions известны API, но не включены/не проверены здесь.
+
+```text
+uv run --locked --no-env-file aimedia image generate --prompt "Two synthetic robots" --model gpt-5-4-image-2-mie --allow-experimental --max-images 2 --format webp --keep-original --json
 uv run --locked --no-env-file aimedia jobs recent --json
 uv run --locked --no-env-file aimedia jobs show 1 --json
 uv run --locked --no-env-file aimedia jobs search "laboratory robot" --json

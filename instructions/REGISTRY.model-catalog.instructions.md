@@ -77,6 +77,13 @@ Registry v0.1 различает только:
   (Guide), несмотря на catalog 14. Явное использование требует
   `--allow-experimental`; missing unit parameter не выдумывается, >1 output
   отклоняется adapter до POST. Синтетические IDs остаются только в tests.
+- Третий binding `gpt-5-4-image-2-mie` → `openai/gpt-5.4-image-2@mie`
+  подтверждён публичными guide/model Markdown: experimental/NOT_LIVE_VERIFIED,
+  text-only 1K count subset. Лимиты/defaults/ratios — в единственном YAML;
+  `input.n` принадлежит adapter только этого exact binding. RUB 4/image в 1K
+  не переносится на неквалифицированный token-priced маршрут. Reference URLs и
+  higher resolutions документированы, но не включены/не проверены здесь; это
+  локальный conservative subset, а не заявление о полном provider capability.
 - `CatalogPricing` — typed exact Decimal metadata RUB по resolution; опубликованный
   максимум вычисляется из текущих tiers, не гарантия будущей цены. Цены не участвуют
   в actual billing. View/help читают те же pricing/limits effective definition.

@@ -226,6 +226,25 @@
 nonblocking claim и перечитывание CREATED/full snapshot до submit. Kernel снимает
 ownership при crash; файл не удаляется, PID/stale timeout не используется.
 Никакого broker, daemon или distributed lock. `sync` использует тот же ownership
-и только GET. Реализация — кандидат до независимого review/frozen SHA; Windows
-cross-process/crash assertions находятся в `test_execution_ownership.py`, Linux
-требует отдельного прогона E10. Исходные решения E00 выше сохранены.
+и только GET. Реализация принята offline в E07–E09 на `8a09d18`; Windows/Linux
+и installed evidence перечислены в release-board. Cross-process/crash assertions
+находятся в `test_execution_ownership.py`. E10 live/E11 открыты. Исходные решения
+E00 выше сохранены.
+
+## Уточнение D06/D07: документированный MIE count binding
+
+По прямому заданию владельца добавляется только `gpt-5-4-image-2-mie` →
+`openai/gpt-5.4-image-2@mie`, experimental/NOT_LIVE_VERIFIED. Источники —
+публичные [guide](https://polza.ai/docs/gaidy/gpt-5-4-image-2.md) и
+[model Markdown](https://polza.ai/models/openai/gpt-5.4-image-2.md), 2026-09-30.
+Text-only count subset: logical max_images 1–4/default 1, только 1K; exact remote
+mapper использует input.n. Generic mapping/Qwen/Gemini не расширяются.
+Remote model identity допускает bounded ASCII qualifier, не URL; Polza adapter
+проверяет единственный подтверждённый exact route. Logical IDs и opaque remote
+job IDs/GET не меняются. RUB 4/image — MIE 1K metadata, не actual total и не цена
+неквалифицированного/default-openai token-priced маршрута. Reference URLs/higher
+resolutions известны API, но не проверены/не включены в этот subset.
+Недостаточный пригодный normalized result сохраняет ref/billing и не COMPLETED;
+sync остаётся GET-only. Zero-image malformed response сохраняет принятый C09
+invalid-response/submit-uncertain контракт; новый billing не выдумывается,
+ранее подтверждённые ref/cost не стираются. Один Job/paid POST, paid POST = 0.

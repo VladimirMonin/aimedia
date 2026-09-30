@@ -17,7 +17,9 @@ effective definition модели; произвольная передача `pr
 - локальный `final_format` никогда не попадает в provider payload;
 - `max_images` всегда уходит, когда модель объявляет точное поле (включая
   доменное значение `1`, независимо от model default); без поля `1` опускается,
-  а значения больше `1` отклоняются; граница схемы Polza — не более 6;
+  а значения больше `1` отклоняются; граница generic схемы Polza — не более 6.
+  Единственное подтверждённое исключение — exact GPT-5.4 Image 2 @mie binding:
+  логический count 1–4 передаётся как input.n, не generic max_images;
 - обязательные устойчивые поля и поддерживаемые provider options с документированным
   default передаются явно, без default — отклоняются до HTTP;
 - размер тела ограничен **явным локальным** safety-cap: это защита проекта, а не
@@ -33,6 +35,7 @@ import base64
 import hashlib
 import json
 import math
+import re
 from collections.abc import Sequence
 
 from aimedia.application.inputs.image_probe import (
@@ -55,6 +58,9 @@ _REFERENCE_PARAMETER = "--image"
 _MAX_IMAGES_PARAMETER = "max_images"
 # ImageInputDto constrains this field independently of model-specific limits.
 _MAX_SCHEMA_IMAGES = 6
+# Public GPT-5.4 Image 2 guide: this exact qualified binding alone uses input.n.
+_MIE_COUNT_MODEL = "openai/gpt-5.4-image-2@mie"
+_SAFE_REMOTE_MODEL_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_./-]{0,127}\Z")
 _STABLE_SCHEMA_ENUMS = {
     "aspect_ratio": (
         "1:1",
@@ -155,6 +161,13 @@ def build_media_request(
         "input": input_payload,
     }
     _enforce_exact_body_size(payload, max_body_bytes=max_body_bytes)
+    if effective.remote_model_id != _MIE_COUNT_MODEL and not _SAFE_REMOTE_MODEL_ID.fullmatch(
+        effective.remote_model_id
+    ):
+        raise InvalidParameterValueError(
+            "Недопустимый remote model ID или неподтверждённый qualifier Polza.",
+            details={"parameter": "remote_model_id"},
+        )
     return payload
 
 
@@ -308,7 +321,14 @@ def _apply_declared_parameters(
                 details={"parameter": name, **({"required": True} if using_default else {})},
             )
         input_payload[provider_field] = value
-    if _include_max_images(request.max_images, effective):
+    if effective.remote_model_id == _MIE_COUNT_MODEL:
+        if not 1 <= request.max_images <= 4:
+            raise InvalidParameterValueError(
+                "Число изображений вне документированной границы count binding.",
+                details={"parameter": _MAX_IMAGES_PARAMETER, "min": 1, "max": 4},
+            )
+        input_payload["n"] = request.max_images
+    elif _include_max_images(request.max_images, effective):
         input_payload[_MAX_IMAGES_PARAMETER] = request.max_images
 
 

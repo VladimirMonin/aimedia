@@ -13,8 +13,8 @@
 
 | Поле | Значение |
 |---|---|
-| Последний проверенный source SHA среза E06 | `2110a5fe5c4547a40f438f9e965ff15632a95e7c` (C09c2, **не** приёмка E06) |
-| Незавершённое | Production model bindings, верхние цены и приёмка E06; интеграция скачивания в Job относится к E07. Статус worktree проверяется Git, а не этой статичной строкой |
+| Принятый baseline E07–E09 | `8a09d186a650248715b6efcade96b81f69370613` (CLOSED/ACCEPTED offline, не live/release E10) |
+| Незавершённое | E06 live verification; новый MIE count slice experimental/NOT_LIVE_VERIFIED до independent review; E10/E11 открыты. Статус worktree проверяется Git |
 | Обязательный объём и отложенное | [`release-scope.md`](release-scope.md) + change notes `CN-01`–`CN-03` |
 | Требования R01–R24 | [`verification-matrix.md`](verification-matrix.md) |
 | Решения развилок E00 | [`decisions/implementation-baseline.md`](decisions/implementation-baseline.md) (D01–D16) |
@@ -79,7 +79,14 @@ Summary clean-clone gate хранится локально вне Git в
 `artifacts/quality/2110a5fe5c4547a40f438f9e965ff15632a95e7c/summary.json`
 (для C09c1 — в каталоге его SHA); воспроизводимый источник — commit SHA и команда.
 
-### Что ещё должно появиться до закрытия E06
+### Исторические ограничения C09 (состояние на C09c2, не текущий каталог)
+
+Следующие записи сохранены как история C09c2. На `8a09d18` downloader уже
+подключён к Job/CLI, Qwen/Gemini YAML и опубликованные тарифы добавлены;
+живые режимы всё ещё не проверены. Текущий MIE count slice добавляет третью
+experimental запись по публичным Markdown, paid POST = 0, MCP refusal не обходился.
+
+### Что ещё должно появиться до закрытия E06 (историческая запись C09c2)
 
 - Production bindings и верхние цены не подтверждены: встроенный каталог остаётся
   пустым (ограничение E03). Официальные гайды называют
@@ -98,15 +105,24 @@ Summary clean-clone gate хранится локально вне Git в
 - Подключение downloader к Job, проверка/сохранение его байтов и recovery — E07–E08,
   не доказаны срезом C09c2. Приёмка wheel/sdist и installed-CLI smoke — слот E10.
 
-## E07–E09: связный image CLI кандидат; E10–E11 открыты ⏳
+## E07–E09: CLOSED / ACCEPTED на `8a09d18`; E10–E11 открыты ⏳
+
+Fresh whole-source review `32e31e48` и correction review `c4b4f239` — OK.
+Evidence baseline: `artifacts/quality/8a09d186a650248715b6efcade96b81f69370613/`
+(`windows`, `linux`, `installed-ux-parent`). Windows clean release **1366 PASSED**,
+12 raw exits 0; Linux **1362 PASSED + 4 Windows-only junction SKIPPED**, 12 raw exits 0
+(SKIPPED ≠ PASSED). Fresh installed receipt `a69473fc84`: 62 console / 22 injected argv,
+80 matched bytes; actual SIGINT/restart/kernel locks/GET-only sync проверены.
+Schema v2 archive и v3 FTS committed; ownership platform fix входит в baseline.
+Это приёмка E07–E09, не закрытие E06 live, E10 или E11.
 
 | Этап | Что должно появиться | Зависимости | Критерий приёмки (из [`README.md`](README.md)) | Состояние |
 |---|---|---|---|---|
-| E07 | Одиночный application use case `single_image.generate_image`: prepared inputs → confirmed CREATED → validation/archive → один submit → ref/polling → billing → все artifacts → confirmed history | E04–E06 | `tests/integration/test_single_image.py`: реальная tmp SQLite/managed copies/Pillow, fake + Polza MockHTTP, ошибки без duplicate submit; независимый review/committed clone ещё требуются | `IN_PROGRESS` (связный незакоммиченный кандидат, не приёмка E07) |
-| E08 | Batch с ограниченной конкурентностью, partial failures, `retry`/`sync`, Ctrl+C, recovery и защита от двойного Runner | E07 | Peak active = лимит, partial outcome, submit_count = 1 при неизвестном исходе, restart без нового POST, cross-process guard | `IN_PROGRESS` (код и offline assertions в общей поставке) |
-| E09 | Полный CLI, JSON/exit codes, история, лексический FTS5, валютные сводки, atomic help | E03, E08 | Реальный argv, JSON/exit для текущей попытки, поиск prompts/ref provenance/managed paths/hashes/result artifacts после restart без чтения файлов, RUB/USD/unknown раздельно, packaged help вне cwd | `IN_PROGRESS` (публичный CLI/FTS/help в общей поставке) |
+| E07 | Одиночный application use case `single_image.generate_image`: prepared inputs → confirmed CREATED → validation/archive → один submit → ref/polling → billing → все artifacts → confirmed history | E04–E06 | `tests/integration/test_single_image.py`: реальная tmp SQLite/managed copies/Pillow, fake + Polza MockHTTP, ошибки без duplicate submit; independent reviews и clean release baseline подтверждены выше | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
+| E08 | Batch с ограниченной конкурентностью, partial failures, `retry`/`sync`, Ctrl+C, recovery и защита от двойного Runner | E07 | Peak active = лимит, partial outcome, submit_count = 1 при неизвестном исходе, restart без нового POST, cross-process guard | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
+| E09 | Полный CLI, JSON/exit codes, история, лексический FTS5, валютные сводки, atomic help | E03, E08 | Реальный argv, JSON/exit для текущей попытки, поиск prompts/ref provenance/managed paths/hashes/result artifacts после restart без чтения файлов, RUB/USD/unknown раздельно, packaged help вне cwd | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
 | E10 | Приёмка release candidate: Windows+Linux, offline quick/full/release, wheel+sdist, installed smoke, secret scan, агентский walkthrough, ограниченный live | E09 | Один frozen SHA; отсутствие обязательных `SKIP`/`XFAIL`/`NOT_RUN`; live-отчёт с model ID, режимом, ценой и датой | `PENDING` |
-| E11 | Публикация проверенного релиза | E10 + отдельное разрешение владельца | Annotated tag на проверенном SHA, wheel/sdist + checksums, установка по тегу с проверкой происхождения | `PENDING`, `BLOCKED` (нет GitHub owner и разрешения) |
+| E11 | Публикация проверенного релиза | E10 + отдельное разрешение владельца | Annotated tag на проверенном SHA, wheel/sdist + checksums, установка по тегу с проверкой происхождения | `PENDING`, `BLOCKED` (login VladimirMonin известен; owner/target и разрешения не подтверждены) |
 
 **Историческая запись одиночного среза до укрупнения (не текущий статус):**
 E07 содержал частичное одиночное ядро и `tests/integration/test_single_image.py`;
@@ -127,9 +143,12 @@ activation и live не реализованы этим срезом. E08–E11 
 
 | ID | Работа | Зависимости | Что докажет приёмка | Состояние |
 |---|---|---|---|---|
-| CN-01 | Долговечные managed-копии reference images, связанные с Job (path/SHA-256/MIME/размер/позиция) в managed-дереве app data | E02 (inputs), E04 (storage v1) | Новая миграция **v2** без правки schema v1; no-clobber/ownership; Job→ref связь читается после удаления исходника; negative-тесты; managed-копии входят в quiesced backup-манифест. Контракт — [`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии reference images»; реализован первый code-срез: поле `InputRef.managed_path` и таблица v2 `managed_input_copies` со связью в repository. Файловый шов добавляет snapshots, `inputs/` no-clobber publish/resolve, confirmation hook и tmp manual backup/restore тест; одиночная application-композиция E07 добавлена в worktree, CLI/history/recovery ещё не реализованы | `IN_PROGRESS` (DTO/SQLite и файловый source-срез `aaf1c5e` приняты отдельно; полная E07/CLI/history-композиция и весь `CN-01` не приняты) |
-| CN-02 | Лексический FTS5 и фильтры остаются обязательными; семантический/векторный поиск — backlog следующего релиза | E09 для FTS5 | FTS5/фильтры находят Jobs/prompts/ref-метаданные/artifacts; FTS5 не выдаётся за семантический поиск | `PENDING` (semantic — вне v0.1.0) |
+| CN-01 | Долговечные managed-копии reference images, связанные с Job (path/SHA-256/MIME/размер/позиция) в managed-дереве app data | E02 (inputs), E04 (storage v1) | Новая миграция **v2** без правки schema v1; no-clobber/ownership; Job→ref связь читается после удаления исходника; negative-тесты; managed-копии входят в quiesced backup-манифест. Контракт — [`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии reference images»; реализован первый code-срез: поле `InputRef.managed_path` и таблица v2 `managed_input_copies` со связью в repository. Файловый шов добавляет snapshots, `inputs/` no-clobber publish/resolve, confirmation hook и tmp manual backup/restore тест; одиночная application/CLI/history/recovery композиция committed и принята на `8a09d18` | `ACCEPTED` offline на `8a09d18`; v2 archive и CLI/recovery реализованы, backup CLI не входит |
+| CN-02 | Лексический FTS5 и фильтры остаются обязательными; семантический/векторный поиск — backlog следующего релиза | E09 для FTS5 | FTS5/фильтры находят Jobs/prompts/ref-метаданные/artifacts; FTS5 не выдаётся за семантический поиск | `ACCEPTED` offline FTS v3 на `8a09d18` (semantic — вне v0.1.0) |
 | CN-03 | Audio/speech/STT/TTS — отдельное приложение, вне планов и навигации этого репозитория | — | В `docs/plans/` нет речи как задачи aimedia; отменяемые положения `01` (раздел «Расширение на аудио» и примеры `aimedia audio ...`) явно superseded с сохранением исходного текста; ссылки не битые | `DONE` (документарно) |
+
+**Исторические подсрезы CN-01 до общей приёмки `8a09d18`:** ограничения ниже
+относятся к указанным старым SHA, не к текущему CLI/v3.
 
 **Проверенный подсрез CN-01 — DTO/SQLite:** source SHA
 `a237d4f7e485d37a92f1467a490b74413537dcb1`; production v1→v2, сохранность связей и
@@ -159,14 +178,17 @@ Linux/release/live и реальные пользовательские данн
 
 ## Зависимости и блокеры 🚧
 
+Исторические B3/B6 зависимости offline интеграции сняты приёмкой `8a09d18`.
+Открыт E06 live gate, не интеграция downloader/CLI или CN-01/v3.
+
 | ID | Блокер | Что блокирует | Что требуется, чтобы снять | Владелец |
 |---|---|---|---|---|
-| B1 | **Частично снят:** public GET каталога HTTP 200 подтвердил IDs/Media endpoint/параметры и режимные RUB tiers Qwen/Gemini; production bindings и живая генерация ещё не проверены | Закрытие E06, live-часть E07/E10, gate G3, заявления о живой поддержке модели | Перед платным POST сверить актуальный режим/цену и ограниченный план; затем live на фиксированном SHA | исполнитель |
+| B1 | **Частично снят:** documented experimental Qwen/Gemini bindings committed; MIE count subset по публичным Markdown добавлен в worktree. Живая генерация NOT_RUN | Закрытие E06, E10 live, G3 | Перед разрешённым платным POST сверить режим/цену и план на fixed SHA | исполнитель |
 | B2 | **RESOLVED для C09c1/C09c2**: `c794c0b` (1019) и `2110a5f` (1145) offline passed в чистых клонах, SOL6 предкоммитные reviews OK | — | E06 в целом остаётся открытым | исполнитель + интегратор |
-| B3 | Есть clean-clone gate для C09c2, но нет frozen candidate всего E06 (bindings/ценовой preflight отсутствуют) | E06 → E07, ворота G2 | Зафиксировать законченный E06 source SHA и прогнать применимые offline-gates на нём | интегратор |
-| B4 | Нет GitHub owner и явного разрешения на создание repo/push/tag/release | E11 | Точное имя owner и отдельное разрешение | владелец |
+| B3 | **RESOLVED offline:** E07–E09 baseline `8a09d18` принят; E06 live открыт | Новый MIE slice требует fresh review/same-SHA gate, не повтор принятого аудита | Independent review → parent frozen-SHA verification | интегратор |
+| B4 | Authenticated login `VladimirMonin` известен; proposed target `VladimirMonin/aimedia`, но owner/target и create/push/tag/release authorization не подтверждены | E11 | Подтверждение owner/target и отдельное явное разрешение; login не authorization | владелец |
 | B5 | Live-бюджет расходуется только по заранее согласованному плану (≤ 200 ₽ суммарно, без автоматического платного retry) | Генерация asset, E10 live | Согласованный список вызовов на каждую модель/режим | владелец |
-| B6 | **RESOLVED (документарно)**: правка принятой спецификации под `CN-01` сделана — 07/03/README E04-E07/verification-matrix R07-R18/backup-contract и инструкции PROCESSING/CORE/DATA; контракт `e90e4c5`, DTO/SQLite-срез `a237d4f` | — | Файловый source-срез `aaf1c5e` проверен отдельно; полная E07/CLI/D03/history-композиция и приёмка CN-01 ещё требуются | исполнитель |
+| B6 | **RESOLVED offline:** CN-01 v2 archive и полная E07/CLI/D03/history/recovery композиция приняты на `8a09d18`; v3 FTS committed | — | Backup CLI отсутствует по scope, live отдельно | исполнитель |
 
 **Public catalog metadata (два GET без ключа, paid POST = 0):**
 `qwen/image-2.1`: `image_resolution` 1K → **3 ₽**, 2K → **6 ₽**;
@@ -177,7 +199,7 @@ Linux/release/live и реальные пользовательские данн
 `artifacts/metadata/polza-catalog-qwen.json`, `polza-catalog-gemini.json` рядом.
 Каталог подтверждает 1:1/16:9, Media endpoint и наличие image inputs; это **не live**.
 Для Gemini guide (8 refs) и catalog (14) расходятся: до отдельной сверки не заявлять
-14, будущий binding ограничить подтверждённым пересечением (не более 8).
+14; committed binding ограничен подтверждённым пересечением (не более 8).
 Непроверенные production bindings не активированы; ключ не читался.
 
 `B4` (GitHub owner и разрешение на публикацию) — единственный блокер, который
@@ -188,12 +210,12 @@ Linux/release/live и реальные пользовательские данн
 
 | Ворота | Критерий | Текущее состояние (не E06/release candidate) |
 |---|---|---|
-| G0 | Нет незакрытого решения, от которого зависит реализация | Частично: E00 baseline D01–D16 принят, `CN-01`–`CN-03` зафиксированы; контракт `CN-01` синхронизирован со спецификацией, реализован его первый code-срез (schema v2 + связь), файловый source-срез `aaf1c5e` принят отдельно, полная E07/CLI-композиция отсутствует |
-| G1 | Функции согласованного scope существуют и интегрированы | Связный E07–E09 кандидат реализован; consolidated writer gate/review/frozen SHA ещё не означают release acceptance |
-| G2 | Обязательные offline-assertions выполнены на кандидате | C09c2: clean-clone full 1145 passed; CN-01 DTO/SQLite `a237d4f`: clean-clone full 1192 passed, файловый source `aaf1c5e`: 1252 passed; E06/release candidate ещё нет |
+| G0 | Нет незакрытого решения, от которого зависит реализация | Частично: E00 baseline D01–D16 принят, `CN-01`–`CN-03` зафиксированы; контракт `CN-01` синхронизирован со спецификацией, реализован его первый code-срез (schema v2 + связь), файловый source-срез `aaf1c5e` принят отдельно, полная E07/CLI-композиция принята на `8a09d18` |
+| G1 | Функции согласованного scope существуют и интегрированы | E07–E09 приняты на `8a09d18`; новый count binding остаётся experimental, не release acceptance |
+| G2 | Обязательные offline-assertions выполнены на кандидате | Baseline `8a09d18`: Windows 1366 PASSED / Linux 1362 PASSED + 4 SKIPPED, 12 raw 0; новый count slice требует своего frozen-SHA gate |
 | G3 | Есть live evidence заявленных моделей/режимов | Не выполнено: `NOT_RUN` |
-| G4 | Собранные distributions и установленный пакет работают вне checkout | Не выполнено для текущего HEAD (приёмка E04/E05 не переносится на новые срезы) |
-| G5 | Reviewer проверил evidence на одном SHA | Не выполнено для кандидата |
+| G4 | Собранные distributions и установленный пакет работают вне checkout | Выполнено для baseline `8a09d18` (installed evidence выше); новый slice ещё требует same-SHA install |
+| G5 | Reviewer проверил evidence на одном SHA | Выполнено для baseline `8a09d18`, новый slice требует fresh review |
 | G6 | Annotated tag указывает на проверенный SHA | Не выполнено |
 | G7 | Личная копия установлена по тегу с проверяемым происхождением | Не выполнено |
 
@@ -211,7 +233,8 @@ Linux/release/live и реальные пользовательские данн
 | E04 | `e13b5692…` | да | `PASSED` (quick/full/release) | SOL6 `PASS` | вне Git |
 | E05 | `701d2d83…` | да | `PASSED` (quick/full/release) | SOL6 `PASS` | вне Git |
 | E06 | `null` для **всего этапа**; промежуточный C09c2: `2110a5fe5c4547a40f438f9e965ff15632a95e7c` | да для clone C09c2, этап не готов | C09c2: full `PASSED` (1145); release `NOT_RUN`; E06 final `NOT_RUN` | SOL6 `PRECOMMIT OK` для C09c2; финальный E06 review `NOT_RUN` | локально `artifacts/quality/2110a5fe5c4547a40f438f9e965ff15632a95e7c/summary.json`; commit `2110a5f` |
-| E07–E11 | `null` | `null` | `NOT_RUN` | — | `null` |
+| E07–E09 | `8a09d186a650248715b6efcade96b81f69370613` | да | Windows release 1366 PASSED; Linux 1362 PASSED / 4 SKIPPED, все 12 raw 0 | `32e31e48` / `c4b4f239` OK | `artifacts/quality/<sha>/{windows,linux,installed-ux-parent}` |
+| E10–E11 | `null` | `null` | live/release acceptance `NOT_RUN` | — | `null` |
 
 Поля заполняются по [`progress/stage-report.template.json`](progress/stage-report.template.json);
 строка R01–R24 в [`verification-matrix.md`](verification-matrix.md) получает реальный
@@ -219,16 +242,43 @@ pytest node ID и статус только после прогона на ко�
 
 ## Границы достоверности 🔬
 
-- Доска не объявляет E06–E11 реализованными и не заменяет приёмку: commit C09c2,
+- E07–E09 приняты offline на `8a09d18`, но это не E06 live или E10/E11.
+  Исторический commit C09c2,
   clean-clone full gate и SOL6 предкоммитный review доказывают только gateway и
   безопасное скачивание по документированному URL, а не интеграцию Job, production
   bindings или release candidate.
-- Production model IDs, цены и режимы не подтверждены; YAML-запись и fixture не
+- Documented experimental model IDs/тарифы подтверждены источниками; YAML-запись и fixture не
   доказывают живую поддержку.
 - `SKIPPED`, `XFAILED`, `NOT_RUN`, `NOT_COLLECTED` не равны `PASSED`; строка без
   `PASSED` означает незакрытое требование.
 - Статус `DONE` для `CN-03` относится только к документарному выводу speech из
   навигации и не означает изменений кода.
+
+## MIE count binding: source pending fresh review
+
+Новый локальный slice от `8a09d18`, не accepted E06/live: третий data-only
+`gpt-5-4-image-2-mie` → exact `openai/gpt-5.4-image-2@mie`, experimental /
+NOT_LIVE_VERIFIED, text-only 1K. `max_images` 1–4/default 1 → `input.n`, один
+Job/POST; Qwen/Gemini >1 fail-closed. Public guide/model Markdown 2026-09-30;
+RUB 4/image только MIE 1K, не total Job/default-openai token tariff; unitParam
+не выдуман. Reference URLs/higher resolutions известны API, но не включены/не
+проверены здесь. Paid POST = 0, MCP refusal не обходился.
+
+Dirty-worktree Windows release checkpoint: **1417 PASSED / 93% coverage**, все
+12 raw exits 0; focused **394 PASSED**, static mypy `--platform linux` raw 0.
+Evidence: `artifacts/quality/mie-count-sol61/` (`release-checkpoint/summary.json`,
+`focused-accepted.*`, `mypy-linux.*`, `checkpoint-manifest.json`). Ранние failures
+не скрыты: absent asyncio marker, ошибочные view/exit assertions, missing recovery
+eligibility для нового error code (исправлено), прежняя surrogate body assertion
+(сохранена без ослабления). `focused-third.*` / `focused-final.*` — raw 1.
+Infrastructure timeout1200000ms — FAILED, не PASS; resume не меняет модель/протокол.
+
+Required-count n2→1/n4→2 относится к пригодному normalized result: durable ref и
+billing до download сохраняются, COMPLETED запрещён, recovery GET-only. n2→0 —
+отдельный malformed C09 result: POST SUBMIT_UNCERTAIN / GET invalid-response;
+новый billing unknown, не zero, прежний known ref/cost не стирается.
+Fresh reviewer, final-SHA Linux runtime/installed acceptance и live — NOT_RUN;
+parent владеет staging/commit/frozen-SHA проверками. E10/E11 не закрыты.
 
 ## Ссылки 🔗
 
@@ -239,7 +289,7 @@ pytest node ID и статус только после прогона на ко�
 - [`backup-contract.md`](backup-contract.md) — quiescent offline backup (managed files).
 - [`logging-contract.md`](logging-contract.md) — диагностические события и redaction.
 
-### Consolidated writer verification, 2026-09-30
+### Историческая запись: Consolidated writer verification, 2026-09-30
 
 E07–E09 остаются **IN_PROGRESS candidate / whole-review pending**, не ACCEPTED.
 Публичный image CLI, batch, retry/sync, ownership, v3 FTS search, costs и 10 packaged
@@ -255,7 +305,7 @@ entrypoint/resources outside cwd проверен с явными disposable con
 не заявлены; staging/commit/push/tag/release не выполнялись.
 
 
-### Consolidated corrective candidate E07–E09
+### Историческая запись: Consolidated corrective candidate E07–E09
 
 Семь source findings исправлены одним связанным срезом: sync current-attempt errors,
 config-test isolation, DB leaf preflight, storage error boundary, parser format choices,

@@ -16,6 +16,18 @@
 
 **Документ является планом, а не отчётом о работающей программе.** При его составлении были только спецификации: результаты запуска реализации, отчёт CI и подтверждённый релиз ещё отсутствовали. Поэтому исходные статусы этапов — `NOT_STARTED`, а проверок — `NOT_RUN`; актуальные статусы и evidence вынесены на доску ниже. Названия будущих тестов и служебных скриптов задают работу для разработчиков; их наличие в тексте не означает, что они уже существуют.
 
+**Текущий baseline:** E07/E08/E09 CLOSED / ACCEPTED offline на
+`8a09d186a650248715b6efcade96b81f69370613`: downloader/CLI/batch/retry/sync,
+v2 managed archive, v3 FTS и kernel ownership реализованы. Fresh reviews
+`32e31e48` / `c4b4f239` OK; Windows 1366 PASSED / 12 raw 0, Linux 1362 PASSED
++ 4 Windows-only SKIPPED / 12 raw 0 (не PASSED), installed `a69473fc84`.
+Evidence: `artifacts/quality/<sha>/{windows,linux,installed-ux-parent}`.
+E06 bindings остаются experimental/NOT_LIVE_VERIFIED; новый MIE count slice
+по публичным Markdown не означает live-приёмки. E10/E11 открыты, paid POST = 0,
+Authenticated login `VladimirMonin` известен, предложен target `VladimirMonin/aimedia`;
+owner/target и разрешения create/push/tag/release ещё не подтверждены. Login не
+означает authorization. Исторические записи ниже относятся к своим SHA.
+
 Текущее состояние этапов (что принято и на каком SHA, что в работе, какие блокеры и слоты доказательств открыты) ведётся отдельно в [`release-board.md`](release-board.md). Этот README остаётся картой плана и не подменяет доску статусов.
 
 Каноническое место этого файла — `docs/plans/README.md`, рядом с документами `01`–`09` (относительные ссылки рассчитаны на такое соседство). Корневой `README.md` пакета позднее содержит короткую установку, первый запуск и ссылку на этот план: это не две конкурирующие спецификации. **Все терминальные команды в плане выполняются из корня репозитория**, если явно не указано другое.
@@ -355,7 +367,14 @@ Provider-specific renaming выполняет adapter согласно реше�
 - [x] Удаление модели не ломает чтение старой Job history.
 - [x] Ни один API ID или лимит не перенесён из условного примера без проверки.
 
-**Ограничение:** встроенный production-каталог пока пуст: авторитетные Polza model IDs и лимиты не подтверждены. Это не блокирует офлайн-контракт E03, но блокирует утверждение, что реальная генерация готова.
+**Историческое ограничение E03:** на SHA E03 каталог был пуст. Сейчас Qwen/Gemini
+имеют documented experimental bindings; третий `gpt-5-4-image-2-mie` по публичным
+[guide](https://polza.ai/docs/gaidy/gpt-5-4-image-2.md) и
+[model page](https://polza.ai/models/openai/gpt-5.4-image-2.md) — text-only 1K
+count subset, exact `openai/gpt-5.4-image-2@mie`, не alias и не live.
+Цена MIE 4 RUB/image не относится к default-openai token pricing. References и
+higher resolutions известны API, но не включены/не проверены здесь. Каталог
+не доказывает реальную генерацию; Qwen/Gemini count >1 остаётся fail-closed.
 
 ### E04. SQLite, миграции, история и деньги 🗄️
 
@@ -378,7 +397,7 @@ Provider-specific renaming выполняет adapter согласно реше�
 
 **Резервное копирование:** согласованная копия БД (WAL) и managed artifacts — не функция v0.1.0, а инвариант для E05+. Пока backup-команды нет, поддерживается только quiescent offline manual backup; один `database.sqlite3` под WAL копировать нельзя. Контракт — в [`backup-contract.md`](backup-contract.md).
 
-**Новые данные сверх v1 (`CN-01`):** managed-копии reference images оформляются миграцией **v2**, а не правкой v1 `inputs` ([`release-scope.md`](release-scope.md), `CN-01`; контракт — [`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии reference images»). Реализованы схема v2 и связь входа с копией; файлы копий — `NOT IMPLEMENTED`.
+**Новые данные сверх v1 (`CN-01`):** managed-копии reference images оформляются миграцией **v2**, а не правкой v1 `inputs` ([`release-scope.md`](release-scope.md), `CN-01`; контракт — [`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии reference images»). Схема v2, связь и файлы копий committed; CLI/history/recovery приняты на `8a09d18`. DDL v1/v2/v3 в count slice не меняется.
 
 - [x] Используется ровно один migration runner; установленная версия Peewee проверена.
 - [x] Нет транзакции, удерживаемой через `await` сетевого вызова.
@@ -450,17 +469,18 @@ wheel/sdist — exit 0; независимый нативный SOL6-review — 
 
 ### E07. Один Job полностью, без скрытых пробелов ⚙️
 
-**Текущий частичный срез (не принят):** `application.single_image.generate_image`
+**Принято offline на `8a09d18` (E07):** `application.single_image.generate_image`
 собирает новый image Job через существующие порты: prepared snapshots → confirmed
 CREATED → callback validation/binding/output preflight → archive → один submit → confirmed ref →
 bounded polling/result → safe billing snapshot → все локальные images → confirmed
 history. `tests/integration/test_single_image.py` использует реальную временную
 SQLite, managed copies, Pillow и fake/MockHTTP provider. CLI, batch, retry/sync,
-recovery/locks и production bindings/live отсутствуют; E07/CN-01 целиком не приняты.
+recovery/locks и documented experimental bindings реализованы; E07/CN-01 приняты
+offline. Live не выполнялся.
 После возможного финального commit прерывание сохраняет опубликованный snapshot:
 сверка known ID не позволяет заменить COMPLETED устаревшим FAILED. Явный `--out`
-проверяется файловым портом до платного submit. Независимый review и full committed
-clean-clone gate ещё требуются.
+проверяется файловым портом до платного submit. Независимые reviews и clean release
+baseline подтверждены выше; новый count slice требует отдельного fresh review.
 
 **Результат.** Собирается вертикальный сценарий: входы → Job в SQLite → submit → remote ref → polling/result → cost/usage → локальный artifact → финальное состояние. Use case не обращается к httpx/Peewee напрямую. Вызов через CLI возможен уже здесь, но полный публичный контракт ещё проходит E09.
 
@@ -471,7 +491,7 @@ clean-clone gate ещё требуются.
 | `tests/integration/test_finalization_failure.py` | Remote success и download/conversion failure оставляют failed Job с фактической стоимостью и данными для recovery |
 | `tests/integration/test_submit_persistence_failure.py` | При сбое сохранения remote ref не выполняется повторная генерация; диагностический канал сохраняет пригодные для разбирательства идентификаторы |
 | `tests/integration/test_result_invariants.py` | Image success без usable image не становится completed; partial result не теряется |
-| `tests/integration/test_managed_inputs.py` (существует) | Managed-копия reference image (`CN-01`): файловый source-срез `aaf1c5e` сохраняет copies/links при reopen/resave и после удаления исходника; полный E07/CLI-сценарий ещё требуется. Связь и миграция v2 покрыты в `test_migrations.py`/`test_migration_failure.py`/`test_job_repository.py`; ручной backup/restore — в `test_manual_managed_backup.py` |
+| `tests/integration/test_managed_inputs.py` (существует) | Managed-копия reference image (`CN-01`): файловый source-срез `aaf1c5e` сохраняет copies/links при reopen/resave и после удаления исходника; полный E07/CLI-сценарий принят на `8a09d18`. Связь и миграция v2 покрыты в `test_migrations.py`/`test_migration_failure.py`/`test_job_repository.py`; ручной backup/restore — в `test_manual_managed_backup.py` |
 
 **Логируется:** полная цепочка `job_created → validation_completed → provider_submit_accepted → remote_ref_saved → remote_completed → usage_recorded → artifact_saved → job_completed`. Допускаются дополнительные события, но не успешное завершение раньше обязательного artifact commit.
 
@@ -488,9 +508,9 @@ submit, опубликованный файл после неопределён�
 повторяется ([`07-storage-history-costs.md`](07-storage-history-costs.md),
 «Managed-копии reference images»). Schema v2/связь и файловый source-срез `aaf1c5e`
 проверены отдельно: snapshot одного чтения, copies/resolve и confirmation hook.
-Одиночная application-композиция D03 с submit/polling/finalization добавлена
-частичным незакоммиченным срезом E07; пользовательский CLI/recovery ещё
-`NOT IMPLEMENTED`, независимая приёмка этого среза и всего CN-01 не пройдена.
+Application-композиция D03 с submit/polling/finalization, пользовательский
+CLI/recovery и v3 FTS committed и приняты offline на `8a09d18`. Никаких
+миграций или изменений immutable DDL для count binding нет.
 
 ### E08. Параллельность, восстановление и защита от двойного запуска ⚡
 
@@ -1261,8 +1281,9 @@ offline gate и независимый review/frozen commit на полезну�
 сохранении обязательных security/negative assertions. Карта Cxx выше описывает
 логические зависимости, а не обязательное количество согласований/коммитов.
 
-Текущий кандидат включает одиночную генерацию, batch/retry/sync, local kernel Job
-ownership, v3 FTS5, историю/расходы, atomic package help и documented experimental
-Polza bindings. Актуальные writer evidence и непроверенные E10 live/Linux/E11
+Принятый baseline `8a09d18` включает одиночную генерацию, batch/retry/sync, local kernel
+Job ownership, v3 FTS5, историю/расходы, atomic package help и documented experimental
+Polza bindings. Windows/Linux offline и installed evidence приняты для baseline;
+новый MIE count slice требует fresh review/frozen SHA. Непроверенные E06/E10 live/E11
 слоты — [release-board](release-board.md), [verification-matrix](verification-matrix.md).
 Наличие кода не является release acceptance.

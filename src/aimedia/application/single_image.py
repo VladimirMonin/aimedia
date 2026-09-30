@@ -36,7 +36,11 @@ from aimedia.domain.requests import ImageGenerationRequest
 from aimedia.domain.state import JobStatus, ensure_transition
 from aimedia.logging import EventLogger, redact
 
-_SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_./-]{0,127}\Z")
+# Remote model identity only: a bounded ASCII ID with an optional route qualifier,
+# never a URL. Logical IDs and opaque remote job IDs keep their own boundaries.
+_SAFE_REMOTE_MODEL_ID = re.compile(
+    r"(?=.{1,128}\Z)[A-Za-z0-9][A-Za-z0-9_./-]*(?:@[a-z0-9]+(?:-[a-z0-9]+)*)?\Z"
+)
 
 
 @dataclass(frozen=True)
@@ -169,7 +173,7 @@ async def generate_image(
         if (
             setup.binding.provider_id != prepared.provider.id
             or setup.gateway.provider_id != prepared.provider.id
-            or not _SAFE_ID.fullmatch(setup.binding.remote_model_id)
+            or not _SAFE_REMOTE_MODEL_ID.fullmatch(setup.binding.remote_model_id)
         ):
             raise UnknownProviderError("Provider binding does not match image request")
         assert job.id is not None
@@ -403,6 +407,14 @@ async def finish_image_result(
             for item in result.remote_artifacts
         ):
             raise ValueError("Remote result has no usable image")
+        if len(result.remote_artifacts) < job.request.max_images:
+            raise ProviderError(
+                JobError(
+                    code="PROVIDER_INCOMPLETE_RESULT",
+                    message="Remote result has fewer images than requested",
+                    retryable=True,
+                )
+            )
         prior = job.result or JobResult()
         # Legacy partial final files are in publication order; ORIGINAL is separate.
         finals = [a for a in prior.artifacts if a.role is ArtifactRole.FINAL]

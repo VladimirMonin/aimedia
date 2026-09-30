@@ -50,6 +50,13 @@ Use case нового Job подключён к публичному CLI; batch/
 - Output directory/base name/keep-original сохраняются как локальные execution
   metadata, не provider data. ORIGINAL имеет отдельную роль; partial FINAL positions
   переиспользуются recovery без повторной публикации.
+- После durable billing число пригодных image locators обязано быть не меньше
+  `request.max_images`. Недостаточный remote completed result даёт
+  `PROVIDER_INCOMPLETE_RESULT`, не COMPLETED; ref/cost остаются для GET-only sync,
+  download ещё не выполняется. Проверка относится к пригодному normalized result,
+  общая для всех providers, без route logic. Zero-image malformed Polza result
+  сохраняет C09 invalid-response/submit-uncertain контракт: новый billing из него
+  не считается подтверждённым, прежние ref/cost не удаляются, POST не повторяется.
 - Все required image locators сохраняются; ранние файлы остаются partial result,
   последний проходит E05 `finalize_image_artifact`. COMPLETED возможен только после
   проверки опубликованного файла и подтверждения полного history snapshot.

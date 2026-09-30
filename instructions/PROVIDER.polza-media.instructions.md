@@ -35,6 +35,18 @@ Registry и HTTP-транспорта (`httpx` в gateway, `httpcore` в downloa
 - `__init__.py` намеренно **не** импортирует gateway, чтобы чистый mapper оставался
   доступен без сетевого транспорта.
 
+## Подтверждённый count binding
+
+`media.request.build_media_request` направляет `max_images` в `input.n` **только**
+для exact remote `openai/gpt-5.4-image-2@mie` (public guide/model Markdown).
+Это experimental, NOT_LIVE_VERIFIED text-only 1K subset, не generic mapping framework.
+Qwen/Gemini и generic-schema `max_images` сохраняют прежнее поведение.
+Неподтверждённые `@` qualifiers/URL/не-ASCII/ID сверх 128 символов отклоняются
+до HTTP; qualifier не становится endpoint и не меняет opaque remote job ID/GET.
+MIE цена RUB 4/image в 1K — metadata, не billing total и не верхняя цена
+неквалифицированного token-priced маршрута. References/higher resolutions известны
+документации, но не включены/не проверены этим count slice.
+
 ## Инварианты транспорта
 
 `httpx.AsyncClient` инжектируется вызывающей стороной и переиспользуется всеми

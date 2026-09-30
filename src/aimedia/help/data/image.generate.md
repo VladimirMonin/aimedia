@@ -22,8 +22,17 @@ managed `outputs/<job_id>`. Нет скрытой второй копии; no-cl
 `--keep-original` сохраняет отдельный ORIGINAL. `--name` — безопасное базовое имя.
 
 `--max-images` — outputs одного submit, не количество Jobs. Применяется лишь когда
-модель объявляет такой параметр. У текущих двух моделей unit parameter не опубликован:
-значения больше 1 отклоняются до POST. `--seed`/`--quality` также не принимаются без
+модель объявляет такой параметр. Qwen/Gemini по-прежнему отклоняют значения больше
+1 до POST. Для `gpt-5-4-image-2-mie` используется документированный `input.n`:
+
+```text
+aimedia image generate --prompt "Two synthetic robots" --model gpt-5-4-image-2-mie --allow-experimental --max-images 2 --format webp --keep-original --json
+```
+
+Это experimental / NOT_LIVE_VERIFIED text-only subset; ограничения — в
+`models show`. Если completed remote result содержит меньше запрошенных images,
+Job не становится COMPLETED: ref/billing сохранены, `jobs sync` продолжает только GET,
+без скрытого повторного POST. `--seed`/`--quality` также не принимаются без
 документированной поддержки. `models show <id> --json` показывает реальные ограничения.
 
 `--poll-interval` (по умолчанию 1 секунда) и `--wait-timeout` (300 секунд) конечны.

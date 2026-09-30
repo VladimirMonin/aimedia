@@ -29,6 +29,9 @@ Polza/FS. Источники — [08](../docs/plans/08-job-execution.md), baseli
   остаётся FAILED при running observation; failed→completed разрешён только
   recovery того же ref с `recovery.previous_error`. Сохранённые partial positions
   переиспользуются без нового файла; стоимость — snapshot, не прибавление.
+  `PROVIDER_INCOMPLETE_RESULT` пригодного normalized результата — recoverable
+  same-ref failure; повторный count GET не требует нового POST. Zero-image
+  malformed response остаётся отдельным invalid-response, без нового billing.
   `SyncResult.error` описывает только текущую попытку. Новый GET/remote/local отказ
   нельзя выдавать за success или классифицировать по старому `Job.error`.
   Успешное running observation старого FAILED остаётся success; общий finalizer

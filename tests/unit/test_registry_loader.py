@@ -11,6 +11,7 @@ alias, неизвестная версия схемы и `default` вне enum �
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -404,16 +405,24 @@ def test_load_registry_root_missing_directory_is_empty(tmp_path: Path) -> None:
 def test_builtin_catalog_is_documented_experimental_not_live_verified() -> None:
     """Only official catalog bindings, with conservative Guide reference limit."""
     records = load_builtin_registry()
-    assert len(registry_files(builtin_registry_dir())) == len(records) == 2
+    assert len(registry_files(builtin_registry_dir())) == len(records) == 3
     assert {record.providers["polza"].remote_model_id for record in records} == {
         "qwen/image-2.1",
         "google/gemini-3.1-flash-image-preview",
+        "openai/gpt-5.4-image-2@mie",
     }
     for record in records:
         assert record.status.value == "experimental"
         assert record.verification is not None and record.verified_at is None
-        assert "polza.ai/api/v1/models/catalog" in record.verification.source
-        assert "max_images" not in record.parameters
+        if record.model_id != "gpt-5-4-image-2-mie":
+            assert "polza.ai/api/v1/models/catalog" in record.verification.source
+            assert "max_images" not in record.parameters
+        else:
+            assert "polza.ai/docs/gaidy/gpt-5-4-image-2.md" in record.verification.source
+            assert "polza.ai/models/openai/gpt-5.4-image-2.md" in record.verification.source
+            assert record.parameters["max_images"].max == 4
+            assert record.pricing.by_resolution == {"1K": Decimal("4")}
+            assert record.pricing.unit_parameter is None
     gemini = next(record for record in records if record.model_id.startswith("gemini"))
     assert gemini.inputs["images"].max == 8
 
