@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib
 import os
+import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -39,7 +40,7 @@ def claim_job(data_root: Path, job_id: int) -> Iterator[None]:
             stream.flush()
         stream.seek(0)
         try:
-            if os.name == "nt":
+            if sys.platform == "win32":
                 import msvcrt
 
                 msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
@@ -53,7 +54,7 @@ def claim_job(data_root: Path, job_id: int) -> Iterator[None]:
             yield
         finally:
             stream.seek(0)
-            if os.name == "nt":
+            if sys.platform == "win32":
                 import msvcrt
 
                 msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
