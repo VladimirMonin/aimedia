@@ -1,30 +1,12 @@
-# Встроенный каталог моделей — статус: not verified 🚧
+# Production image catalog
 
-Этот каталог — место для **production** YAML-записей Model Registry. Сейчас он
-намеренно **пуст**.
+Только официальные metadata/bindings public Polza catalog GET от 2026-09-30:
+`qwen/image-2.1`, `google/gemini-3.1-flash-image-preview`, endpoint `/api/v1/media`.
+Исходное offline evidence — `artifacts/metadata/polza-catalog-{qwen,gemini}.json`
+(HTTP 200, no auth, paid POST 0; evidence не включается в пакет).
 
-## Почему пусто
-
-В v0.1 встроенный каталог содержит только проверенные записи
-(`docs/plans/release-scope.md`): для каждой модели должны быть зафиксированы
-exact remote ID, источник параметров, дата проверки и результаты live-сценариев
-(решение E00 D16). В локальных документах таких authoritative данных нет:
-
-- `seedream-5-pro`, `qwen-image-2.1`, `gpt-image-2.5` и `some/provider/model`
-  в `docs/plans/*.md` помечены как **демонстрационные** примеры
-  (`06-model-registry.md`, «Формат хранения: YAML»): наличие YAML-записи не
-  означает проверенную поддержку модели;
-- фактические remote IDs, capabilities и лимиты должны заполняться только после
-  проверки актуальной публичной документации (что невозможно сделать в этом
-  offline-срезе без API credentials).
-
-Поэтому каталог оставлен строго пустым: синтетические ID вне тестов не
-добавляются, а permissive fallback и «угаданные» лимиты запрещены. Это
-ограничение — **not verified**, а не подтверждённая пустая поддержка моделей.
-
-## Как добавить запись
-
-Каждая модель — отдельный YAML-файл (`schema_version: 1`) с провенансом
-(`verification.checked_at` + `verification.source`) и binding'ом к provider с
-exact `remote_model_id`. Схема и обязательные поля описаны в
-`docs/plans/06-model-registry.md`; загрузка и проверка — в `aimedia.registry`.
+Все записи **experimental / live unverified**, требуют явного выбора и
+`--allow-experimental`. `verification` означает документированный источник, не
+проверенную живую генерацию. Gemini refs ≤8 по консервативной границе Guide,
+несмотря на catalog 14. Unit parameter не опубликован: не выдумывается.
+Pricing — точные опубликованные RUB tiers, не гарантия будущего тарифа и не billing.

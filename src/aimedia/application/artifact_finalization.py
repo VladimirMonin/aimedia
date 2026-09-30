@@ -21,7 +21,10 @@
 `ArtifactHistoryWriteError` с опубликованным `Artifact` и **без** исходного
 исключения в цепочке. Файл не удаляется. Итог транзакции может быть неизвестен:
 файл может быть orphan либо уже записан в completed Job. Вызывающий слой обязан
-сверить историю перед recovery; повторный submit не производится.
+сверить историю перед recovery; повторный submit не производится. При
+KeyboardInterrupt/CancelledError тот же типизированный carrier сохраняет исходное
+прерывание в `interruption`: caller сверяет known-ID snapshot и пробрасывает его,
+не заменяя уже записанный completed устаревшим Job.
 
 Модуль не импортирует storage, artifacts, provider или logging: работа идёт
 только через доменные порты `JobRepository`/`ArtifactStorage`, поэтому у шва нет
@@ -31,11 +34,12 @@ orphan и полный recovery — задача E07/E08, а не этого м�
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from pathlib import Path
 
 from aimedia.domain.artifacts import Artifact, ArtifactRole
-from aimedia.domain.job import Job, JobResult
+from aimedia.domain.job import Job, JobRecovery, JobResult
 from aimedia.domain.ports import ArtifactStorage, JobRepository
 from aimedia.domain.requests import FinalFormat, JobKind
 from aimedia.domain.state import JobStatus, ensure_transition
@@ -47,15 +51,22 @@ class ArtifactHistoryWriteError(Exception):
     Сообщение и трассировка не содержат исходного исключения, пути, имени файла
     или prompt. `orphan` предоставляет фактически опубликованный Artifact для
     сверки с БД: он может оказаться orphan либо уже записанным в completed Job.
-    Файл не удаляется, состояние Job здесь не утверждается.
+    Файл не удаляется, состояние Job здесь не утверждается. `interruption`
+    хранит исходный KeyboardInterrupt/CancelledError для проброса после сверки.
     """
 
-    def __init__(self, orphan: Artifact) -> None:
+    def __init__(
+        self,
+        orphan: Artifact,
+        *,
+        interruption: KeyboardInterrupt | asyncio.CancelledError | None = None,
+    ) -> None:
         super().__init__(
             "Запись completed Job в историю не подтверждена; опубликованный artifact "
             "может быть orphan или уже записан в истории — требуется сверка"
         )
         self.orphan = orphan
+        self.interruption = interruption
 
 
 def finalize_image_artifact(
@@ -68,6 +79,7 @@ def finalize_image_artifact(
     final_format: FinalFormat | None = None,
     output_dir: Path | None = None,
     base_name: str | None = None,
+    recovery: bool = False,
 ) -> Job:
     """Опубликовать финальный artifact и записать `completed` Job.
 
@@ -81,7 +93,7 @@ def finalize_image_artifact(
     `output_dir` — явный пользовательский каталог (уже существует), при его
     отсутствии storage использует managed `outputs/<job_id>`.
     """
-    job_id = _preflight(job, completed_at)
+    job_id = _preflight(job, completed_at, recovery=recovery)
     artifact = storage.save(
         job_id=job_id,
         content=content,
@@ -91,23 +103,32 @@ def finalize_image_artifact(
         base_name=base_name,
     )
     saved: Job | None = None
+    interruption: KeyboardInterrupt | asyncio.CancelledError | None = None
     try:
-        completed = _completed_job(job, artifact=artifact, completed_at=completed_at)
+        if not storage.exists(artifact):
+            raise ValueError("Published artifact is not verified")
+        completed = _completed_job(
+            job, artifact=artifact, completed_at=completed_at, recovery=recovery
+        )
         saved = repository.save(completed)
         confirmed = saved is not None and saved.id == job_id and saved.status is JobStatus.COMPLETED
+    except (KeyboardInterrupt, asyncio.CancelledError) as exc:
+        # Carry the published snapshot to the caller without losing the original
+        # interruption. A commit may already have happened; do not clean up/retry.
+        interruption = exc
+        confirmed = False
     except Exception:
-        # Включая ValidationError после публикации, DB-ошибку и сбой проверки
-        # ответа. BaseException (Ctrl+C) намеренно не глотается.
+        # Включая ValidationError после публикации, DB-ошибку и сбой проверки ответа.
         confirmed = False
     if confirmed:
         assert saved is not None
         return saved
     # Поднятие вне `except` исключает исходную ошибку из cause/context/traceback.
     # Отсутствие подтверждения не означает доказанный rollback транзакции.
-    raise ArtifactHistoryWriteError(artifact)
+    raise ArtifactHistoryWriteError(artifact, interruption=interruption)
 
 
-def _preflight(job: Job, completed_at: datetime) -> int:
+def _preflight(job: Job, completed_at: datetime, *, recovery: bool = False) -> int:
     """Проверить состояние и идентификаторы до любого файлового эффекта."""
     if job.kind is not JobKind.IMAGE_GENERATE:
         raise ValueError("Финализация artifact поддерживает только image.generate Job")
@@ -115,13 +136,15 @@ def _preflight(job: Job, completed_at: datetime) -> int:
         raise ValueError("Финализация требует сохранённый Job с положительным id")
     if not isinstance(completed_at, datetime) or completed_at.utcoffset() is None:
         raise ValueError("completed_at должен быть timezone-aware timestamp")
-    ensure_transition(job.status, JobStatus.COMPLETED)
-    if job.error is not None:
+    ensure_transition(job.status, JobStatus.COMPLETED, recovery=recovery)
+    if job.error is not None and not recovery:
         raise ValueError("Job с terminal error нельзя завершить без отдельного recovery")
     return job.id
 
 
-def _completed_job(job: Job, *, artifact: Artifact, completed_at: datetime) -> Job:
+def _completed_job(
+    job: Job, *, artifact: Artifact, completed_at: datetime, recovery: bool = False
+) -> Job:
     """Построить валидированный `completed` Job, сохранив прежние поля агрегата."""
     return Job.model_validate(
         {
@@ -129,6 +152,10 @@ def _completed_job(job: Job, *, artifact: Artifact, completed_at: datetime) -> J
             "status": JobStatus.COMPLETED,
             "completed_at": completed_at,
             "result": _completed_result(job.result, artifact),
+            "error": None,
+            "recovery": JobRecovery(previous_error=job.error, recovered_at=completed_at)
+            if recovery and job.error
+            else job.recovery,
         }
     )
 

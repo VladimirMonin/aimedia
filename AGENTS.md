@@ -33,10 +33,14 @@
 | [CORE.domain-boundary](instructions/CORE.domain-boundary.instructions.md) | Изменение `src/aimedia/domain/`, provider/storage ports, статусов Job, денежных значений, DTO запросов/результатов, `tests/architecture/`, `tests/support/` или доменных тестов |
 | [REGISTRY.model-catalog](instructions/REGISTRY.model-catalog.instructions.md) | Изменение `src/aimedia/registry/`, `tests/contracts/`, `tests/unit/test_registry_*.py` или `tests/security/test_registry_data_only.py`: загрузка YAML, resolution/override, единый источник значений для validation и help/JSON, происхождение сведений и безопасные события Registry |
 | [APP.inputs-preparation](instructions/APP.inputs-preparation.instructions.md) | Изменение `src/aimedia/application/` (prompt compiler, snapshot reference images и archive/confirmation hook), `tests/unit/test_prompt_compiler.py`, `tests/unit/test_input_preparation.py`, `tests/support/image_fixtures.py` |
+| [APP.single-image-execution](instructions/APP.single-image-execution.instructions.md) | Изменение `application/single_image.py` и `tests/integration/test_single_image.py`: один submit, D03, durable remote ref, ожидание, billing и финализация |
 | [DATA.sqlite-history](instructions/DATA.sqlite-history.instructions.md) | Изменение SQLite-истории: `src/aimedia/storage/` (схема, миграции, repositories) или их offline-тестов — версии v1/v2, неизменность v1 DDL, короткие транзакции, связи входов и backup перед рискованной миграцией |
 | [PROCESSING.image-artifacts](instructions/PROCESSING.image-artifacts.instructions.md) | Изменение image artifact writer, конвертера, финализации Job, тестов outputs или managed-копий reference images (CN-01: schema v2 и файловый шов, без полного E07/CLI): пути, no-clobber, метаданные, orphan, backup |
 | [PROVIDER.polza-media](instructions/PROVIDER.polza-media.instructions.md) | Изменение `src/aimedia/providers/polza/`, `tests/contracts/test_polza_*.py` или `tests/security/test_download_auth.py`: фиксированный base URL, инжектируемый client, консервативная классификация submit/status, инвариант `SUBMIT_UNCERTAIN`, streaming cap, redaction, реализованная граница CDN-скачивания (только документированный URL, внутренний DNS-пинящий пул, без bearer, политика DEBUG-журнала httpcore) |
 | [CORE.code_intelligence](instructions/CORE.code_intelligence.instructions.md) | Поиск реализации, символов, связей, структурных паттернов и оценка влияния |
+| [APP.image-execution](instructions/APP.image-execution.instructions.md) | Изменение batch/retry/sync, composition root, local Job locks и cross-process/crash tests |
+| [CLI.public-image](instructions/CLI.public-image.instructions.md) | Изменение публичных команд, argv/global flags, JSON/exit codes, config и subprocess CLI tests |
+| [HELP.atomic-resources](instructions/HELP.atomic-resources.instructions.md) | Изменение packaged atomic Markdown, topics/related, data-only directives и installed help |
 | [WORKFLOW.native-pi-routing](instructions/WORKFLOW.native-pi-routing.instructions.md) | Делегирование реализации/аудита, выбор нативной модели, резерв и scope image-only |
 
 - **Каждую новую инструкцию обязательно добавляй сюда** рабочей Markdown-ссылкой
@@ -89,8 +93,11 @@ runtime-поведение доказывают тесты и безопасны
 
 ## Исполнение, Git и отчёт
 
-Работай небольшими срезами: контракт → тест/проверяемое утверждение → реализация →
-negative/failure cases → документация и инструкция → проверки → review → commit.
+Поставляй связные законченные пользовательские функции: контракт → проверяемые
+утверждения → реализация и failure cases → docs/инструкции → единый offline gate →
+независимый review → commit. Не дроби полезную поставку на согласования и
+QA/commits каждого поля или документа; безопасность и обязательные проверки
+сохраняются.
 Не включай чужие изменения или несвязанный рефакторинг. Сохраняй raw exit code
 каждой обязательной проверки; успешный последний элемент pipeline не маскирует
 предыдущий failure.

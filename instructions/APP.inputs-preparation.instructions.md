@@ -97,7 +97,9 @@ save/create/publish/POST. Без полного совпадения — `InputA
 файлы сохраняются. Resolve проверяет actual bytes/hash/size/MIME без fallback к
 исходнику. Повторная архивация уже связанных копий запрещена. Контракт —
 [`07-storage-history-costs.md`](../docs/plans/07-storage-history-costs.md), «Managed-копии
-reference images». Полный E07/CLI и пользовательская history-интеграция не реализованы.
+reference images». Archive подключён к одиночному `single_image.generate_image`
+([APP.single-image-execution](APP.single-image-execution.instructions.md)); публичная
+history/retry/sync-композиция — [APP.image-execution](APP.image-execution.instructions.md).
 
 ## Лимиты без выдуманных чисел
 
@@ -144,7 +146,8 @@ Job и его reference images не смешиваются с batch-элемен
 ## Что не входит в C04
 
 CLI-парсер (`--prompt`/`--prompt-file`/`--image` как Typer-опции) и Polza adapter —
-этапы E09 и E06. Локальная конвертация изображений и `ArtifactStorage` — E05.
+отдельные владельцы [CLI](CLI.public-image.instructions.md) и
+[PROVIDER](PROVIDER.polza-media.instructions.md). Локальная конвертация изображений и `ArtifactStorage` — E05.
 Файловый шов managed-копий (`CN-01`) описан выше; его Runner/CLI-композиция — E07/E09. Model-aware
 validation (число refs по модели, разрешённые значения) — E03. Здесь описан только
 application-контракт подготовки данных, на который эти этапы опираются.

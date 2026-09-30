@@ -109,6 +109,9 @@ class Settings(BaseSettings):
         overrides: dict[str, Any] = dict(cli_overrides or {})
         explicit_cli = bool(overrides) or config_file is not None
         selected = config_file if config_file is not None else _config_file_from_env()
+        if selected is None:
+            default_file = paths.user_settings_file()
+            selected = default_file if default_file.is_file() else None
         if selected is not None:
             overrides["config_file"] = selected
         settings = cls(**overrides)

@@ -1,7 +1,7 @@
 ---
 applyTo: "src/aimedia/registry/**, tests/contracts/**, tests/unit/test_registry_*.py, tests/security/test_registry_data_only.py"
 name: "REGISTRY.ModelCatalog"
-description: "Читай при изменении src/aimedia/registry или его тестов: строгая data-only загрузка YAML, alias/effective resolution, provider override, единый источник допустимых значений для validation и help/JSON, происхождение сведений (documented vs live_verified), безопасные события Registry и пустой встроенный каталог."
+description: "Читай при изменении src/aimedia/registry или его тестов: строгая data-only загрузка YAML, alias/effective resolution, provider override, единый источник допустимых значений для validation и help/JSON, происхождение сведений (documented vs live_verified), безопасные события Registry и documented experimental production bindings."
 ---
 
 # REGISTRY — Model Registry (E03, C05)
@@ -71,9 +71,15 @@ Registry v0.1 различает только:
 - Демонстрационные ID из `docs/plans/01`–`09` (`seedream-5-pro`,
   `gpt-image-2.5`, `qwen-image-2.1`, `some/provider/model`) — **условные**: они не
   переносятся в production каталог без проверки.
-- На E03 authoritative данных нет, поэтому каталог **строго пуст**: это явное
-  ограничение «not verified», а не permissive fallback и не «пустая поддержка».
-  Синтетические ID допустимы только в тестах.
+- На E03 каталог был пуст. После authoritative public catalog GET добавлены только
+  `qwen/image-2.1` и `google/gemini-3.1-flash-image-preview`, с источником/датой,
+  **experimental**, без live_verified/active claims. Gemini refs консервативно ≤8
+  (Guide), несмотря на catalog 14. Явное использование требует
+  `--allow-experimental`; missing unit parameter не выдумывается, >1 output
+  отклоняется adapter до POST. Синтетические IDs остаются только в tests.
+- `CatalogPricing` — typed exact Decimal metadata RUB по resolution; опубликованный
+  максимум вычисляется из текущих tiers, не гарантия будущей цены. Цены не участвуют
+  в actual billing. View/help читают те же pricing/limits effective definition.
 - Загрузка встроенного каталога идёт через `importlib.resources`
   (`builtin_registry_dir`), а не через относительный путь: loader не должен
   зависеть от текущей рабочей директории.
@@ -110,5 +116,6 @@ Application-граница логирует (необязательный `Event
 - `tests/unit/test_registry_events.py` — безопасность и детерминированность событий.
 - `tests/unit/test_serialization.py` — историческая воспроизводимость Job.
 
-CLI-команды `models list/show` относятся к E09 и здесь не реализуются: E03 даёт
-только структурированное представление.
+CLI-команды `models list/show` используют эти views; owner —
+[CLI.public-image](CLI.public-image.instructions.md). Help dynamic blocks —
+[HELP.atomic-resources](HELP.atomic-resources.instructions.md).

@@ -401,15 +401,21 @@ def test_load_registry_root_missing_directory_is_empty(tmp_path: Path) -> None:
     assert load_registry_root(tmp_path / "absent") == ()
 
 
-def test_builtin_catalog_is_strict_and_empty() -> None:
-    """Встроенный каталог пуст и не содержит синтетических ID вне тестов.
-
-    На E03 нет authoritative remote ID/лимитов из документации, поэтому
-    production YAML не выдумываются: пустой набор — это ограничение «not
-    verified», а не подмена синтетическими записями (`release-scope.md`).
-    """
-    assert load_builtin_registry() == ()
-    assert registry_files(builtin_registry_dir()) == ()
+def test_builtin_catalog_is_documented_experimental_not_live_verified() -> None:
+    """Only official catalog bindings, with conservative Guide reference limit."""
+    records = load_builtin_registry()
+    assert len(registry_files(builtin_registry_dir())) == len(records) == 2
+    assert {record.providers["polza"].remote_model_id for record in records} == {
+        "qwen/image-2.1",
+        "google/gemini-3.1-flash-image-preview",
+    }
+    for record in records:
+        assert record.status.value == "experimental"
+        assert record.verification is not None and record.verified_at is None
+        assert "polza.ai/api/v1/models/catalog" in record.verification.source
+        assert "max_images" not in record.parameters
+    gemini = next(record for record in records if record.model_id.startswith("gemini"))
+    assert gemini.inputs["images"].max == 8
 
 
 def test_builtin_registry_dir_is_resolved_from_package_resource() -> None:

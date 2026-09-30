@@ -31,10 +31,11 @@ _SETTINGS_ENV_VARS: tuple[str, ...] = (
 
 
 @pytest.fixture(autouse=True)
-def _clean_settings_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Убрать любые AIMEDIA_* переменные, чтобы тесты не зависели от окружения."""
+def _clean_settings_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Все config locators disposable; реальный пользовательский TOML не читается."""
     for name in _SETTINGS_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(paths, "user_settings_file", lambda: tmp_path / "settings.toml")
 
 
 def _write_config(tmp_path: Path, body: str) -> Path:
@@ -182,3 +183,20 @@ def test_sources_never_leak_values(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     settings = Settings.load()
     assert all("sk-should-not-appear" not in name for name in settings.sources)
     assert "debug" not in settings.sources
+
+
+def test_default_discovery_uses_only_disposable_toml_and_synthetic_secret_alias(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    alias = "AIMEDIA_TEST_SYNTHETIC_CONFIG_ALIAS"
+    canary = "settings_alias_canary_not_a_real_key"
+    _write_config(tmp_path, f'log_level = "warning"\npolza_api_key_env = "{alias}"\n')
+    monkeypatch.setenv(alias, canary)
+    settings = Settings.load()
+    assert settings.config_file == tmp_path / "settings.toml"
+    assert settings.log_level == "WARNING"
+    assert settings.polza_api_key_env == alias
+    assert settings.resolve_api_key() == canary
+    assert canary not in repr(settings) + settings.model_dump_json()
+    monkeypatch.delenv(alias)
+    assert settings.resolve_api_key() is None

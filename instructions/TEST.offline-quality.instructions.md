@@ -73,8 +73,16 @@ JUnit/coverage XML и live-evidence добавляются вместе с со�
   Кроме `POLZA_API_KEY` очищается имя-алиас, на которое ссылается
   `AIMEDIA_POLZA_API_KEY_ENV`. Значения никогда не читаются и не логируются;
   возвращаются только имена удалённых переменных.
-- Тестовые данные направляются в временные каталоги; пользовательский data-root не
-  создаётся и не изменяется (проверяется `tests/cli/test_bootstrap.py`).
+- Тестовые данные и конфигурация направляются в временные каталоги; пользовательский
+  data/config-root не создаётся и не изменяется. Для CLI-subprocess и installed smoke
+  задавай явные disposable `--config`/`AIMEDIA_CONFIG` и `--data-dir`/`AIMEDIA_DATA_DIR`;
+  для `config init` обязательно отдельный `--file` внутри того же temp. Не полагайся
+  только на `HOME`/`APPDATA`/`LOCALAPPDATA`: Windows platformdirs может использовать
+  системные Known Folders и проигнорировать такую подмену. Проверяй returned init path
+  и отсутствие эффектов вне temp; socket/secret guard остаётся обязательным.
+  Default Settings discovery tests обязаны подменять `paths.user_settings_file`
+  на disposable tmp TOML. Alias-canary — только synthetic env variable/value;
+  реальный пользовательский TOML нельзя читать даже для проверки default fallback.
 - `uv run --locked --no-env-file` используется во всех проверках: `--locked`
   запрещает молчаливое изменение lockfile, `--no-env-file` отключает загрузку
   `.env`. `--no-env-file` не удаляет уже экспортированные переменные — поэтому

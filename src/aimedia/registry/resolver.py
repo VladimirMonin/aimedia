@@ -120,6 +120,7 @@ class ModelResolver:
             verification=record.verification,
             verified_at=record.verified_at,
             docs=record.docs,
+            pricing=record.pricing,
         )
 
     @staticmethod

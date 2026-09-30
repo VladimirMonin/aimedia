@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import os
+import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
@@ -34,7 +35,7 @@ from aimedia.artifacts.events import (
     log_artifact_saved,
 )
 from aimedia.artifacts.image import PreparedImage, convert_image, prepare_image
-from aimedia.artifacts.output import PublishedOutput, publish_output
+from aimedia.artifacts.output import PublishedOutput, _output_directory, publish_output
 from aimedia.domain.artifacts import Artifact, ArtifactKind, ArtifactRole
 from aimedia.domain.requests import FinalFormat
 from aimedia.logging import EventLogger
@@ -67,6 +68,22 @@ class PillowArtifactStorage:
     def __init__(self, *, data_root: Path, logger: EventLogger | None = None) -> None:
         self._data_root = Path(os.path.abspath(data_root))
         self._logger = logger
+
+    def preflight(self, *, job_id: int, output_dir: Path | None = None) -> None:
+        """Check E05 directory guards and actual write access before paid submit.
+
+        Only managed directories may be created. The exclusive empty probe is
+        removed immediately; final publication still rechecks paths/no-clobber.
+        """
+        if type(job_id) is not int or job_id <= 0:
+            raise ValueError("job_id must be a positive integer")
+        directory, _ = self._select_directory(job_id=job_id, output_dir=output_dir)
+        directory = _output_directory(directory)
+        fd, name = tempfile.mkstemp(prefix=".aimedia-", suffix=".part", dir=directory)
+        try:
+            os.close(fd)
+        finally:
+            Path(name).unlink()
 
     def save(
         self,

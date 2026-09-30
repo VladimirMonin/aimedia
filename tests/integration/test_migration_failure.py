@@ -245,8 +245,9 @@ def test_failed_v2_leaves_production_v1_rows_and_schema_untouched(tmp_path: Path
         # Номер версии не «сгорел»: штатная v2 применяется со следующей попытки, а
         # уже записанные строки v1 остаются без managed-копий.
         outcome = apply_migrations(manager.database)
-        assert outcome.applied == (2,)
+        assert outcome.applied == (2, 3)
         assert "managed_input_copies" in set(manager.database.get_tables())
+        assert "jobs_fts" in set(manager.database.get_tables())
         assert manager.database.execute_sql('SELECT COUNT(*) FROM "inputs"').fetchone() == (1,)
         assert manager.database.execute_sql(
             'SELECT COUNT(*) FROM "managed_input_copies"'

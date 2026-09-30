@@ -96,6 +96,8 @@ terminal — `completed`/`failed`/`cancelled` (инвариант 13).
   возможность, а не ловит исключение.
 - Методы `ProviderGateway` асинхронны, методы `JobRepository`/`ArtifactStorage`
   синхронны: локальный SQLite не должен ждать remote внутри транзакции.
+  `ArtifactStorage.preflight(job_id, output_dir)` — узкая проверка output до submit;
+  IO/redirect guards/write probe остаются в файловом adapter, не в application/domain.
 - Через границу provider проходит `ProviderResult`/`SubmissionResult`, а не сырой
   HTTP JSON и не `httpx.Response`. `SubmissionResult(completed)` несёт результат
   с доступным удалённым image artifact; `submitted`/`running` несёт `RemoteJobRef`

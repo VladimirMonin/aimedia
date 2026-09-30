@@ -1,0 +1,46 @@
+schema_version: 1
+model_id: qwen-image-2-1
+name: Qwen Image 2.1
+family: image
+status: experimental
+capabilities:
+  text_to_image: true
+  reference_images:
+    supported: true
+    max: 10
+inputs:
+  prompt:
+    supported: true
+    required: true
+    max_chars: 5000
+  images:
+    supported: true
+    min: 0
+    max: 10
+outputs:
+  images:
+    supported: true
+parameters:
+  resolution:
+    type: enum
+    values: [1K, 2K]
+    default: 1K
+  aspect_ratio:
+    type: enum
+    values: ['1:1', '4:3', '3:4', '3:2', '2:3', '16:9', '9:16']
+  output_format:
+    type: enum
+    values: [png, webp, jpeg]
+    default: png
+providers:
+  polza:
+    remote_model_id: qwen/image-2.1
+verification:
+  checked_at: 2026-09-30
+  source: https://polza.ai/api/v1/models/catalog
+pricing:
+  currency: RUB
+  unit_parameter: null
+  by_resolution:
+    1K: "3"
+    2K: "6"

@@ -450,6 +450,18 @@ wheel/sdist — exit 0; независимый нативный SOL6-review — 
 
 ### E07. Один Job полностью, без скрытых пробелов ⚙️
 
+**Текущий частичный срез (не принят):** `application.single_image.generate_image`
+собирает новый image Job через существующие порты: prepared snapshots → confirmed
+CREATED → callback validation/binding/output preflight → archive → один submit → confirmed ref →
+bounded polling/result → safe billing snapshot → все локальные images → confirmed
+history. `tests/integration/test_single_image.py` использует реальную временную
+SQLite, managed copies, Pillow и fake/MockHTTP provider. CLI, batch, retry/sync,
+recovery/locks и production bindings/live отсутствуют; E07/CN-01 целиком не приняты.
+После возможного финального commit прерывание сохраняет опубликованный snapshot:
+сверка known ID не позволяет заменить COMPLETED устаревшим FAILED. Явный `--out`
+проверяется файловым портом до платного submit. Независимый review и full committed
+clean-clone gate ещё требуются.
+
 **Результат.** Собирается вертикальный сценарий: входы → Job в SQLite → submit → remote ref → polling/result → cost/usage → локальный artifact → финальное состояние. Use case не обращается к httpx/Peewee напрямую. Вызов через CLI возможен уже здесь, но полный публичный контракт ещё проходит E09.
 
 | Будущий тест | Проверяемое утверждение |
@@ -476,8 +488,9 @@ submit, опубликованный файл после неопределён�
 повторяется ([`07-storage-history-costs.md`](07-storage-history-costs.md),
 «Managed-копии reference images»). Schema v2/связь и файловый source-срез `aaf1c5e`
 проверены отдельно: snapshot одного чтения, copies/resolve и confirmation hook.
-Полная композиция D03 с submit/polling/finalization и пользовательским CLI ещё
-`NOT IMPLEMENTED`; приёмка всего CN-01 не пройдена.
+Одиночная application-композиция D03 с submit/polling/finalization добавлена
+частичным незакоммиченным срезом E07; пользовательский CLI/recovery ещё
+`NOT IMPLEMENTED`, независимая приёмка этого среза и всего CN-01 не пройдена.
 
 ### E08. Параллельность, восстановление и защита от двойного запуска ⚡
 
@@ -520,7 +533,7 @@ submit, опубликованный файл после неопределён�
 | `tests/cli/test_prompt_argv_order.py` | Реальный argv с перемежающимися options сохраняет порядок и на этапе парсинга, и в сохранённом compiled prompt |
 | `tests/cli/test_json_contract.py` | stdout целиком разбирается как один JSON document при успехе и ошибках, включая invalid args; нет ANSI/баннера/прогресса |
 | `tests/cli/test_exit_codes.py` | Каждому ожидаемому исходу соответствует согласованный exit code, а не всегда 0 |
-| `tests/integration/test_history_search.py` | Запрос находит ожидаемые Job IDs в фиксированном corpus; перестроение FTS не меняет историю |
+| `tests/integration/test_history_search.py` | Prompts, refs и result artifact paths/hashes/metadata находят связанные Job IDs; DB-only v3 backfill/resave/rollback не меняет v1/v2 или файлы |
 | `tests/cli/test_cost_report.py` | Известные RUB/USD и количество unknown Jobs показываются отдельно; границы периода проверены |
 | `tests/contracts/test_help_topics.py` | Topic IDs уникальны, related существуют, raw не содержит unresolved directives, JSON markdown совпадает с raw body |
 | `tests/cli/test_help_without_credentials.py` | Локальные help/version/models/history не требуют ключа и не вызывают API |
@@ -531,7 +544,7 @@ submit, опубликованный файл после неопределён�
 
 - [ ] Проверены оба согласованных расположения глобальных флагов и конфликтные значения.
 - [ ] Human mode не используется как источник данных для JSON mode.
-- [ ] FTS5 не выдан за семантический или морфологически полноценный поиск.
+- [ ] FTS5 находит prompts, reference provenance/managed paths/hashes и result artifact paths/hashes после restart/удаления исходника; не выдан за OCR, семантический или морфологически полноценный поиск.
 - [ ] `raw` возвращает готовый Markdown; source/front matter имеют отдельную внутреннюю роль.
 - [ ] Документы будущих функций не показываются как действующие команды.
 - [ ] Все приведённые пользовательские примеры проверены на существование команды/flags без платного запуска.
@@ -1239,3 +1252,17 @@ aimedia/
 
 > [!success] Критерий завершения
 > Готовность — это согласованная функция, работающая в установленной версии и подтверждённая конкретной проверкой. Для каждого важного утверждения известны тест, его результат, проверенный commit и границы доказательства. Только такой результат получает релизный тег и становится постоянной копией `aimedia`, установленной через uv tool.
+
+## Связная пользовательская поставка E07–E09
+
+По прямому указанию владельца E07–E09 выполняются одним набором до рабочего
+image CLI, не микросрезами отдельных полей/docs receipts. Один consolidated
+offline gate и независимый review/frozen commit на полезную поставку, при
+сохранении обязательных security/negative assertions. Карта Cxx выше описывает
+логические зависимости, а не обязательное количество согласований/коммитов.
+
+Текущий кандидат включает одиночную генерацию, batch/retry/sync, local kernel Job
+ownership, v3 FTS5, историю/расходы, atomic package help и documented experimental
+Polza bindings. Актуальные writer evidence и непроверенные E10 live/Linux/E11
+слоты — [release-board](release-board.md), [verification-matrix](verification-matrix.md).
+Наличие кода не является release acceptance.

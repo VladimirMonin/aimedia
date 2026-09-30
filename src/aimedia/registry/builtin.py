@@ -5,11 +5,9 @@ Loader не должен зависеть от текущей рабочей д�
 resolution»). Поэтому путь к данным берётся через package resources, а не через
 относительный `Path("./registry/models")`.
 
-На E03 встроенный каталог намеренно пуст: в локальных документах нет
-authoritative remote ID и лимитов, а синтетические записи вне тестов запрещены
-(`docs/plans/release-scope.md`; решение E00 D16). Пустой каталог — это явное
-ограничение **not verified**, а не permissive fallback и не подтверждённая
-поддержка моделей: см. `aimedia/registry/data/README.md`.
+Каталог содержит только официально документированные experimental bindings,
+не live_verified модели: см. `aimedia/registry/data/README.md`. Синтетические IDs
+в production запрещены (D16), текущие tiers не являются гарантией будущей цены.
 """
 
 from __future__ import annotations
@@ -29,11 +27,7 @@ def builtin_registry_dir() -> Path:
 
 
 def load_builtin_registry() -> tuple[ModelRecord, ...]:
-    """Загрузить встроенный каталог (сейчас — пустой набор).
-
-    Отсутствие записей не маскируется синтетическими ID: пустой кортеж — честный
-    результат, а не «модель есть по умолчанию».
-    """
+    """Загрузить строгий documented каталог; запись не доказывает live-поддержку."""
     return load_registry_root(builtin_registry_dir())
 
 

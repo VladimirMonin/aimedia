@@ -98,18 +98,27 @@ Summary clean-clone gate хранится локально вне Git в
 - Подключение downloader к Job, проверка/сохранение его байтов и recovery — E07–E08,
   не доказаны срезом C09c2. Приёмка wheel/sdist и installed-CLI smoke — слот E10.
 
-## E07–E11: ещё не начато ⏳
+## E07–E09: связный image CLI кандидат; E10–E11 открыты ⏳
 
 | Этап | Что должно появиться | Зависимости | Критерий приёмки (из [`README.md`](README.md)) | Состояние |
 |---|---|---|---|---|
-| E07 | Одиночный Job end-to-end: входы → Job в SQLite → submit → polling → cost/usage → artifact → final state | E04–E06 | Синхронизированный Fake provider + реальная SQLite/файлы; ошибки сохраняют ref/cost и не создают скрытый повторный submit | `PENDING` |
-| E08 | Batch с ограниченной конкурентностью, partial failures, `retry`/`sync`, Ctrl+C, recovery и защита от двойного Runner | E07 | Peak active = лимит, partial outcome, submit_count = 1 при неизвестном исходе, restart без нового POST, cross-process guard | `PENDING` |
-| E09 | Полный CLI, JSON/exit codes, история, лексический FTS5, валютные сводки, atomic help | E03, E08 | Реальный argv, разбираемый JSON на успехе и ошибке, известный corpus находится поиском, RUB/USD/unknown раздельно, help из установленного пакета вне cwd | `PENDING` |
+| E07 | Одиночный application use case `single_image.generate_image`: prepared inputs → confirmed CREATED → validation/archive → один submit → ref/polling → billing → все artifacts → confirmed history | E04–E06 | `tests/integration/test_single_image.py`: реальная tmp SQLite/managed copies/Pillow, fake + Polza MockHTTP, ошибки без duplicate submit; независимый review/committed clone ещё требуются | `IN_PROGRESS` (связный незакоммиченный кандидат, не приёмка E07) |
+| E08 | Batch с ограниченной конкурентностью, partial failures, `retry`/`sync`, Ctrl+C, recovery и защита от двойного Runner | E07 | Peak active = лимит, partial outcome, submit_count = 1 при неизвестном исходе, restart без нового POST, cross-process guard | `IN_PROGRESS` (код и offline assertions в общей поставке) |
+| E09 | Полный CLI, JSON/exit codes, история, лексический FTS5, валютные сводки, atomic help | E03, E08 | Реальный argv, JSON/exit для текущей попытки, поиск prompts/ref provenance/managed paths/hashes/result artifacts после restart без чтения файлов, RUB/USD/unknown раздельно, packaged help вне cwd | `IN_PROGRESS` (публичный CLI/FTS/help в общей поставке) |
 | E10 | Приёмка release candidate: Windows+Linux, offline quick/full/release, wheel+sdist, installed smoke, secret scan, агентский walkthrough, ограниченный live | E09 | Один frozen SHA; отсутствие обязательных `SKIP`/`XFAIL`/`NOT_RUN`; live-отчёт с model ID, режимом, ценой и датой | `PENDING` |
 | E11 | Публикация проверенного релиза | E10 + отдельное разрешение владельца | Annotated tag на проверенном SHA, wheel/sdist + checksums, установка по тегу с проверкой происхождения | `PENDING`, `BLOCKED` (нет GitHub owner и разрешения) |
 
-E07–E11 **не** содержат реализации, tests и evidence: файлов этих этапов в дереве
-нет. Названия будущих тестов на доске не являются признаком их существования.
+**Историческая запись одиночного среза до укрупнения (не текущий статус):**
+E07 содержал частичное одиночное ядро и `tests/integration/test_single_image.py`;
+локальные raw attempts — `artifacts/quality/e07-single-sol61-writer/`, не замена
+независимому review и committed clone. Follow-up P1/P2: published snapshot и исходный
+interrupt сохраняются при unknown final commit, COMPLETED не перезаписывается
+устаревшим FAILED; output preflight выполняется до submit. Локальный dirty-worktree
+focused — 153 passed, full — 1303 passed (11 raw codes = 0); новые и предыдущие
+попытки сохранены отдельно в `artifacts/quality/e07-review-fixes-sol61/`. Независимый
+review исправлений ещё требуется. CLI/batch/recovery/locks, production
+activation и live не реализованы этим срезом. E08–E11 не начаты; названия будущих
+тестов на доске не являются признаком их существования.
 
 ## Дополнительная работа по изменению объёма (CN) 🧩
 
@@ -118,7 +127,7 @@ E07–E11 **не** содержат реализации, tests и evidence: ф�
 
 | ID | Работа | Зависимости | Что докажет приёмка | Состояние |
 |---|---|---|---|---|
-| CN-01 | Долговечные managed-копии reference images, связанные с Job (path/SHA-256/MIME/размер/позиция) в managed-дереве app data | E02 (inputs), E04 (storage v1) | Новая миграция **v2** без правки schema v1; no-clobber/ownership; Job→ref связь читается после удаления исходника; negative-тесты; managed-копии входят в quiesced backup-манифест. Контракт — [`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии reference images»; реализован первый code-срез: поле `InputRef.managed_path` и таблица v2 `managed_input_copies` со связью в repository. Файловый шов добавляет snapshots, `inputs/` no-clobber publish/resolve, confirmation hook и tmp manual backup/restore тест; полная E07/CLI/history-композиция не реализована | `IN_PROGRESS` (DTO/SQLite и файловый source-срез `aaf1c5e` приняты отдельно; полная E07/CLI/history-композиция и весь `CN-01` не приняты) |
+| CN-01 | Долговечные managed-копии reference images, связанные с Job (path/SHA-256/MIME/размер/позиция) в managed-дереве app data | E02 (inputs), E04 (storage v1) | Новая миграция **v2** без правки schema v1; no-clobber/ownership; Job→ref связь читается после удаления исходника; negative-тесты; managed-копии входят в quiesced backup-манифест. Контракт — [`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии reference images»; реализован первый code-срез: поле `InputRef.managed_path` и таблица v2 `managed_input_copies` со связью в repository. Файловый шов добавляет snapshots, `inputs/` no-clobber publish/resolve, confirmation hook и tmp manual backup/restore тест; одиночная application-композиция E07 добавлена в worktree, CLI/history/recovery ещё не реализованы | `IN_PROGRESS` (DTO/SQLite и файловый source-срез `aaf1c5e` приняты отдельно; полная E07/CLI/history-композиция и весь `CN-01` не приняты) |
 | CN-02 | Лексический FTS5 и фильтры остаются обязательными; семантический/векторный поиск — backlog следующего релиза | E09 для FTS5 | FTS5/фильтры находят Jobs/prompts/ref-метаданные/artifacts; FTS5 не выдаётся за семантический поиск | `PENDING` (semantic — вне v0.1.0) |
 | CN-03 | Audio/speech/STT/TTS — отдельное приложение, вне планов и навигации этого репозитория | — | В `docs/plans/` нет речи как задачи aimedia; отменяемые положения `01` (раздел «Расширение на аудио» и примеры `aimedia audio ...`) явно superseded с сохранением исходного текста; ссылки не битые | `DONE` (документарно) |
 
@@ -180,7 +189,7 @@ Linux/release/live и реальные пользовательские данн
 | Ворота | Критерий | Текущее состояние (не E06/release candidate) |
 |---|---|---|
 | G0 | Нет незакрытого решения, от которого зависит реализация | Частично: E00 baseline D01–D16 принят, `CN-01`–`CN-03` зафиксированы; контракт `CN-01` синхронизирован со спецификацией, реализован его первый code-срез (schema v2 + связь), файловый source-срез `aaf1c5e` принят отдельно, полная E07/CLI-композиция отсутствует |
-| G1 | Функции согласованного scope существуют и интегрированы | Не выполнено: E07–E09 не начаты |
+| G1 | Функции согласованного scope существуют и интегрированы | Связный E07–E09 кандидат реализован; consolidated writer gate/review/frozen SHA ещё не означают release acceptance |
 | G2 | Обязательные offline-assertions выполнены на кандидате | C09c2: clean-clone full 1145 passed; CN-01 DTO/SQLite `a237d4f`: clean-clone full 1192 passed, файловый source `aaf1c5e`: 1252 passed; E06/release candidate ещё нет |
 | G3 | Есть live evidence заявленных моделей/режимов | Не выполнено: `NOT_RUN` |
 | G4 | Собранные distributions и установленный пакет работают вне checkout | Не выполнено для текущего HEAD (приёмка E04/E05 не переносится на новые срезы) |
@@ -229,3 +238,34 @@ pytest node ID и статус только после прогона на ко�
 - [`decisions/implementation-baseline.md`](decisions/implementation-baseline.md) — D01–D16.
 - [`backup-contract.md`](backup-contract.md) — quiescent offline backup (managed files).
 - [`logging-contract.md`](logging-contract.md) — диагностические события и redaction.
+
+### Consolidated writer verification, 2026-09-30
+
+E07–E09 остаются **IN_PROGRESS candidate / whole-review pending**, не ACCEPTED.
+Публичный image CLI, batch, retry/sync, ownership, v3 FTS search, costs и 10 packaged
+help topics реализованы вместе. Locked offline full: **1344 passed / 93% branch
+coverage**, collection/Ruff/mypy/pytest raw exits **0**;
+`artifacts/quality/complete-cli-sol61-writer/full-accepted-candidate/summary.json`.
+Ошибочные ранние gates сохранены в `full/`, `full-final/` с raw exit 1.
+Cached offline wheel/sdist build и no-deps target install прошли; установленный
+entrypoint/resources outside cwd проверен с явными disposable config/data paths
+(`installed-smoke-03.txt`, raw exit 0). Приватный config isolation incident и
+санкционированный exact-template cleanup не скрыты. Финальная release/build evidence
+лежит в том же writer report directory. Live, Linux, E10/E11 и независимое принятие
+не заявлены; staging/commit/push/tag/release не выполнялись.
+
+
+### Consolidated corrective candidate E07–E09
+
+Семь source findings исправлены одним связанным срезом: sync current-attempt errors,
+config-test isolation, DB leaf preflight, storage error boundary, parser format choices,
+DB-only reference/result FTS v3 и batch SIGINT regression. Accepted v1/v2 DDL неизменен.
+Добавлено **22** offline cases: focused **69 passed**, итоговый release **1366 passed /
+93% coverage**, все **12 raw codes 0**, build успешен, SKIP/XFAIL нет.
+Evidence: `artifacts/quality/whole-cli-consolidated-fixes/release/summary.json`;
+первый raw-1 release сохранён отдельно в `release-first-failed/` (исправлена старая
+assertion raw ORM error → StorageError для directory leaf).
+Код остаётся uncommitted candidate до fresh independent review и parent SHA/clone gate.
+Linux/live/clean clone/немодифицированный installed loopback NOT_RUN. Отсутствующий
+официальный unit parameter для нескольких outputs не придуман; returned images
+сохраняются все, multi-output request live остаётся NOTPROVEN. Stage/commit не выполнены.

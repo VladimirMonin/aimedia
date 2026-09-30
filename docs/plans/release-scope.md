@@ -60,6 +60,10 @@
 - **SQLite FTS5 по истории — обязательный пункт** (переведён из «Желательно»;
   закрывается на E09). Это лексический, а не семантический/морфологический поиск.
   Обязательная команда — `aimedia jobs search` с позиционным `query` и `--json`.
+  Corpus включает prompts, reference provenance/имена/managed paths/hashes и
+  result artifact имена/local paths/hashes/сохранённые metadata; результат — связанные
+  Jobs. Это DB-only snapshots, без чтения изображений/legacy-файлов, OCR или embeddings.
+  Отсутствие поискового слова в prompt/model не отменяет поиск refs/results.
 - **Сводка расходов по отдельным валютам — обязательный пункт** (переведена из
   «Желательно»; закрывается на E09). Валюты не смешиваются; ноль ≠ неизвестная цена.
   Обязательная команда — `aimedia jobs costs` с минимальными опциями `--today` и
@@ -284,3 +288,23 @@ embeddings | позже | после E11» для STT/TTS уточняется: 
 - `NOT_RUN`, `SKIPPED`, `XFAILED`, `NOT_COLLECTED` не равны `PASSED`.
 - Синтетические и демонстрационные ID, YAML-записи и примеры не выдаются за
   подтверждённую runtime/live поддержку.
+
+## CN-04. Единая пользовательская поставка E07–E09
+
+Прямое задание владельца объединяет execution, batch/retry/sync, публичный CLI,
+FTS5/history/costs и packaged atomic help в один полезный набор с одним review/gate.
+Дополнены local `config init/show/validate` и alias `jobs list → recent`; image-only
+scope, обязательные negative/security checks и ограничения E10/E11 сохраняются.
+
+Production metadata подтверждены public catalog GET 2026-09-30 (HTTP 200, no auth,
+paid POST 0): `qwen/image-2.1` и `google/gemini-3.1-flash-image-preview`, Media
+endpoint и параметры. Bindings **experimental / live unverified**, не active:
+генерация требует явного model и `--allow-experimental`. Gemini refs ≤8 по Guide
+(каталог 14); unit parameter не опубликован и не выдумывается. Exact RUB tiers
+хранятся как pricing metadata, не actual billing/будущая гарантия.
+
+В рабочем кандидате реализованы CLI/D03/archive/history/retry/sync и derived FTS5
+миграция v3 без правки принятого v1/v2 DDL, backfill только из DB snapshots.
+CN-01 API/files seam ранее принят отдельно; пользовательский CLI проверяется в
+этом наборе. Backup CLI/GC не добавлены. Реализация/dirty-worktree evidence не
+означают frozen SHA, независимую приёмку, live, Linux или опубликованный релиз.

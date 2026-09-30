@@ -192,6 +192,9 @@ class _MalformedArtifactStorage:
     def __init__(self, storage: PillowArtifactStorage) -> None:
         self.storage = storage
 
+    def preflight(self, *, job_id: int, output_dir: Path | None = None) -> None:
+        self.storage.preflight(job_id=job_id, output_dir=output_dir)
+
     def save(
         self,
         *,

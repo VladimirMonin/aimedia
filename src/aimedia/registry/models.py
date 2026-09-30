@@ -31,6 +31,8 @@ from pydantic import (
     model_validator,
 )
 
+from aimedia.domain.base import ExactDecimal
+
 # Канонический ID и alias: lowercase-kebab-case (`06-model-registry.md`,
 # «Требования к ID»). Одно написание на концепт — точек, слэшей и подчёркиваний нет.
 _ID_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
@@ -225,6 +227,24 @@ class DocsRef(RegistryModel):
     overview: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
+class CatalogPricing(RegistryModel):
+    """Published tariff metadata, never actual billing or a future cost guarantee."""
+
+    currency: str
+    by_resolution: dict[str, ExactDecimal]
+    unit_parameter: str | None = None
+
+    @property
+    def published_max(self) -> ExactDecimal:
+        return max(self.by_resolution.values())
+
+    @model_validator(mode="after")
+    def _valid_prices(self) -> CatalogPricing:
+        if not self.by_resolution or any(value < 0 for value in self.by_resolution.values()):
+            raise ValueError("Catalog pricing must contain nonnegative published amounts")
+        return self
+
+
 class ModelRecord(RegistryModel):
     """Одна логическая модель Registry.
 
@@ -246,6 +266,7 @@ class ModelRecord(RegistryModel):
     verification: Verification | None = None
     verified_at: date | None = None
     docs: DocsRef | None = None
+    pricing: CatalogPricing | None = None
 
     @field_validator("model_id")
     @classmethod
@@ -304,6 +325,7 @@ class EffectiveModelDefinition(RegistryModel):
     verification: Verification | None = None
     verified_at: date | None = None
     docs: DocsRef | None = None
+    pricing: CatalogPricing | None = None
 
 
 __all__ = [

@@ -25,8 +25,9 @@ Runner ведёт себя так:
 не может удерживать транзакцию SQLite.
 
 Реализованная цепочка: **v1** — все таблицы данных первого релиза, **v2** (`CN-01`)
-— одна таблица `managed_input_copies`. v1 DDL не переписывается: новая таблица
-входит в цепочку отдельным шагом, а не в `SCHEMA_TABLES` версии 1.
+— одна таблица `managed_input_copies`, **v3** — derived FTS5 history index с
+DB-only backfill. v1/v2 DDL не переписываются: новые объекты входят в цепочку
+отдельным шагом, а не в `SCHEMA_TABLES` версии 1.
 """
 
 from __future__ import annotations
@@ -93,6 +94,59 @@ def _create_managed_input_copies(database: Database) -> None:
     database.create_tables([ManagedInputCopyRecord])
 
 
+def _create_history_search(database: Database) -> None:
+    """v3: derived FTS5 index; backfill only persisted history, never files."""
+    # Only SQLite snapshots: never open input/result files or index remote URLs.
+    database.execute_sql("CREATE VIRTUAL TABLE jobs_fts USING fts5(document)")
+    database.execute_sql(
+        "CREATE VIEW jobs_search_documents AS SELECT j.id AS job_id, "
+        "coalesce(j.compiled_prompt,'') || ' ' || j.model_id || ' ' || "
+        "j.provider_id || ' ' || coalesce(j.remote_model_id,'') || ' ' || j.kind || ' ' || "
+        "coalesce((SELECT group_concat("
+        "coalesce(p.source_path,'') || ' ' || p.text_snapshot, ' ') "
+        "FROM prompt_sources p WHERE p.job_id=j.id),'') || ' ' || "
+        "coalesce((SELECT group_concat("
+        "i.source_path || ' ' || coalesce(m.local_path,'') || ' ' || "
+        "coalesce(i.sha256,'') || ' ' || coalesce(i.mime_type,'') || ' ' || "
+        "i.kind || ' ' || coalesce(i.metadata_json,''), ' ') "
+        "FROM inputs i LEFT JOIN managed_input_copies m ON m.input_id=i.id "
+        "WHERE i.job_id=j.id),'') || ' ' || "
+        "coalesce((SELECT group_concat("
+        "coalesce(a.local_path,'') || ' ' || coalesce(a.sha256,'') || ' ' || "
+        "coalesce(a.mime_type,'') || ' ' || a.kind || ' ' || a.role || ' ' || "
+        "coalesce(a.metadata_json,''), ' ') "
+        "FROM artifacts a WHERE a.job_id=j.id),'') AS document FROM jobs j"
+    )
+    database.execute_sql(
+        "INSERT INTO jobs_fts(rowid, document) SELECT job_id, document FROM jobs_search_documents"
+    )
+    # Child snapshots are replaced during repository.save; each trigger is in
+    # that same transaction, so readers only see the complete committed document.
+    for table in ("jobs", "prompt_sources", "inputs", "managed_input_copies", "artifacts"):
+        for action in ("insert", "update", "delete"):
+            aliases = (
+                ("old", "new") if action == "update" else ("old" if action == "delete" else "new",)
+            )
+            statements = []
+            for alias in aliases:
+                if table == "jobs":
+                    job_id = f"{alias}.id"
+                elif table == "managed_input_copies":
+                    job_id = f"(SELECT job_id FROM inputs WHERE id={alias}.input_id)"
+                else:
+                    job_id = f"{alias}.job_id"
+                statements.append(
+                    f"DELETE FROM jobs_fts WHERE rowid={job_id}; "
+                    "INSERT INTO jobs_fts(rowid, document) SELECT job_id, document "
+                    f"FROM jobs_search_documents WHERE job_id={job_id}; "
+                )
+            database.execute_sql(
+                f"CREATE TRIGGER {table}_fts_{action} AFTER {action.upper()} ON {table} BEGIN "
+                + "".join(statements)
+                + "END"
+            )
+
+
 # Продуктовая цепочка. Новая версия схемы добавляется сюда следующим элементом с
 # номером `LATEST_SCHEMA_VERSION + 1`; отдельный файл миграций не заводится, потому
 # что runner один и порядок объявлен в одном месте.
@@ -103,6 +157,7 @@ MIGRATIONS: tuple[Migration, ...] = (
         name="002_managed_input_copies",
         apply=_create_managed_input_copies,
     ),
+    Migration(version=3, name="003_history_fts", apply=_create_history_search),
 )
 
 LATEST_SCHEMA_VERSION: int = MIGRATIONS[-1].version

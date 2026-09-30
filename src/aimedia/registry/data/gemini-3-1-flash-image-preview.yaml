@@ -1,0 +1,45 @@
+schema_version: 1
+model_id: gemini-3-1-flash-image-preview
+name: Gemini 3.1 Flash Image Preview
+family: image
+status: experimental
+capabilities:
+  text_to_image: true
+  reference_images:
+    supported: true
+    max: 8
+inputs:
+  prompt:
+    supported: true
+    required: true
+    max_chars: 20000
+  images:
+    supported: true
+    min: 0
+    max: 8
+outputs:
+  images:
+    supported: true
+parameters:
+  resolution:
+    type: enum
+    values: [1K, 2K, 4K]
+  aspect_ratio:
+    type: enum
+    values: ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', auto]
+  output_format:
+    type: enum
+    values: [png, jpeg]
+providers:
+  polza:
+    remote_model_id: google/gemini-3.1-flash-image-preview
+verification:
+  checked_at: 2026-09-30
+  source: https://polza.ai/api/v1/models/catalog (references conservatively capped at Guide limit 8)
+pricing:
+  currency: RUB
+  unit_parameter: null
+  by_resolution:
+    1K: "4.8"
+    2K: "7.2"
+    4K: "10.8"

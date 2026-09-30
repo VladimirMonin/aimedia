@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import sqlite3
+import stat
 import threading
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,7 +28,7 @@ from types import TracebackType
 from typing import Self, cast
 
 import peewee
-from peewee import SqliteDatabase
+from peewee import DatabaseError, OperationalError, SqliteDatabase
 
 from aimedia.logging import EventLogger
 from aimedia.storage.errors import DatabaseClosedError, DatabaseOwnershipError, StorageError
@@ -151,6 +152,21 @@ class DatabaseManager:
                 f"{owner}, а обращение пришло из потока {threading.get_ident()}"
             )
 
+    def _check_database_leaf(self) -> None:
+        # Check the leaf before SQLite can follow a redirect or migrate its target.
+        try:
+            info = self._path.lstat()
+            if (
+                self._path.is_symlink()
+                or self._path.is_junction()
+                or not stat.S_ISREG(info.st_mode)
+            ):
+                raise StorageError("Файл истории должен быть обычным файлом без redirects")
+        except FileNotFoundError:
+            pass  # A new regular SQLite file may be created by connect.
+        except OSError as exc:
+            raise StorageError("Не удалось проверить файл истории") from exc
+
     def connect(self) -> None:
         """Открыть соединение и применить pragmas.
 
@@ -165,11 +181,17 @@ class DatabaseManager:
             raise FileNotFoundError(
                 f"Каталог базы не существует: {parent}. Storage не создаёт data-root сам"
             )
+        self._check_database_leaf()
         # Версия ORM проверяется до первой миграции: непроверенный Peewee не должен
         # незаметно менять фактическое поведение DDL/транзакций. Присваивается
         # только после успешного `connect`, чтобы состояние не опережало факт.
         versions = verify_engine_versions()
-        self._database.connect()
+        try:
+            self._database.connect()
+        except DatabaseError as exc:
+            if type(exc) not in (DatabaseError, OperationalError):
+                raise  # Unexpected ORM/programming errors are not storage IO failures.
+            raise StorageError("Не удалось открыть SQLite историю") from exc
         self.engine_versions = versions
         self._owner_thread = threading.get_ident()
 
@@ -200,7 +222,13 @@ class DatabaseManager:
         Необязательный `logger` включает события `migration_started/completed/failed`
         (E04, C06c1); без него миграции работают молча.
         """
-        return apply_migrations(self.database, logger=logger)
+        self._check_database_leaf()
+        try:
+            return apply_migrations(self.database, logger=logger)
+        except DatabaseError as exc:
+            if type(exc) not in (DatabaseError, OperationalError):
+                raise  # Unexpected ORM/programming errors are not storage IO failures.
+            raise StorageError("Не удалось прочитать схему истории") from exc
 
     def open(self, *, logger: EventLogger | None = None) -> MigrationOutcome:
         """Открыть соединение и применить миграции; при ошибке закрыть его.

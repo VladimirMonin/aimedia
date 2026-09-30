@@ -37,6 +37,7 @@ from pydantic import Field
 
 from aimedia.registry.models import (
     CapabilityNode,
+    CatalogPricing,
     EffectiveModelDefinition,
     InputLimit,
     ModelRecord,
@@ -123,6 +124,7 @@ class ModelView(RegistryModel):
     parameters: dict[str, ParameterView] = Field(default_factory=dict)
     provenance: ProvenanceView
     docs_overview: str | None = None
+    pricing: CatalogPricing | None = None
 
 
 class ModelSummaryView(RegistryModel):
@@ -160,6 +162,7 @@ def build_model_view(effective: EffectiveModelDefinition) -> ModelView:
         parameters={name: _parameter_view(spec) for name, spec in effective.parameters.items()},
         provenance=_provenance_view(effective),
         docs_overview=effective.docs.overview if effective.docs is not None else None,
+        pricing=effective.pricing,
     )
 
 
@@ -227,6 +230,14 @@ def render_model_help(view: ModelView) -> str:
             f"Output {name}: {_describe_limit(limit)}" for name, limit in view.outputs.items()
         ]
 
+    if view.pricing is not None:
+        lines += ["", "Published catalog pricing (not actual billing/future guarantee):"]
+        lines += [
+            f"  {resolution}: {amount} {view.pricing.currency}"
+            for resolution, amount in view.pricing.by_resolution.items()
+        ]
+        lines.append(f"  Published maximum: {view.pricing.published_max} {view.pricing.currency}")
+        lines.append(f"  Unit parameter: {view.pricing.unit_parameter or 'not published'}")
     provenance = view.provenance
     lines += ["", f"Provenance: {provenance.status.value}"]
     if provenance.source is not None:

@@ -14,7 +14,12 @@ managed-файлов. Порт `ArtifactStorage` возвращает Artifact �
 состояние Job, размер/целостность изображения и существующие перенаправления;
 имя проверяется до создания временного файла. `--out` выбирает уже существующий
 пользовательский каталог: не создавай его, не делай скрытую managed-копию и не
-удаляй общей очисткой.
+удаляй общей очисткой. Узкий `ArtifactStorage.preflight` вызывается execution-слоем
+после CREATED и до платного submit: переиспользует E05 guards всех компонентов,
+проверяет доступ реальным эксклюзивным пустым temp probe и сразу удаляет probe.
+В этой проверке можно подготовить только managed `outputs/<job_id>`; явный `--out`
+не создаётся. Это отдельная проверка каталога, не публикация Artifact; `save`
+по-прежнему проверяет bytes до своих файловых эффектов и повторяет guards/no-clobber.
 
 - Для PNG/JPEG/WebP проверяй реальные входные **и конечные** байты, пиксельные
   лимиты и размеры. PNG/WebP сохраняют alpha (включая PNG `tRNS` RGB/L/P);
@@ -30,7 +35,11 @@ managed-файлов. Порт `ArtifactStorage` возвращает Artifact �
   публикации и сбоя истории файл **не** удаляй: по Artifact можно сверить
   фактический путь/hash с историей. Исключение после возможного DB commit не
   доказывает rollback: сначала сверить запись по локальному ID; без сверки не
-  повторять submit и не обещать orphan как установленный факт.
+  повторять submit и не обещать orphan как установленный факт. KeyboardInterrupt/
+  CancelledError после возврата опубликованного Artifact переносится finalizer через
+  `ArtifactHistoryWriteError.interruption`, не теряя Artifact или исходный interrupt.
+  Caller сверяет полный COMPLETED snapshot до failure write, не перезаписывает
+  подтверждённый terminal Job и пробрасывает исходное прерывание с forensic snapshot.
 - Диагностика artifacts не содержит URL/query, prompt, локальных путей, basename
   или исходных исключений; записывай только проверенные ID, enum и счётчики.
   Download-события принадлежат этапу получения remote-байтов, а не файловому
@@ -97,5 +106,14 @@ FS/DB не атомарны: при частичном отказе сохран
 ручную quiescent процедуру DB+inputs+outputs, manifest и изолированный restore.
 Это тестовое доказательство процедуры, не runtime backup API.
 
-**Не реализовано:** полный E07/CLI, history show/retry/sync интеграция, backup CLI/GC.
-Файловый шов не означает приёмки всего `CN-01` и не проверял пользовательские данные.
+Одиночный application use case `single_image.generate_image` соединяет archive,
+provider ports, billing и E05 finalizer; все locators сохраняются, ранние files
+остаются partial до последнего. Finalizer проверяет `storage.exists` перед
+COMPLETED; use case сверяет полный Job после history commit. Правила execution —
+[APP.single-image-execution](APP.single-image-execution.instructions.md).
+
+CLI/history show/retry/sync-композиция — владельцы
+[CLI](CLI.public-image.instructions.md) и [APP execution](APP.image-execution.instructions.md).
+Finalizer поддерживает явно разрешённый same-ref recovery с previous_error, не
+terminal→running. **Не реализовано:** backup CLI/GC. Runtime-код не означает
+release-приёмки всего `CN-01` и не проверял пользовательские данные.

@@ -188,6 +188,10 @@ class ArtifactStorage(Protocol):
     Незавершённая запись не должна выглядеть успешным артефактом.
     """
 
+    def preflight(self, *, job_id: int, output_dir: Path | None = None) -> None:
+        """Check output directory/access before submit; never create an explicit --out."""
+        ...
+
     def save(
         self,
         *,

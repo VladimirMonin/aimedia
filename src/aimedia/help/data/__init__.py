@@ -1,0 +1,1 @@
+"""Atomic Markdown package resources."""

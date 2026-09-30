@@ -218,3 +218,14 @@
 Все 16 развилок имеют выбранный вариант; открытых блокеров уровня E00 нет.
 Конкретные API (migration runner) и схема cross-process ownership уточняются на
 своих этапах и не блокируют E00.
+
+## Конкретизация D14 для связной E07–E09 поставки
+
+По прямому заданию владельца используется минимальный local stdlib FS lock:
+постоянный `locks/<job_id>.lock`, Windows byte-range `msvcrt` / POSIX `flock`,
+nonblocking claim и перечитывание CREATED/full snapshot до submit. Kernel снимает
+ownership при crash; файл не удаляется, PID/stale timeout не используется.
+Никакого broker, daemon или distributed lock. `sync` использует тот же ownership
+и только GET. Реализация — кандидат до независимого review/frozen SHA; Windows
+cross-process/crash assertions находятся в `test_execution_ownership.py`, Linux
+требует отдельного прогона E10. Исходные решения E00 выше сохранены.

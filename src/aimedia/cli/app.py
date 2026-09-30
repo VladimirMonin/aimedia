@@ -12,6 +12,7 @@ stderr. В режиме `--json` stdout содержит единственны�
 from __future__ import annotations
 
 import json
+import sys
 import tomllib
 from pathlib import Path
 
@@ -20,6 +21,9 @@ from pydantic import ValidationError
 from pydantic_settings import SettingsError
 
 from aimedia import __version__
+from aimedia.bootstrap import LocalApplication
+from aimedia.cli.commands import register
+from aimedia.cli.runtime import PublicGroup, emit
 from aimedia.config import Settings
 from aimedia.logging import (
     EventLogger,
@@ -34,6 +38,8 @@ CONFIG_ERROR_EXIT_CODE = 4
 
 app = typer.Typer(
     name="aimedia",
+    cls=PublicGroup,
+    pretty_exceptions_enable=False,
     help="Локальный CLI генерации изображений через Polza.",
     add_completion=False,
     no_args_is_help=True,
@@ -128,6 +134,11 @@ def _root(
         "--log-level",
         help="Уровень диагностики (DEBUG/INFO/WARNING/ERROR/CRITICAL).",
     ),
+    json_output: bool = typer.Option(False, "--json"),
+    provider: str = typer.Option("polza", "--provider"),
+    quiet: bool = typer.Option(False, "--quiet"),
+    verbose: bool = typer.Option(False, "--verbose"),
+    no_color: bool = typer.Option(False, "--no-color"),
     show_version: bool = typer.Option(
         False,
         "--version",
@@ -136,24 +147,43 @@ def _root(
     ),
 ) -> None:
     if show_version:
-        _emit_version(as_json=False)
+        _emit_version(as_json=json_output)
         raise typer.Exit(code=0)
     if ctx.invoked_subcommand is None:
         return
     try:
-        settings = _build_settings(config, data_dir, log_level)
+        if quiet and verbose:
+            raise typer.BadParameter("--quiet и --verbose несовместимы")
+        effective_level = log_level or ("DEBUG" if verbose else "WARNING" if quiet else None)
+        settings = _build_settings(config, data_dir, effective_level)
     except (ValidationError, SettingsError, tomllib.TOMLDecodeError) as exc:
         # Ошибка настроек возникает до логгера; её нельзя пробрасывать сырой —
         # rich напечатал бы трассировку и включённое в неё значение (потенциальный
         # секрет). Вместо этого — короткое сообщение в stderr и код `4`, а stdout
         # остаётся чистым (в `--json` там нет мусора).
-        typer.echo(_safe_settings_message(exc), err=True)
+        emit(
+            as_json=json_output,
+            ok=False,
+            error={
+                "code": "CONFIGURATION_ERROR",
+                "message": _safe_settings_message(exc),
+                "details": {},
+            },
+        )
         raise typer.Exit(code=CONFIG_ERROR_EXIT_CODE) from None
     _configure_run(settings, command=_command_path(ctx))
+    ctx.obj.update(
+        application=LocalApplication(settings),
+        provider=provider,
+        as_json=json_output,
+        no_color=no_color,
+        quiet=quiet,
+    )
 
 
 @app.command()
 def version(
+    ctx: typer.Context,
     json_output: bool = typer.Option(
         False,
         "--json",
@@ -161,7 +191,7 @@ def version(
     ),
 ) -> None:
     """Показать версию aimedia."""
-    _emit_version(as_json=json_output)
+    _emit_version(as_json=json_output or ctx.obj.get("as_json", False))
 
 
 def _exit_code_of(exc: SystemExit) -> int:
@@ -175,6 +205,9 @@ def _exit_code_of(exc: SystemExit) -> int:
 
 def main() -> None:
     """Точка входа console script `aimedia`."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     exit_code = 0
     try:
         app()
@@ -186,3 +219,6 @@ def main() -> None:
         raise
     finally:
         finish_active(exit_code)
+
+
+register(app)

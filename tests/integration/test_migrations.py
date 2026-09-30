@@ -16,7 +16,7 @@ import threading
 from pathlib import Path
 
 import pytest
-from peewee import Database, IntegrityError, OperationalError
+from peewee import Database, IntegrityError
 
 from aimedia.storage import (
     LATEST_SCHEMA_VERSION,
@@ -256,7 +256,7 @@ def test_production_v1_migrates_to_v2_without_rewriting_v1_schema(tmp_path: Path
 
         assert outcome.previous_version == 1
         assert outcome.current_version == LATEST_SCHEMA_VERSION
-        assert outcome.applied == (2,)
+        assert outcome.applied == (2, 3)
         assert "managed_input_copies" in _list_tables(manager)
         # v2 не добавляет колонок в v1 и не переписывает её DDL.
         assert set(v1_ddl) == set(V1_TABLES)
@@ -590,9 +590,9 @@ def test_manager_context_manager_opens_and_closes(tmp_path: Path) -> None:
         manager.close()
 
 
-def test_unwritable_database_directory_surfaces_as_database_error(tmp_path: Path) -> None:
-    """Сбой открытия файла не превращается в успешное «пустое» состояние."""
+def test_unwritable_database_directory_surfaces_as_storage_error(tmp_path: Path) -> None:
+    """Nonregular leaf отвергается storage до открытия SQLite, без пустого успеха."""
     manager = DatabaseManager(tmp_path)  # путь — каталог, а не файл
-    with pytest.raises(OperationalError):
+    with pytest.raises(StorageError):
         manager.connect()
     assert manager.is_open is False
