@@ -37,6 +37,7 @@ import json
 import math
 import re
 from collections.abc import Sequence
+from decimal import ROUND_CEILING, Decimal
 
 from aimedia.application.inputs.image_probe import (
     SUPPORTED_IMAGE_MIME_TYPES,
@@ -60,6 +61,10 @@ _MAX_IMAGES_PARAMETER = "max_images"
 _MAX_SCHEMA_IMAGES = 6
 # Public GPT-5.4 Image 2 guide: this exact qualified binding alone uses input.n.
 _MIE_COUNT_MODEL = "openai/gpt-5.4-image-2@mie"
+# MediaRequestDto.provider selects upstreams without inventing model qualifiers.
+_MIE_PRICED_MODELS = frozenset(
+    {"qwen/image-2.1", "google/gemini-3.1-flash-image-preview", _MIE_COUNT_MODEL}
+)
 _SAFE_REMOTE_MODEL_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_./-]{0,127}\Z")
 _STABLE_SCHEMA_ENUMS = {
     "aspect_ratio": (
@@ -160,6 +165,8 @@ def build_media_request(
         "model": effective.remote_model_id,
         "input": input_payload,
     }
+    if effective.remote_model_id in _MIE_PRICED_MODELS:
+        payload["provider"] = _build_mie_price_filter(effective)
     _enforce_exact_body_size(payload, max_body_bytes=max_body_bytes)
     if effective.remote_model_id != _MIE_COUNT_MODEL and not _SAFE_REMOTE_MODEL_ID.fullmatch(
         effective.remote_model_id
@@ -169,6 +176,26 @@ def build_media_request(
             details={"parameter": "remote_model_id"},
         )
     return payload
+
+
+def _build_mie_price_filter(effective: EffectiveModelDefinition) -> dict[str, object]:
+    """Fixed documented MIE route and RUB/image API filter, never actual billing."""
+    pricing = effective.pricing
+    if (
+        pricing is None
+        or pricing.currency != "RUB"
+        or not pricing.by_resolution
+        or any(
+            not isinstance(amount, Decimal) or not amount.is_finite() or amount < 0
+            for amount in pricing.by_resolution.values()
+        )
+    ):
+        raise InvalidParameterValueError(
+            "Для фиксированного маршрута Polza требуется пригодная опубликованная цена RUB.",
+            details={"parameter": "pricing"},
+        )
+    ceiling = int(pricing.published_max.to_integral_value(rounding=ROUND_CEILING))
+    return {"only": ["mie"], "allow_fallbacks": False, "max_price": {"image": ceiling}}
 
 
 def _encode_reference_images(

@@ -35,7 +35,7 @@ providers:
     remote_model_id: google/gemini-3.1-flash-image-preview
 verification:
   checked_at: 2026-09-30
-  source: https://polza.ai/api/v1/models/catalog (references conservatively capped at Guide limit 8)
+  source: https://polza.ai/api/v1/models/catalog ; https://polza.ai/models/google/gemini-3.1-flash-image-preview.md (references conservatively capped at Guide limit 8; pricing for selected MIE only, not automatic/default token-priced upstreams or actual billing; NOT_LIVE_VERIFIED)
 pricing:
   currency: RUB
   unit_parameter: null

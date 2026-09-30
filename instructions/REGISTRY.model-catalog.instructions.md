@@ -84,9 +84,16 @@ Registry v0.1 различает только:
   не переносится на неквалифицированный token-priced маршрут. Reference URLs и
   higher resolutions документированы, но не включены/не проверены здесь; это
   локальный conservative subset, а не заявление о полном provider capability.
-- `CatalogPricing` — typed exact Decimal metadata RUB по resolution; опубликованный
-  максимум вычисляется из текущих tiers, не гарантия будущей цены. Цены не участвуют
-  в actual billing. View/help читают те же pricing/limits effective definition.
+- `CatalogPricing` — typed exact Decimal metadata RUB по resolution для **выбранного
+  MIE**, не всех/default upstreams. Опубликованный максимум вычисляется из текущих
+  tiers. Для трёх exact builtins Python adapter использует ceiling этого effective
+  максимума как top-level ProviderDto.max_price.image с only=[mie]/fallbacks=false
+  (owner — [PROVIDER.polza-media](PROVIDER.polza-media.instructions.md)); YAML schema,
+  IDs и tiers не меняются. Missing/non-RUB/unusable pricing закрывается до HTTP.
+  Unqualified Gemini автоматический без DTO: его token-priced upstreams этими
+  ценами не ограничены. Price filter не гарантия будущей цены/total/бюджета и не
+  actual billing; unknown reservations не превращаются в zero. View/help читают
+  те же pricing/limits effective definition; live support не заявляется.
 - Загрузка встроенного каталога идёт через `importlib.resources`
   (`builtin_registry_dir`), а не через относительный путь: loader не должен
   зависеть от текущей рабочей директории.

@@ -14,7 +14,7 @@
 | Поле | Значение |
 |---|---|
 | Принятый baseline E07–E09 | `8a09d186a650248715b6efcade96b81f69370613` (CLOSED/ACCEPTED offline, не live/release E10) |
-| Незавершённое | E06 live verification; новый MIE count slice experimental/NOT_LIVE_VERIFIED до independent review; E10/E11 открыты. Статус worktree проверяется Git |
+| Незавершённое | E06 live verification; MIE count source76 reviewed offline, experimental/NOT_LIVE_VERIFIED; новый financial filter pending current review; E10/E11 открыты. Статус worktree проверяется Git |
 | Обязательный объём и отложенное | [`release-scope.md`](release-scope.md) + change notes `CN-01`–`CN-03` |
 | Требования R01–R24 | [`verification-matrix.md`](verification-matrix.md) |
 | Решения развилок E00 | [`decisions/implementation-baseline.md`](decisions/implementation-baseline.md) (D01–D16) |
@@ -254,7 +254,7 @@ pytest node ID и статус только после прогона на ко�
 - Статус `DONE` для `CN-03` относится только к документарному выводу speech из
   навигации и не означает изменений кода.
 
-## MIE count binding: source pending fresh review
+## Исторический MIE count checkpoint: до source76 review
 
 Новый локальный slice от `8a09d18`, не accepted E06/live: третий data-only
 `gpt-5-4-image-2-mie` → exact `openai/gpt-5.4-image-2@mie`, experimental /
@@ -279,6 +279,23 @@ billing до download сохраняются, COMPLETED запрещён, recove
 новый billing unknown, не zero, прежний known ref/cost не стирается.
 Fresh reviewer, final-SHA Linux runtime/installed acceptance и live — NOT_RUN;
 parent владеет staging/commit/frozen-SHA проверками. E10/E11 не закрыты.
+
+## Текущий source76 и финансовый fix перед первым live POST
+
+На source `76f93a2c1206ae5ced45bc47507578cf1e45775e` parent подтверждает native
+precommit source-review `4fc`: accepted, **1417 PASSED**. Windows/Linux same-SHA
+quick/full/release — все шесть raw 0; независимый installed **112 argv** и strict
+TLS — raw 0. Это offline source76, не live. Исторический checkpoint выше сохранён
+со своими тогдашними pending/NOT_RUN, не описывает текущий review статус.
+
+Новый fixed Media provider DTO для трёх existing bindings — pending current
+independent review/commit/frozen-SHA gates; source76 gates не доказывают новые байты.
+Цены Registry относятся к выбранному MIE, не automatic Gemini upstreams.
+API only=[mie]/fallbacks=false/ceil-RUB price filter не гарантирует actual billing,
+Job total или 200 RUB. Live **STOP BEFORE FIRST PAID POST**: paid POST = 0,
+credential reads = 0; E06 live/E10/E11 остаются открытыми. Public-doc evidence:
+`artifacts/metadata/polza-media-priced-routing-2026-09-30.json`; writer gates:
+`artifacts/quality/priced-media-writer/` (отдельно от source76).
 
 ## Ссылки 🔗
 

@@ -37,7 +37,7 @@ providers:
     remote_model_id: qwen/image-2.1
 verification:
   checked_at: 2026-09-30
-  source: https://polza.ai/api/v1/models/catalog
+  source: https://polza.ai/api/v1/models/catalog ; https://polza.ai/models/qwen/image-2.1.md (pricing for selected MIE only, not default/all upstreams or actual billing; NOT_LIVE_VERIFIED)
 pricing:
   currency: RUB
   unit_parameter: null

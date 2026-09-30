@@ -244,6 +244,21 @@ Remote model identity допускает bounded ASCII qualifier, не URL; Polz
 job IDs/GET не меняются. RUB 4/image — MIE 1K metadata, не actual total и не цена
 неквалифицированного/default-openai token-priced маршрута. Reference URLs/higher
 resolutions известны API, но не проверены/не включены в этот subset.
+
+## Уточнение D07: финансовый фильтр трёх Media bindings
+
+По прямому заданию владельца фиксированный adapter rule для существующих exact
+Qwen/Gemini/GPT MIE remote IDs добавляет top-level ProviderDto.only=[mie],
+allow_fallbacks=false, max_price.image=целочисленный ROUND_CEILING опубликованного
+maximum effective Decimal RUB pricing. Источники —
+[Media create](https://polza.ai/docs/api-reference/media/create.md),
+[Nano guide](https://polza.ai/docs/gaidy/nanobanano-2.md) и model Markdown:
+цены Gemini MIE не ограничивают автоматические token-priced upstreams.
+Missing/non-RUB/unusable pricing — безопасный typed отказ до HTTP.
+Новых qualifiers, YAML schema, switches, retries или routing framework нет;
+generic mapping неизменен. Price filter не actual billing/total/200 RUB guarantee;
+usage и unknown reservations остаются отдельными. Это уточнение wire guard,
+не live verification и не закрытие E10. Owner: PROVIDER.polza-media / REGISTRY.model-catalog.
 Недостаточный пригодный normalized result сохраняет ref/billing и не COMPLETED;
 sync остаётся GET-only. Zero-image malformed response сохраняет принятый C09
 invalid-response/submit-uncertain контракт; новый billing не выдумывается,

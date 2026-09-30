@@ -47,6 +47,29 @@ MIE цена RUB 4/image в 1K — metadata, не billing total и не верх
 неквалифицированного token-priced маршрута. References/higher resolutions известны
 документации, но не включены/не проверены этим count slice.
 
+## Фиксированный финансовый фильтр Media
+
+Для exact remote `qwen/image-2.1`, `google/gemini-3.1-flash-image-preview` и
+`openai/gpt-5.4-image-2@mie` mapper добавляет **top-level**
+`provider={only:[mie],allow_fallbacks:false,max_price:{image:<integer>}}`.
+Источник wire-контракта — [MediaRequestDto / ProviderDto](https://polza.ai/docs/api-reference/media/create.md)
+и [Nano guide](https://polza.ai/docs/gaidy/nanobanano-2.md).
+Потолок — `int(effective.pricing.published_max.to_integral_value(rounding=ROUND_CEILING))`
+из exact Decimal RUB tiers; второй таблицы цен и money float нет. Отсутствующая,
+не-RUB или непригодная цена закрывается `InvalidParameterValueError` до HTTP,
+с безопасным `details={parameter:pricing}`. Нулевая цена не становится unknown.
+Caller provider_options не могут менять fixed rule; generic/synthetic mapping
+не меняется. Точный body safety-cap включает routing bytes; gateway отправляет
+те же serialized bytes ровно одним POST, без retry.
+
+Unqualified Gemini без provider DTO выбирал бы upstream автоматически: MIE цены
+не покрывают token-priced google-ai-studio и прочие upstreams. Media не поддерживает
+общие key=value model aliases; Gemini@mie/новые qualifiers не вводятся.
+Фильтр API **не** гарантирует actual billing, total Job или бюджет 200 RUB:
+фактические usage/cost и unknown reservations учитываются отдельно. Все три
+binding остаются experimental/NOT_LIVE_VERIFIED. Регрессии —
+`tests/contracts/test_polza_priced_routing.py`.
+
 ## Инварианты транспорта
 
 `httpx.AsyncClient` инжектируется вызывающей стороной и переиспользуется всеми
