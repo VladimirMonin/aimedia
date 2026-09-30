@@ -135,6 +135,13 @@ def normalize_media_submission(payload: object) -> SubmissionResult:
     return SubmissionResult(state=state, remote_ref=remote_ref)
 
 
+def validate_media_response_id(payload: object, expected_id: str) -> None:
+    """Проверить безопасный ID GET-ответа до нормализации его состояния/результата."""
+    actual_id = _read_remote_job_id(_require_mapping(payload))
+    if actual_id != expected_id:
+        raise _invalid_response("remote_job_id_mismatch")
+
+
 def normalize_media_status(payload: object) -> ProviderJobState:
     """Нормализовать ответ `GET /v1/media/{id}` в `ProviderJobState`.
 
@@ -503,4 +510,5 @@ __all__ = [
     "normalize_media_result",
     "normalize_media_status",
     "normalize_media_submission",
+    "validate_media_response_id",
 ]

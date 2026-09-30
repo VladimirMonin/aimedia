@@ -97,9 +97,10 @@ _OPTION_TYPES: dict[str, type] = {
 }
 _OPTION_ENUMS: dict[str, tuple[str, ...]] = {"upscale_factor": ("1", "2", "4", "8")}
 
-# Каноническая сериализация для проверки точного размера тела: компактные
-# разделители без пробелов, unicode не экранируется. Транспорт C09b обязан
-# использовать тот же вид, иначе гарантия по размеру тела не совпадёт.
+# Каноническая сериализация для точного размера тела: компактные разделители без
+# пробелов, unicode не экранируется. Единственный владелец вида байтов —
+# :func:`serialize_media_request`; транспорт C09c обязан отправлять именно их,
+# иначе гарантия по размеру тела не совпадёт.
 _JSON_SEPARATORS: tuple[str, str] = (",", ":")
 
 
@@ -430,6 +431,31 @@ def _valid_option(key: str, value: object, spec: ParameterSpec) -> bool:
     return True
 
 
+def serialize_media_request(payload: dict[str, object]) -> bytes:
+    """Сериализовать payload `POST /v1/media` в канонические байты тела.
+
+    Единственная реализация сериализации: :func:`build_media_request` проверяет по
+    этим байтам локальный safety-cap, а транспорт C09c отправляет ровно их без
+    второго `json.dumps`. Компактные разделители без пробелов, unicode не
+    экранируется — форма стабильна между проверкой и отправкой.
+
+    Некодируемое в UTF-8 тело становится :class:`InvalidParameterValueError` без
+    исходной причины: текст или имя не попадают в traceback.
+    """
+    body: bytes | None = None
+    unencodable = False
+    try:
+        body = json.dumps(payload, ensure_ascii=False, separators=_JSON_SEPARATORS).encode("utf-8")
+    except UnicodeError:
+        unencodable = True
+    if unencodable or body is None:
+        raise InvalidParameterValueError(
+            "Тело запроса не кодируется в UTF-8.",
+            details={"parameter": "body"},
+        )
+    return body
+
+
 def _base64_encoded_length(size_bytes: int) -> int:
     """Длина base64 для блока из `size_bytes` байт без учёта padding-строки."""
     return 4 * ((size_bytes + 2) // 3)
@@ -470,18 +496,8 @@ def _enforce_estimated_size(
 
 
 def _enforce_exact_body_size(payload: dict[str, object], *, max_body_bytes: int) -> None:
-    """Отклонить запрос по точному размеру сериализованного тела."""
-    try:
-        body_bytes = len(
-            json.dumps(payload, ensure_ascii=False, separators=_JSON_SEPARATORS).encode("utf-8")
-        )
-    except UnicodeError:
-        body_bytes = None
-    if body_bytes is None:
-        raise InvalidParameterValueError(
-            "Тело запроса не кодируется в UTF-8.",
-            details={"parameter": "body"},
-        )
+    """Отклонить запрос по точному размеру канонически сериализованного тела."""
+    body_bytes = len(serialize_media_request(payload))
     if body_bytes > max_body_bytes:
         raise InvalidParameterValueError(
             "Размер тела запроса превышает локальный safety-лимит; "
@@ -494,4 +510,4 @@ def _enforce_exact_body_size(payload: dict[str, object], *, max_body_bytes: int)
         )
 
 
-__all__ = ["build_media_request"]
+__all__ = ["build_media_request", "serialize_media_request"]

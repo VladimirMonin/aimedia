@@ -1,8 +1,9 @@
-"""Polza provider adapter: HTTP-клиент, mapping и нормализация ошибок.
+"""Polza provider adapter: чистые mappers, HTTP-шлюз и нормализация ошибок.
 
-На C09a реализован только чистый request mapping для media endpoint
-(`polza.media`). HTTP-клиент, ошибки и ответы появятся отдельными срезами
-(C09b/C09c) и в этом пакете пока отсутствуют (`docs/plans/README.md`, E06).
+`polza.media` содержит чистые mappers без транспорта. `polza.gateway`
+(`PolzaProviderGateway`) добавляет HTTP-транспорт submit/status/result поверх
+инжектированного `httpx.AsyncClient`. Пакет намеренно не импортирует gateway в
+`__init__`, чтобы чистый media-mapper оставался доступен без сетевого транспорта.
 """
 
 from __future__ import annotations
