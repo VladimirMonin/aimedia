@@ -211,11 +211,18 @@ Polza закрывается на E06/E10.
 [`verification-matrix.md`](verification-matrix.md) (R07),
 [`backup-contract.md`](backup-contract.md) (состав managed-дерева).
 
-**Будущая задача.** Отдельная задача обновляет `07-storage-history-costs.md`
-(schema v2, миграция, пути, ownership) и синхронно — `backup-contract.md`,
-`verification-matrix.md` (evidence managed-копий) и применяемую инструкцию
-владельца. До этого реализация managed-копий не считается согласованной с
-принятой спецификацией, а schema v1 в коде не меняется.
+**Состояние спецификации.** Правка принятой спецификации под `CN-01` сделана
+документарно (блокер `B6`): контракт зафиксирован в
+[`07-storage-history-costs.md`](07-storage-history-costs.md) (раздел «Managed-копии
+reference images»: таблица v2, пути, ownership, порядок до платного POST, отказы,
+требуемые проверки), [`03-domain-model.md`](03-domain-model.md)
+(`InputRef.managed_path`), [`README.md`](README.md) (E04/E07),
+[`verification-matrix.md`](verification-matrix.md) (R07, R18),
+[`backup-contract.md`](backup-contract.md) и инструкции
+[`PROCESSING.image-artifacts`](../../instructions/PROCESSING.image-artifacts.instructions.md).
+
+Это правка **контракта**, а не реализация: миграция v2, поле `managed_path` и
+managed-копии остаются `NOT IMPLEMENTED`, schema v1 в коде не меняется.
 
 ### CN-02. Лексический поиск остаётся, семантический — backlog следующего релиза 🔎
 

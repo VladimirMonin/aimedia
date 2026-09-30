@@ -76,6 +76,17 @@ provider submit. План-источники — `docs/plans/04-cli-contract.md`
 (флаг анимации VP8X **или** chunk ANIM/ANMF, даже при наличии VP8/VP8L)
 отклоняются как `UNSUPPORTED_INPUT_FORMAT` до submit.
 
+### Managed-копии входов (`CN-01`) — планируется
+
+Будущий шаг подготовки возвращает небольшой application-снимок «`InputRef` +
+bytes»: байты остаются в application-слое и не попадают ни в домен, ни в SQLite.
+Транспортный запрос для отправки строится из безопасно разрешённых managed-путей,
+а `source_path` в истории сохраняет provenance исходного файла. Контракт и порядок
+до платного POST — [`07-storage-history-costs.md`](../docs/plans/07-storage-history-costs.md),
+раздел «Managed-копии reference images»; объём — `CN-01` в
+[`release-scope.md`](../docs/plans/release-scope.md). На текущем HEAD этого шага
+нет: `prepare_reference_images` по-прежнему возвращает только metadata.
+
 ## Лимиты без выдуманных чисел
 
 - `ReferenceLimits.max_references` и `max_size_bytes` приходят из Model Registry
@@ -122,9 +133,9 @@ Job и его reference images не смешиваются с batch-элемен
 
 CLI-парсер (`--prompt`/`--prompt-file`/`--image` как Typer-опции) и Polza adapter —
 этапы E09 и E06. Локальная конвертация изображений и `ArtifactStorage` — E05.
-Model-aware validation (число refs по модели, разрешённые значения) — E03. Здесь
-описан только application-контракт подготовки данных, на который эти этапы
-опираются.
+Managed-копии reference images (`CN-01`) — отдельная задача после E04. Model-aware
+validation (число refs по модели, разрешённые значения) — E03. Здесь описан только
+application-контракт подготовки данных, на который эти этапы опираются.
 
 ## Обязательные проверки
 

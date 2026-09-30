@@ -162,6 +162,9 @@ artifacts
 schema_migrations
 ```
 
+С `CN-01` к этому набору добавляется **одна** таблица v2 — `managed_input_copies`
+(раздел «Managed-копии reference images»).
+
 Provider/model можно хранить прямо в `jobs` как snapshot-поля.
 
 Отдельные таблицы `providers` и `models` для v0.1 не обязательны, потому что:
@@ -178,6 +181,7 @@ Provider/model можно хранить прямо в `jobs` как snapshot-п
 erDiagram
     JOBS ||--o{ PROMPT_SOURCES : contains
     JOBS ||--o{ INPUTS : uses
+    INPUTS ||--o| MANAGED_INPUT_COPIES : "managed copy (v2, CN-01)"
     JOBS ||--o{ ARTIFACTS : produces
     JOBS ||--o| JOBS : derived_from
 
@@ -227,6 +231,11 @@ erDiagram
         integer size_bytes
         string sha256
         text metadata_json
+    }
+
+    MANAGED_INPUT_COPIES {
+        integer input_id PK
+        string local_path
     }
 
     ARTIFACTS {
@@ -670,6 +679,13 @@ metadata
 
 ---
 
+> [!warning] Раздел устарел (superseded решением `CN-01`)
+> Рекомендация ниже — reference-only без копирования inputs — **не действует** для
+> reference images. Решение — [`release-scope.md`](release-scope.md), change note
+> `CN-01`: входы сохраняются долговечными managed-копиями. Исходный текст
+> спецификации сохранён ниже как история; при расхождении действуют `CN-01` и
+> раздел «Managed-копии reference images» ниже.
+
 ## Решение для v0.1
 
 Рекомендуется:
@@ -685,7 +701,122 @@ Hash входного файла — обязательное поле исто�
 preserve_inputs = true
 ```
 
-для snapshot-copy.
+для snapshot-copy — **не** для reference images (см. `CN-01` выше).
+
+---
+
+# Managed-копии reference images (CN-01, планируется) 🗂️
+
+Reference images, переданные в Job, сохраняются управляемыми копиями в
+managed-дереве app data и связываются с Job. Это закрывает единственное слабое
+место reference-only режима: пользователь может удалить или изменить исходник
+после выполнения Job.
+
+> [!important] Это контракт, а не реализация
+> Новая таблица, миграция **v2** и поле `InputRef.managed_path` **не реализованы**;
+> закреплённая схема кода — **v1**. Ссылка на этот раздел не подтверждает
+> существующей функции. Объём — [`release-scope.md`](release-scope.md), `CN-01`.
+
+## Схема v2
+
+Новые данные оформляются **миграцией v2**, которая добавляет **одну** таблицу:
+
+```text
+managed_input_copies
+    input_id    INTEGER PRIMARY KEY REFERENCES inputs(id) ON DELETE CASCADE
+    local_path  TEXT NOT NULL UNIQUE
+```
+
+- Связь `InputRef → копия` — `1:0..1`: строка есть только у входа с managed-копией.
+- `local_path` — относительный путь внутри managed-дерева; уникальность не даёт
+  двум входам сослаться на один файл.
+- Hash, MIME, размер, позиция и `source_path` **остаются в `inputs`**: v2 не
+  дублирует исторические поля и не добавляет колонок в `inputs`.
+- Schema **v1 не переписывается**. Новые ORM-модели подключаются в runtime bindings,
+  но не попадают в список создания v1; повторный запуск миграций — no-op;
+  автоматический destructive downgrade не обещается (D11).
+- Старые строки `inputs` **не backfill-ятся**: миграция не читает пользовательские
+  файлы и не меняет `completed` Jobs. Отсутствие строки в `managed_input_copies`
+  означает «managed-копии нет» (legacy), а не повреждение истории.
+- Новых конфигурационных флагов не вводится: копирование reference images не
+  управляется опцией `preserve_inputs` и не отключается на один запуск.
+
+## Пути
+
+```text
+<app_data>/inputs/<job_id>/<position>.<ext>
+```
+
+- Путь строится из **Job ID и position**, а не из изменяемого локального `input.id`.
+- `<ext>` берётся из MIME проверенных байтов, а не из расширения исходного файла.
+- `local_path` относителен: абсолютные и drive-relative пути, `..`, выход за root,
+  symlink/junction в существующих компонентах отклоняются.
+- Публикация — no-clobber по тем же правилам, что и managed artifacts: временный
+  файл, flush/fsync, эксклюзивное создание конечного имени; при конфликте
+  используется suffix-схема с сохранением фактического пути. Чужой файл не
+  перезаписывается, пользовательский исходник не копируется в `--out` и не
+  удаляется.
+- Копии входят в то же managed-дерево и тот же манифест quiescent offline backup,
+  что и managed artifacts ([`backup-contract.md`](backup-contract.md)).
+
+## Порядок до платного POST (D03)
+
+1. Разобрать intent и один раз прочитать исходные байты источника.
+2. Создать и подтвердить Job ID.
+3. Выполнить предметную pre-submit validation подготовленного снимка.
+4. Опубликовать **неизменённые проверенные** байты в managed-копию.
+5. Сохранить связи для **всех** референсов Job и подтвердить запись.
+6. Только затем разрешить submit.
+
+Ошибка чтения источника не создаёт Job (D03). Ошибка validation оставляет `failed`
+Job. Ошибка публикации копии запрещает submit. SQLite-транзакция через HTTP не
+удерживается.
+
+## Домен, история и транспорт
+
+- `InputRef.path` остаётся provenance исходного файла и не подменяется; будущее
+  необязательное поле `InputRef.managed_path` несёт относительный путь копии
+  ([`03-domain-model.md`](03-domain-model.md)).
+- Копия входного ресурса **не является** `Artifact` результата: artifacts —
+  результат Job, копия — вход.
+- Байты копии не попадают ни в SQLite, ни в домен: таблица хранит только связь и
+  относительный путь.
+- Application-слой формирует небольшой снимок «`InputRef` + bytes», а transport
+  request строится из безопасно разрешённых managed-путей; проверка фактических
+  байтов/hash в gateway перед POST сохраняется.
+- Repository удаляет и пересоздаёт `inputs` при каждом сохранении Job, поэтому
+  строка `managed_input_copies` пересоздаётся вместе с новым `input.id` в той же
+  транзакции и восстанавливается при чтении. Файловое имя не зависит от `input.id`.
+
+## Отказы и владение файлами
+
+FS и SQLite не образуют общую атомарную транзакцию.
+
+- Неопубликованный собственный temp-файл можно удалить.
+- После публикации и ошибки БД файл **не удаляется**, submit запрещён; состояние
+  сверяется по известному Job ID, относительному пути, hash и размеру.
+- Исключение после возможного DB commit не доказывает rollback: без успешной
+  сверки нужно остановиться, ничего не удалять и не повторять создание Job или
+  оплаченный submit.
+- Crash может оставить orphan; фоновый GC, cleanup-команда, дедупликация и backup
+  CLI в v0.1 не появляются. Пользовательские файлы и чужие конфликты имён не
+  удаляются.
+- Windows stdlib threat model не расширяется: враждебная подмена каталогов после
+  preflight и атомарная power-loss durability не обещаются.
+
+## Требуемые проверки при реализации (сейчас `NOT_RUN`)
+
+- миграция v1 → v2: DDL v1 не изменён, данные v1 сохранены, повторный apply — no-op,
+  FK/`ON DELETE CASCADE` работают, сбой не оставляет половину v2;
+- повторный `save` Job, смена статуса и reopen восстанавливают связь
+  Job → managed-копия с новыми `input.id`;
+- удаление или изменение исходника после подготовки не мешает чтению копии и не
+  меняет сохранённые hash/MIME/size/позицию;
+- конфликт имени, symlink/junction и `..` не выходят за managed root;
+- сбой до и после commit не создаёт ложный `completed` и не приводит к повторному
+  submit (`submit_count == 0` для pre-submit отказов);
+- backup/restore с отсутствующим файлом, несовпадающим hash или дубликатом пути
+  делает снимок непроверенным.
 
 ---
 
@@ -806,9 +937,15 @@ Provider/CDN может:
 │   │   └── job_482/
 │   │       └── result_001.png
 │   └── ...
+├── inputs/
+│   └── ...
 ├── cache/
 └── logs/
 ```
+
+Каталог `inputs/` — managed-копии reference images по `CN-01` (планируется):
+`inputs/<job_id>/<position>.<ext>`. Внешние `--out` байты в managed-копию не
+входят.
 
 ---
 
@@ -1758,6 +1895,11 @@ applied_at
 
 При старте приложение проверяет current schema.
 
+> [!note]
+> Следующая версия после закреплённой v1 — **v2** по `CN-01`: добавляется только
+> таблица `managed_input_copies`, DDL v1 не переписывается (раздел
+> «Managed-копии reference images»).
+
 ---
 
 # Миграции должны быть последовательными 🧱
@@ -1958,13 +2100,11 @@ FTS/vector indexes считаются производными.
 ```text
 database.sqlite3
 outputs/
-```
-
-Если input snapshot-copy включён:
-
-```text
 inputs/
 ```
+
+`inputs/` — managed-копии reference images по `CN-01` (до реализации v2 их в
+дереве нет). Внешние `--out` байты в managed-копию не входят.
 
 ---
 
@@ -2252,6 +2392,11 @@ artifacts
 
 Для v0.1 удаление вообще можно не реализовывать.
 
+> [!note]
+> `ON DELETE CASCADE` в v2 (`managed_input_copies.input_id → inputs.id`) — принятое
+> решение `CN-01` для связи копии со входом, а не разрешение каскадно удалять
+> историю Job: каскад убирает только строку связи «вход → копия».
+
 ---
 
 # Soft delete 🗑️
@@ -2537,6 +2682,13 @@ Remote job ID можно найти и синхронизировать.
 ### Missing file
 
 History остаётся читаемой.
+
+### Managed-копии входов (`CN-01`)
+
+Миграция v1 → v2 без правки v1; связь Job → managed-копия после повторного
+save/смены статуса/reopen; копия читается после удаления исходника; collision,
+`..` и symlink не выходят за managed root; отказ публикации или БД не создаёт
+ложный `completed` и не повторяет submit.
 
 ---
 
@@ -2997,13 +3149,15 @@ file existence check
 Позже:
 
 ```text
-input snapshots
 sqlite-vec
 documents/chunks/embeddings
 backup command
 maintenance tools
 soft delete
 ```
+
+Managed-копии reference images планируются по `CN-01` (миграция v2) и не
+откладываются «на позже».
 
 ---
 
@@ -3025,7 +3179,8 @@ Compiled prompt и source snapshots сохраняются.
 
 ### Input metadata
 
-Reference images сохраняют path/order/hash.
+Reference images сохраняют path/order/hash; после `CN-01` — ещё и managed-копию
+(раздел «Managed-копии reference images»).
 
 ### Remote recovery
 
@@ -3109,6 +3264,10 @@ Application не работает с Peewee models напрямую.
 > [!important]
 > **15. DB transactions должны быть короткими и не включать network wait.**
 
+> [!important]
+> **16. Managed-копия входа (`CN-01`) не заменяет provenance и не является artifact
+> результата.**
+
 ---
 
 # Что этот документ намеренно не фиксирует ⏸️
@@ -3125,7 +3284,8 @@ Application не работает с Peewee models напрямую.
 - backup format;
 - delete/cleanup CLI;
 - full reporting commands;
-- user input snapshot-copy UX;
+- user input snapshot-copy UX (кроме контракта `CN-01`: schema v2, пути, ownership,
+  отказы);
 - final JSON structure `jobs show`.
 
 Эти детали могут уточняться при реализации, если не нарушают зафиксированные инварианты.

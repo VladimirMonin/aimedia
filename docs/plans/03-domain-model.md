@@ -585,8 +585,21 @@ class InputRef(BaseModel):
     size_bytes: int | None = None
     sha256: str | None = None
 
+    managed_path: Path | None = None   # CN-01, планируется
+
     metadata: dict[str, Any] = {}
 ```
+
+> [!note] Managed-копия входа (`CN-01`, планируется)
+> `path` остаётся provenance исходного файла и не подменяется. Необязательный
+> `managed_path` — **относительный** путь управляемой копии внутри managed-дерева
+> app data (`inputs/<job_id>/<position>.<ext>`); его отсутствие означает
+> legacy-запись без копии, а не ошибку. Домен остаётся IO-free: файловые операции
+> и чтение байтов выполняет application-слой, байты не попадают ни в домен, ни в
+> SQLite. Копия входа **не является** `Artifact` результата.
+> Контракт и порядок до платного POST — `07-storage-history-costs.md`, раздел
+> «Managed-копии reference images»; объём — `release-scope.md`, `CN-01`.
+> **Не реализовано**: на HEAD `dfbb930` поля нет.
 
 `metadata` может содержать:
 
@@ -670,6 +683,11 @@ remote_url
 local_path
 → основной рабочий результат
 ```
+
+> [!note] Artifact — это результат, а не вход
+> Managed-копия входного reference image (`CN-01`, планируется) не становится
+> `Artifact`: она не входит в `JobResult`, не участвует в выборе `--out` и не
+> выдаётся как output. Своё место входа — `InputRef.managed_path`.
 
 ---
 

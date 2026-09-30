@@ -378,6 +378,8 @@ Provider-specific renaming выполняет adapter согласно реше�
 
 **Резервное копирование:** согласованная копия БД (WAL) и managed artifacts — не функция v0.1.0, а инвариант для E05+. Пока backup-команды нет, поддерживается только quiescent offline manual backup; один `database.sqlite3` под WAL копировать нельзя. Контракт — в [`backup-contract.md`](backup-contract.md).
 
+**Новые данные сверх v1 (`CN-01`, планируется):** managed-копии reference images оформляются миграцией **v2**, а не правкой v1 `inputs` ([`release-scope.md`](release-scope.md), `CN-01`; контракт — [`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии reference images»).
+
 - [x] Используется ровно один migration runner; установленная версия Peewee проверена.
 - [x] Нет транзакции, удерживаемой через `await` сетевого вызова.
 - [x] Не включён `check_same_thread=False` или thread offload «на всякий случай» без тестов ownership соединения.
@@ -457,6 +459,7 @@ wheel/sdist — exit 0; независимый нативный SOL6-review — 
 | `tests/integration/test_finalization_failure.py` | Remote success и download/conversion failure оставляют failed Job с фактической стоимостью и данными для recovery |
 | `tests/integration/test_submit_persistence_failure.py` | При сбое сохранения remote ref не выполняется повторная генерация; диагностический канал сохраняет пригодные для разбирательства идентификаторы |
 | `tests/integration/test_result_invariants.py` | Image success без usable image не становится completed; partial result не теряется |
+| `tests/integration/test_managed_input_copies.py` | Managed-копия reference image (`CN-01`, планируется) связана с Job, переживает повторный save, смену статуса и reopen и остаётся читаемой после удаления исходника |
 
 **Логируется:** полная цепочка `job_created → validation_completed → provider_submit_accepted → remote_ref_saved → remote_completed → usage_recorded → artifact_saved → job_completed`. Допускаются дополнительные события, но не успешное завершение раньше обязательного artifact commit.
 
@@ -466,6 +469,12 @@ wheel/sdist — exit 0; независимый нативный SOL6-review — 
 - [ ] Ни одно assertion не ограничено только вызовом mocked метода.
 - [ ] Remote-completed и local-completed различаются на негативном сценарии.
 - [ ] В error path закрываются HTTP/file resources и сохраняются доступные данные.
+
+**`CN-01` (планируется).** До платного POST Job публикует проверенные байты
+reference images как managed-копии и сохраняет связи; ошибка публикации запрещает
+submit, опубликованный файл после неопределённого DB commit не удаляется и не
+повторяется ([`07-storage-history-costs.md`](07-storage-history-costs.md),
+«Managed-копии reference images»).
 
 ### E08. Параллельность, восстановление и защита от двойного запуска ⚡
 
