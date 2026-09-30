@@ -1,7 +1,7 @@
 ---
 applyTo: "src/aimedia/artifacts/**,src/aimedia/application/artifact_finalization.py,tests/integration/test_artifact_*.py,tests/integration/test_output_collisions.py,tests/security/test_output_names.py"
 name: "PROCESSING.ImageArtifacts"
-description: "Читай при изменении image artifact storage/finalization и managed-копий входов: декодирование PNG/JPEG/WebP, managed и --out пути, no-clobber публикация, ошибки, согласованность файлов с Job history и планируемый инвариант managed-копий reference images (CN-01, не реализован)."
+description: "Читай при изменении image artifact storage/finalization и managed-копий входов: декодирование PNG/JPEG/WebP, managed и --out пути, no-clobber публикация, ошибки, согласованность файлов с Job history и инвариант managed-копий reference images (CN-01: схема v2 и связь реализованы, файлы копий — нет)."
 ---
 
 # PROCESSING — Локальные image artifacts
@@ -47,7 +47,7 @@ managed-файлов. Порт `ArtifactStorage` возвращает Artifact �
   но не историю и не artifacts. При непроверенном backup опасную операцию
   остановить, не обещая физического стирания данных.
 
-## Managed-копии reference images — планируемый инвариант (CN-01) 🗂️
+## Managed-копии reference images (CN-01): связь есть, файлов нет 🗂️
 
 Решение [`release-scope.md`, change note `CN-01`](../docs/plans/release-scope.md)
 распространяет managed-владельца на **reference images**: подготовленные входы Job
@@ -74,14 +74,16 @@ reference images»](../docs/plans/07-storage-history-costs.md); здесь то�
 - **Backup:** managed-копии входов входят в тот же quiescent offline манифест, что
   и managed artifacts ([backup-contract](../docs/plans/backup-contract.md)).
 
-**Не реализовано.** На HEAD `dfbb930` managed-копий reference images нет ни в
-коде, ни в схеме: SQLite schema — **v1**, миграция **v2** не написана, поля
-`InputRef.managed_path` нет. Инвариант выше — контракт цели, а не описание
-существующего поведения: ссылка на него не подтверждает реализацию, а schema v1 в
-коде не правится.
+**Реализовано и не реализовано.** В первом code-срезе `CN-01` реализованы только
+**DTO и связь**: доменное поле `InputRef.managed_path` (лексическая проверка без IO)
+и таблица schema v2 `managed_input_copies`, которую пересоздаёт repository вместе с
+входами при каждом `save`. **Не реализовано:** каталог `inputs/`, публикация
+no-clobber, безопасное чтение копии вместо исходника, порядок D03, обработка сбоя
+после публикации и backup-манифест. Поэтому managed-копия входного файла пока не
+существует как файл: нельзя обещать чтение Job после удаления исходника, ссылаться
+на копию как на сохранённый результат или выдавать её за artifact.
 
-Конкретные тесты (миграция v1 → v2 без правки v1, повторный save/смена
-статуса/reopen, удаление исходника, collision/symlink, отказ до и после commit,
-backup с отсутствующим файлом или неверным hash) добавляет задача реализации
-`CN-01`. До её приёмки нельзя заявлять managed-копии референсов существующей
-функцией или обещать восстановление исходника, удалённого пользователем.
+Конкретные тесты файлового слоя (публикация, collision/symlink, удаление исходника,
+отказ до и после commit, backup с отсутствующим файлом или неверным hash) добавляет
+следующий срез `CN-01`. До приёмки `CN-01` нельзя заявлять managed-копии референсов
+существующей функцией.

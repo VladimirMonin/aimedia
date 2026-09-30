@@ -14,12 +14,19 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from pydantic import model_validator
+
 from aimedia.domain.base import (
     DomainModel,
     LocalPath,
+    ManagedRelativePath,
     MimeType,
     NonBlankStr,
     Sha256Hex,
+)
+
+_ERROR_MANAGED_COPY_METADATA = (
+    "managed-копия входа требует заполненных sha256, mime_type и size_bytes"
 )
 
 
@@ -39,6 +46,17 @@ class InputRef(DomainModel):
     Позиция сохраняет порядок входов, `sha256` — обязательный пункт истории
     (решение baseline D15). `metadata` несёт derived-данные ресурса (например
     `width`/`height`), полученные при подготовке входа.
+
+    `path` — provenance исходного файла и не подменяется managed-копией. Копия
+    живёт в отдельном необязательном `managed_path`: относительный путь внутри
+    managed-дерева app data (`inputs/<job_id>/<position>.<ext>`), проверяемый
+    лексически без обращения к файловой системе. Отсутствие `managed_path`
+    означает legacy-запись без копии, а не ошибку; байты копии остаются в
+    файловом слое и не попадают ни в домен, ни в SQLite.
+
+    Заданный `managed_path` требует заполненных `sha256`, `mime_type` и
+    `size_bytes`: копия делается из проверенных байтов, и ссылка без них не
+    доказывала бы соответствие копии входу.
     """
 
     kind: InputKind
@@ -48,8 +66,25 @@ class InputRef(DomainModel):
     mime_type: MimeType | None = None
     size_bytes: int | None = None
     sha256: Sha256Hex | None = None
+    managed_path: ManagedRelativePath | None = None
 
     metadata: dict[str, object] = {}
+
+    @model_validator(mode="after")
+    def _managed_copy_requires_verified_metadata(self) -> InputRef:
+        """Managed-копия без SHA-256, MIME или размера — ошибка, legacy — нет.
+
+        Правило условное: вход без копии (`managed_path is None`) может не нести ни
+        одного из этих полей и остаётся читаемым — история, сохранённая до schema v2,
+        не переклассифицируется.
+        """
+        if self.managed_path is None:
+            return self
+        if self.sha256 is None or self.mime_type is None or self.size_bytes is None:
+            raise ValueError(_ERROR_MANAGED_COPY_METADATA)
+        if self.size_bytes < 0:
+            raise ValueError("размер managed-копии входа не может быть отрицательным")
+        return self
 
 
 class PromptSourceKind(StrEnum):

@@ -39,7 +39,19 @@ from aimedia.storage import (
 )
 
 DATABASE_FILENAME = "database.sqlite3"
-EXPECTED_TABLES = frozenset({"jobs", "prompt_sources", "inputs", "artifacts", "schema_migrations"})
+EXPECTED_TABLES = frozenset(
+    {
+        "jobs",
+        "prompt_sources",
+        "inputs",
+        "artifacts",
+        "managed_input_copies",
+        "schema_migrations",
+    }
+)
+
+# Таблицы первой версии схемы: их DDL обязан пережить миграцию v2 без изменений.
+V1_TABLES = ("jobs", "prompt_sources", "inputs", "artifacts")
 
 
 def _database_path(tmp_path: Path) -> Path:
@@ -76,6 +88,31 @@ def _synthetic_previous_schema() -> tuple[Migration, ...]:
 
 def _add_widget_notes(database: Database) -> None:
     database.execute_sql('ALTER TABLE "widgets" ADD COLUMN "notes" TEXT')
+
+
+def _v1_schema_snapshot(manager: DatabaseManager) -> dict[str, str]:
+    """DDL таблиц v1 из `sqlite_master`: снимок до и после миграции v2."""
+    rows = manager.database.execute_sql(
+        'SELECT "name", "sql" FROM "sqlite_master" WHERE "type" = \'table\' '
+        'AND "name" IN (?, ?, ?, ?)',
+        V1_TABLES,
+    ).fetchall()
+    return {name: sql for name, sql in rows}
+
+
+def _seed_v1_history(manager: DatabaseManager) -> None:
+    """Одна строка v1 (Job с reference image) через raw SQL, без ORM v2."""
+    manager.database.execute_sql(
+        'INSERT INTO "jobs" ("id", "kind", "status", "provider_id", "model_id", "created_at") '
+        "VALUES (1, 'image_generate', 'completed', 'polza', 'synthetic-model', ?)",
+        ("2026-01-01T00:00:00Z",),
+    )
+    manager.database.execute_sql(
+        'INSERT INTO "inputs" '
+        '("id", "job_id", "kind", "position", "source_path", "mime_type", "size_bytes", "sha256") '
+        "VALUES (1, 1, 'image', 0, 'refs/robot.png', 'image/png', 4096, ?)",
+        ("a" * 64,),
+    )
 
 
 def _list_tables(manager: DatabaseManager) -> set[str]:
@@ -121,7 +158,10 @@ def test_migrate_after_close_does_not_autoconnect(tmp_path: Path) -> None:
 
     assert manager._database.is_closed()
     with sqlite3.connect(path) as connection:
-        assert connection.execute('SELECT COUNT(*) FROM "schema_migrations"').fetchone() == (1,)
+        # Все известные версии схемы записаны ровно по одному разу.
+        assert connection.execute('SELECT COUNT(*) FROM "schema_migrations"').fetchone() == (
+            LATEST_SCHEMA_VERSION,
+        )
 
     try:
         outcome = manager.open()
@@ -182,9 +222,116 @@ def test_open_database_is_idempotent_across_reopen(tmp_path: Path) -> None:
     try:
         row = second.database.execute_sql('SELECT COUNT(*) FROM "jobs"').fetchone()
         assert row == (1,)
-        assert applied_migrations(second.database) == {1: "001_initial"}
+        # Схема доводится до всех известных версий, а запись v1 остаётся прежней: 001
+        # не переименовывается и не переписывается при добавлении v2.
+        applied = applied_migrations(second.database)
+        assert applied == {migration.version: migration.name for migration in MIGRATIONS}
+        assert applied[1] == "001_initial"
     finally:
         second.close()
+
+
+def test_production_v1_migrates_to_v2_without_rewriting_v1_schema(tmp_path: Path) -> None:
+    """Продуктовая v1 → v2: данные v1 целы, DDL v1 не изменён, backfill нет.
+
+    Это не синтетическая схема `widgets`, а реальная цепочка `MIGRATIONS`: версия 1
+    создаёт таблицы v1, версия 2 — только `managed_input_copies`.
+    """
+    path = _database_path(tmp_path)
+    seeded = DatabaseManager(path)
+    seeded.connect()
+    try:
+        first = apply_migrations(seeded.database, MIGRATIONS[:1])
+        assert first.applied == (1,)
+        assert "managed_input_copies" not in _list_tables(seeded)
+        _seed_v1_history(seeded)
+        v1_ddl = _v1_schema_snapshot(seeded)
+    finally:
+        seeded.close()
+
+    manager = DatabaseManager(path)
+    manager.connect()
+    try:
+        outcome = apply_migrations(manager.database)
+
+        assert outcome.previous_version == 1
+        assert outcome.current_version == LATEST_SCHEMA_VERSION
+        assert outcome.applied == (2,)
+        assert "managed_input_copies" in _list_tables(manager)
+        # v2 не добавляет колонок в v1 и не переписывает её DDL.
+        assert set(v1_ddl) == set(V1_TABLES)
+        assert _v1_schema_snapshot(manager) == v1_ddl
+        # Данные v1 сохранены как есть: путь, MIME, размер и hash не тронуты.
+        assert manager.database.execute_sql(
+            'SELECT "source_path", "mime_type", "size_bytes", "sha256" FROM "inputs" WHERE "id" = 1'
+        ).fetchone() == ("refs/robot.png", "image/png", 4096, "a" * 64)
+        assert manager.database.execute_sql('SELECT COUNT(*) FROM "jobs"').fetchone() == (1,)
+        # Legacy-строки не получают managed-копию «задним числом»: backfill нет.
+        assert manager.database.execute_sql(
+            'SELECT COUNT(*) FROM "managed_input_copies"'
+        ).fetchone() == (0,)
+        assert applied_migrations(manager.database) == {
+            migration.version: migration.name for migration in MIGRATIONS
+        }
+
+        repeated = apply_migrations(manager.database)
+        assert repeated.applied == ()
+        assert repeated.previous_version == LATEST_SCHEMA_VERSION
+        assert repeated.current_version == LATEST_SCHEMA_VERSION
+    finally:
+        manager.close()
+
+
+def test_managed_input_copies_cascades_from_input_and_keeps_path_unique(
+    tmp_path: Path,
+) -> None:
+    """v2-таблица связи: FK с `ON DELETE CASCADE`, PK входа и UNIQUE пути работают."""
+    manager = open_database(_database_path(tmp_path))
+    try:
+        ddl_row = manager.database.execute_sql(
+            'SELECT "sql" FROM "sqlite_master" WHERE "name" = \'managed_input_copies\''
+        ).fetchone()
+        assert ddl_row is not None
+        assert "ON DELETE CASCADE" in ddl_row[0]
+        assert "PRIMARY KEY" in ddl_row[0]
+
+        _seed_v1_history(manager)
+        manager.database.execute_sql(
+            'INSERT INTO "inputs" ("id", "job_id", "kind", "position", "source_path") '
+            "VALUES (2, 1, 'image', 1, 'refs/lab.png')"
+        )
+
+        # Ссылка на несуществующий вход отклоняется включённым FK.
+        with pytest.raises(IntegrityError):
+            manager.database.execute_sql(
+                'INSERT INTO "managed_input_copies" ("input_id", "local_path") VALUES (404, ?)',
+                ("inputs/1/0.png",),
+            )
+        manager.database.execute_sql(
+            'INSERT INTO "managed_input_copies" ("input_id", "local_path") VALUES (1, ?)',
+            ("inputs/1/0.png",),
+        )
+        # Два входа не могут сослаться на один managed-файл...
+        with pytest.raises(IntegrityError):
+            manager.database.execute_sql(
+                'INSERT INTO "managed_input_copies" ("input_id", "local_path") VALUES (2, ?)',
+                ("inputs/1/0.png",),
+            )
+        # ...и у входа не может быть второй копии.
+        with pytest.raises(IntegrityError):
+            manager.database.execute_sql(
+                'INSERT INTO "managed_input_copies" ("input_id", "local_path") VALUES (1, ?)',
+                ("inputs/1/1.png",),
+            )
+
+        # Каскад убирает только строку связи, а не историю Job.
+        manager.database.execute_sql('DELETE FROM "inputs" WHERE "id" = 1')
+        assert manager.database.execute_sql(
+            'SELECT COUNT(*) FROM "managed_input_copies"'
+        ).fetchone() == (0,)
+        assert manager.database.execute_sql('SELECT COUNT(*) FROM "jobs"').fetchone() == (1,)
+    finally:
+        manager.close()
 
 
 def test_foreign_keys_are_enabled_and_enforced(tmp_path: Path) -> None:
@@ -242,7 +389,7 @@ def test_schema_newer_than_code_fails_closed_without_downgrade(tmp_path: Path) -
         assert excinfo.value.code_version == LATEST_SCHEMA_VERSION
         # Ни одна запись реальной истории не удалена и не переписана.
         assert applied_migrations(manager.database) == {
-            1: "001_initial",
+            **{migration.version: migration.name for migration in MIGRATIONS},
             LATEST_SCHEMA_VERSION + 1: "999_from_future",
         }
         assert EXPECTED_TABLES <= _list_tables(manager)

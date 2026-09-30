@@ -23,6 +23,10 @@ Runner ведёт себя так:
 
 Транзакции синхронны: `apply` — обычная функция без `await`, поэтому сетевой вызов
 не может удерживать транзакцию SQLite.
+
+Реализованная цепочка: **v1** — все таблицы данных первого релиза, **v2** (`CN-01`)
+— одна таблица `managed_input_copies`. v1 DDL не переписывается: новая таблица
+входит в цепочку отдельным шагом, а не в `SCHEMA_TABLES` версии 1.
 """
 
 from __future__ import annotations
@@ -48,6 +52,7 @@ from aimedia.storage.events import (
 from aimedia.storage.models import (
     ALL_MODELS,
     SCHEMA_TABLES,
+    ManagedInputCopyRecord,
     SchemaMigrationRecord,
 )
 
@@ -79,11 +84,25 @@ def _create_initial_schema(database: Database) -> None:
     database.create_tables(list(SCHEMA_TABLES))
 
 
+def _create_managed_input_copies(database: Database) -> None:
+    """v2: одна таблица связи «вход → managed-копия» (`CN-01`).
+
+    Создаётся только новая таблица: v1 DDL не переписывается, существующие строки
+    `inputs` не переклассифицируются и не backfill-ятся, чужие файлы не читаются.
+    """
+    database.create_tables([ManagedInputCopyRecord])
+
+
 # Продуктовая цепочка. Новая версия схемы добавляется сюда следующим элементом с
 # номером `LATEST_SCHEMA_VERSION + 1`; отдельный файл миграций не заводится, потому
 # что runner один и порядок объявлен в одном месте.
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(version=1, name="001_initial", apply=_create_initial_schema),
+    Migration(
+        version=2,
+        name="002_managed_input_copies",
+        apply=_create_managed_input_copies,
+    ),
 )
 
 LATEST_SCHEMA_VERSION: int = MIGRATIONS[-1].version

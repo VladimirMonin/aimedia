@@ -10,6 +10,11 @@
 - `Path` → posix-строка (одинакова на Windows и Linux);
 - enum → его строковое значение.
 
+`ManagedRelativePath` — относительный путь managed-файла (копия входа, `CN-01`).
+Он проверяется **лексически**, без обращения к файловой системе: домен остаётся
+IO-free, а решение об абсолютных путях, `..` и символах-разделителях принимается по
+одной форме строки на Windows и Linux.
+
 `ExactDecimal` отклоняет `float` и `bool`: деньги не проходят через двоичную
 дробь и не смешиваются с булевым флагом.
 """
@@ -35,6 +40,14 @@ _ERROR_DECIMAL_TYPE = "денежная сумма должна быть Decimal
 _ERROR_DECIMAL_VALUE = "некорректная десятичная сумма"
 _ERROR_DECIMAL_FINITE = "денежная сумма должна быть конечным числом"
 _ERROR_TIMESTAMP_NAIVE = "timestamp должен быть timezone-aware; локальное время машины недопустимо"
+_ERROR_MANAGED_PATH_ABSOLUTE = (
+    "managed_path должен быть относительным путём без абсолютного, drive-relative или UNC-префикса"
+)
+_ERROR_MANAGED_PATH_ESCAPES_ROOT = (
+    "managed_path не должен содержать пустые компоненты, `.` или `..`"
+)
+
+_MANAGED_PATH_DRIVE_RE = re.compile(r"[A-Za-z]:")
 
 _SHA256_RE = re.compile(r"[0-9a-fA-F]{64}")
 _MIME_RE = re.compile(r"[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+")
@@ -88,6 +101,27 @@ def _path_to_text(value: Path) -> str:
     return value.as_posix()
 
 
+def _to_managed_relative_path(value: object) -> object:
+    """Проверить managed-путь лексически и привести его к posix-форме.
+
+    Домен не обращается к файловой системе и не разрешает путей: проверяется только
+    форма строки. Абсолютные, drive-relative (`C:rel`) и UNC-пути, компоненты `..`,
+    `.`, пустые компоненты и хвостовой разделитель отклоняются, потому что такой
+    путь либо покидает managed-root, либо даёт двум записям один и тот же файл под
+    разным текстом. Обратный слеш нормализуется в прямой, поэтому значение одинаково
+    на Windows и Linux. Наличие ссылки, каталога или файла не проверяется — это
+    работа файлового слоя.
+    """
+    if not isinstance(value, (str, Path)):
+        raise ValueError(_ERROR_MANAGED_PATH_ABSOLUTE)
+    text = str(value).replace("\\", "/")
+    if not text or text.startswith("/") or _MANAGED_PATH_DRIVE_RE.match(text):
+        raise ValueError(_ERROR_MANAGED_PATH_ABSOLUTE)
+    if any(part in ("", ".", "..") for part in text.split("/")):
+        raise ValueError(_ERROR_MANAGED_PATH_ESCAPES_ROOT)
+    return text
+
+
 def _to_sha256(value: object) -> object:
     """Проверить и нормализовать SHA-256 к нижнему регистру."""
     if isinstance(value, str) and _SHA256_RE.fullmatch(value):
@@ -134,6 +168,11 @@ UtcDatetime = Annotated[
 ]
 LocalPath = Annotated[
     Path,
+    PlainSerializer(_path_to_text, return_type=str, when_used="json"),
+]
+ManagedRelativePath = Annotated[
+    Path,
+    BeforeValidator(_to_managed_relative_path),
     PlainSerializer(_path_to_text, return_type=str, when_used="json"),
 ]
 Sha256Hex = Annotated[str, BeforeValidator(_to_sha256)]

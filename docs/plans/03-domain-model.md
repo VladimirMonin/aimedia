@@ -585,21 +585,26 @@ class InputRef(BaseModel):
     size_bytes: int | None = None
     sha256: str | None = None
 
-    managed_path: Path | None = None   # CN-01, планируется
+    managed_path: Path | None = None   # CN-01: относительный путь managed-копии
 
     metadata: dict[str, Any] = {}
 ```
 
-> [!note] Managed-копия входа (`CN-01`, планируется)
+> [!note] Managed-копия входа (`CN-01`)
 > `path` остаётся provenance исходного файла и не подменяется. Необязательный
 > `managed_path` — **относительный** путь управляемой копии внутри managed-дерева
 > app data (`inputs/<job_id>/<position>.<ext>`); его отсутствие означает
-> legacy-запись без копии, а не ошибку. Домен остаётся IO-free: файловые операции
+> legacy-запись без копии, а не ошибку. Заданный `managed_path` требует
+> заполненных `sha256`, `mime_type` и `size_bytes`: копия делается из проверенных
+> байтов. Домен остаётся IO-free: файловые операции
 > и чтение байтов выполняет application-слой, байты не попадают ни в домен, ни в
 > SQLite. Копия входа **не является** `Artifact` результата.
 > Контракт и порядок до платного POST — `07-storage-history-costs.md`, раздел
 > «Managed-копии reference images»; объём — `release-scope.md`, `CN-01`.
-> **Не реализовано**: на HEAD `dfbb930` поля нет.
+> **Реализовано**: поле с лексической проверкой без IO (абсолютные/drive-relative/
+> UNC-пути, `..` и `.` отклоняются; разделители приводятся к posix-форме) и связь
+> schema v2 `managed_input_copies`. **Не реализовано**: файлы копий, каталог
+> `inputs/`, порядок D03 и backup-манифест.
 
 `metadata` может содержать:
 
@@ -685,9 +690,9 @@ local_path
 ```
 
 > [!note] Artifact — это результат, а не вход
-> Managed-копия входного reference image (`CN-01`, планируется) не становится
-> `Artifact`: она не входит в `JobResult`, не участвует в выборе `--out` и не
-> выдаётся как output. Своё место входа — `InputRef.managed_path`.
+> Managed-копия входного reference image (`CN-01`) не становится `Artifact`: она не
+> входит в `JobResult`, не участвует в выборе `--out` и не выдаётся как output.
+> Своё место входа — `InputRef.managed_path`.
 
 ---
 

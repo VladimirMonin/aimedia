@@ -17,6 +17,7 @@ import pytest
 from peewee import Database, IntegrityError
 
 from aimedia.storage import (
+    LATEST_SCHEMA_VERSION,
     MIGRATIONS,
     DatabaseManager,
     Migration,
@@ -138,7 +139,7 @@ def test_database_not_left_half_migrated_on_real_schema(tmp_path: Path) -> None:
     # База осталась пригодной: корректная миграция с тем же номером применяется.
     reopened = open_database(path)
     try:
-        assert current_schema_version(reopened.database) == 1
+        assert current_schema_version(reopened.database) == LATEST_SCHEMA_VERSION
         assert {"jobs", "prompt_sources", "inputs", "artifacts"} <= set(
             reopened.database.get_tables()
         )
@@ -188,12 +189,70 @@ def test_foreign_key_violation_inside_migration_fails_and_rolls_back(tmp_path: P
         manager.close()
 
 
-def _product_chain_with(second_migration: Callable[[Database], None]) -> tuple[Migration, ...]:
-    """Продуктовая v1 (реальная схема) плюс синтетическая падающая v2."""
+def _product_chain_with(broken_migration: Callable[[Database], None]) -> tuple[Migration, ...]:
+    """Продуктовая цепочка (реальная схема) плюс синтетическая падающая версия."""
     return (
-        MIGRATIONS[0],
-        Migration(version=2, name="002_synthetic_broken", apply=second_migration),
+        *MIGRATIONS,
+        Migration(
+            version=LATEST_SCHEMA_VERSION + 1,
+            name="999_synthetic_broken",
+            apply=broken_migration,
+        ),
     )
+
+
+def test_failed_v2_leaves_production_v1_rows_and_schema_untouched(tmp_path: Path) -> None:
+    """Отказ шага v2 на реальной v1: строки целы, таблицы v2 нет, повтор проходит."""
+    path = _database_path(tmp_path)
+    manager = DatabaseManager(path)
+    manager.connect()
+    try:
+        assert apply_migrations(manager.database, MIGRATIONS[:1]).applied == (1,)
+        manager.database.execute_sql(
+            'INSERT INTO "jobs" ("id", "kind", "status", "provider_id", "model_id", "created_at") '
+            "VALUES (1, 'image_generate', 'completed', 'polza', 'synthetic-model', ?)",
+            ("2026-01-01T00:00:00Z",),
+        )
+        manager.database.execute_sql(
+            'INSERT INTO "inputs" '
+            '("id", "job_id", "kind", "position", "source_path", "sha256") '
+            "VALUES (1, 1, 'image', 0, 'refs/robot.png', ?)",
+            ("a" * 64,),
+        )
+
+        def broken_v2(database: Database) -> None:
+            database.execute_sql(
+                'CREATE TABLE "managed_input_copies" ('
+                '"input_id" INTEGER NOT NULL PRIMARY KEY, "local_path" TEXT NOT NULL)'
+            )
+            raise RuntimeError("сбой после создания таблицы v2")
+
+        chain = (
+            MIGRATIONS[0],
+            Migration(version=2, name="002_synthetic_failed", apply=broken_v2),
+        )
+        with pytest.raises(MigrationFailedError) as excinfo:
+            apply_migrations(manager.database, chain)
+
+        assert excinfo.value.version == 2
+        assert "managed_input_copies" not in set(manager.database.get_tables())
+        assert current_schema_version(manager.database) == 1
+        assert applied_migrations(manager.database) == {1: "001_initial"}
+        assert manager.database.execute_sql(
+            'SELECT "source_path", "sha256" FROM "inputs" WHERE "id" = 1'
+        ).fetchone() == ("refs/robot.png", "a" * 64)
+
+        # Номер версии не «сгорел»: штатная v2 применяется со следующей попытки, а
+        # уже записанные строки v1 остаются без managed-копий.
+        outcome = apply_migrations(manager.database)
+        assert outcome.applied == (2,)
+        assert "managed_input_copies" in set(manager.database.get_tables())
+        assert manager.database.execute_sql('SELECT COUNT(*) FROM "inputs"').fetchone() == (1,)
+        assert manager.database.execute_sql(
+            'SELECT COUNT(*) FROM "managed_input_copies"'
+        ).fetchone() == (0,)
+    finally:
+        manager.close()
 
 
 def test_real_schema_keeps_foreign_keys_enforced_after_failed_migration(tmp_path: Path) -> None:

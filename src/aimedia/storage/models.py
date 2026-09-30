@@ -11,6 +11,9 @@
   отсутствуют вместе (baseline D11, «ноль ≠ unknown»);
 - порядок prompt sources, inputs и artifacts фиксируется колонкой `position` с
   уникальностью в пределах Job;
+- `managed_input_copies` (schema v2, `CN-01`) — только связь «вход → managed-копия»:
+  относительный путь копии; hash, MIME, размер и `source_path` остаются в `inputs`.
+  Таблица создаётся миграцией v2, а не первой версией схемы;
 - `remote_job_id` и `operation` хранятся в snapshot Job рядом, endpoint по строке
   ID не угадывается (baseline D10);
 - timestamps хранятся строкой ISO-8601 UTC с суффиксом `Z` — та же форма, что у
@@ -179,6 +182,32 @@ class ArtifactRecord(StorageModel):
         indexes = ((("job", "position"), True),)
 
 
+class ManagedInputCopyRecord(StorageModel):
+    """Связь входа с его managed-копией (schema v2, `CN-01`).
+
+    Одна строка на вход: `input_id` — первичный ключ, поэтому два `local_path` у
+    одного входа невозможны, а `UNIQUE(local_path)` не даёт двум входам сослаться
+    на один файл. Отсутствие строки означает legacy-вход без managed-копии, а не
+    повреждение истории: `inputs` не backfill-ится и не переклассифицируется.
+
+    Таблица **не входит** в `SCHEMA_TABLES`: её создаёт миграция v2, поэтому v1 DDL
+    не переписывается, а повторный запуск миграций остаётся no-op. Байты копии
+    здесь не хранятся — только относительный путь внутри managed-дерева.
+    """
+
+    input = ForeignKeyField(
+        InputRecord,
+        primary_key=True,
+        backref="managed_copy",
+        field="id",
+        on_delete="CASCADE",
+    )
+    local_path = TextField(null=False, unique=True)
+
+    class Meta:
+        table_name = "managed_input_copies"
+
+
 class SchemaMigrationRecord(StorageModel):
     """Применённая миграция схемы.
 
@@ -205,4 +234,8 @@ SCHEMA_TABLES: tuple[type[StorageModel], ...] = (
 )
 
 # Модели, которым нужна привязка к конкретной базе на время операции.
-ALL_MODELS: tuple[type[StorageModel], ...] = (*SCHEMA_TABLES, SchemaMigrationRecord)
+ALL_MODELS: tuple[type[StorageModel], ...] = (
+    *SCHEMA_TABLES,
+    ManagedInputCopyRecord,
+    SchemaMigrationRecord,
+)

@@ -159,6 +159,31 @@ def test_path_serializes_as_posix_on_any_platform() -> None:
     assert "\\" not in payload["local_path"]
 
 
+def test_managed_path_serializes_as_posix_and_legacy_input_stays_valid() -> None:
+    """Managed-путь уходит posix-строкой, а legacy-вход без копии остаётся валидным."""
+    managed = InputRef(
+        kind=InputKind.IMAGE,
+        path=Path("refs/robot.png"),
+        position=0,
+        mime_type="image/png",
+        size_bytes=4096,
+        sha256=SHA256,
+        managed_path=Path("inputs") / "481" / "0.png",
+    )
+    payload = json.loads(managed.model_dump_json())
+    assert payload["managed_path"] == "inputs/481/0.png"
+    assert "\\" not in payload["managed_path"]
+    assert payload["path"] == "refs/robot.png"
+    assert InputRef.model_validate_json(managed.model_dump_json()) == managed
+
+    # Legacy-запись без managed-копии: поле отсутствует как значение и не мешает
+    # чтению истории, сохранённой до schema v2.
+    legacy = InputRef(kind=InputKind.IMAGE, path=Path("refs/robot.png"), position=0)
+    legacy_payload = json.loads(legacy.model_dump_json())
+    assert legacy_payload["managed_path"] is None
+    assert InputRef.model_validate_json(legacy.model_dump_json()) == legacy
+
+
 def test_artifact_role_distinguishes_original_and_final() -> None:
     original = Artifact(
         kind=ArtifactKind.IMAGE,

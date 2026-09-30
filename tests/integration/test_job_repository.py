@@ -9,6 +9,10 @@
 Загрузка Job не обращается к Model Registry: в тестах участвует логическая модель,
 которой в Registry заведомо нет, и история всё равно восстанавливается — значит,
 читаются только сохранённые snapshot-поля.
+
+Отдельно проверяется связь входа с managed-копией (schema v2, `CN-01`): она
+восстанавливается как часть Job и пересоздаётся под новый `input.id` при каждом
+сохранении, потому что inputs удаляются и вставляются заново в одной транзакции.
 """
 
 from __future__ import annotations
@@ -20,6 +24,8 @@ from threading import Thread
 from unittest.mock import patch
 
 import pytest
+from peewee import IntegrityError
+from pydantic import ValidationError
 
 from aimedia.domain import (
     Artifact,
@@ -45,6 +51,7 @@ from aimedia.domain import (
 )
 from aimedia.storage import (
     DatabaseClosedError,
+    DatabaseManager,
     DatabaseOwnershipError,
     PeeweeCostReportRepository,
     PeeweeJobRepository,
@@ -121,6 +128,80 @@ def _inputs() -> list[InputRef]:
             size_bytes=5120,
             sha256="c" * 64,
         ),
+    ]
+
+
+def _managed_input(
+    *,
+    position: int,
+    source: str,
+    managed: str,
+    sha256: str = REF_SHA256,
+) -> InputRef:
+    """Вход с managed-копией: копия требует проверенных MIME, размера и SHA-256."""
+    return InputRef(
+        kind=InputKind.IMAGE,
+        path=Path(source),
+        position=position,
+        mime_type="image/png",
+        size_bytes=4096,
+        sha256=sha256,
+        managed_path=Path(managed),
+    )
+
+
+def _managed_inputs(job_id: int = 1) -> list[InputRef]:
+    """Входы Job: managed-копия только у позиции 0, legacy-вход без копии — у 1.
+
+    `managed_path` относителен, не зависит от `input.id` и уникален в пределах
+    базы: файловое имя строится из Job ID и position (`inputs/<job_id>/<position>.<ext>`).
+    """
+    return [
+        _managed_input(position=0, source="refs/robot.png", managed=f"inputs/{job_id}/0.png"),
+        InputRef(
+            kind=InputKind.IMAGE,
+            path=Path("refs/lab.png"),
+            position=1,
+            mime_type="image/png",
+            size_bytes=5120,
+            sha256="c" * 64,
+        ),
+    ]
+
+
+def _managed_job(job_id: int = 1) -> Job:
+    """Job с reference images, у первого из которых есть managed-копия."""
+    return Job(
+        kind=JobKind.IMAGE_GENERATE,
+        status=JobStatus.CREATED,
+        provider=PROVIDER,
+        model=MODEL,
+        request=_request(),
+        inputs=_managed_inputs(job_id),
+        prompt_sources=_prompt_sources(),
+        created_at=CREATED_AT,
+    )
+
+
+def _input_id(manager: DatabaseManager, *, job_id: int, position: int) -> int:
+    """ID сохранённой строки входа: он меняется при каждом пересоздании inputs."""
+    row = manager.database.execute_sql(
+        'SELECT "id" FROM "inputs" WHERE "job_id" = ? AND "position" = ?', (job_id, position)
+    ).fetchone()
+    assert row is not None
+    return int(row[0])
+
+
+def _managed_rows(manager: DatabaseManager, *, job_id: int) -> list[tuple[int, str]]:
+    """Позиция входа и путь его managed-копии, прочитанные напрямую из SQLite."""
+    return [
+        (int(position), str(local_path))
+        for position, local_path in manager.database.execute_sql(
+            'SELECT i."position", c."local_path" FROM "managed_input_copies" c '
+            'JOIN "inputs" i ON i."id" = c."input_id" WHERE i."job_id" = ? '
+            'ORDER BY i."position"',
+            (job_id,),
+        ).fetchall()
     ]
 
 
@@ -214,6 +295,287 @@ def _failed_job() -> Job:
         submitted_at=CREATED_AT,
         completed_at=COMPLETED_AT,
     )
+
+
+def test_managed_copy_path_round_trips_through_save_get_and_reopen(tmp_path: Path) -> None:
+    """Связь Job → managed-копия читается, переживает reopen и сохраняет legacy-вход."""
+    path = _database_path(tmp_path)
+    job = _managed_job()
+
+    first = open_database(path)
+    try:
+        repository = PeeweeJobRepository(first)
+        saved = repository.save(job)
+        assert saved.id is not None
+        job_id = saved.id
+        assert saved.inputs[0].managed_path == Path("inputs/1/0.png")
+        assert saved.inputs[1].managed_path is None
+        managed_input_id = _input_id(first, job_id=job_id, position=0)
+        stored_rows = first.database.execute_sql(
+            'SELECT "input_id", "local_path" FROM "managed_input_copies"'
+        ).fetchall()
+    finally:
+        first.close()
+
+    # Строка копии ссылается на фактический вход позиции 0, а не на угаданный ID.
+    assert stored_rows == [(managed_input_id, "inputs/1/0.png")]
+
+    second = open_database(path)
+    try:
+        reopened = PeeweeJobRepository(second)
+        restored = reopened.get(job_id)
+        recent = reopened.list_recent()
+    finally:
+        second.close()
+
+    assert restored is not None
+    assert restored == job.model_copy(update={"id": job_id})
+    assert restored.inputs[0].managed_path == Path("inputs/1/0.png")
+    assert restored.inputs[1].managed_path is None
+    assert restored.inputs[0].path == Path("refs/robot.png")
+    assert [ref.managed_path for ref in recent[0].inputs] == [Path("inputs/1/0.png"), None]
+
+
+@pytest.mark.parametrize(
+    "corrupt",
+    [
+        pytest.param("", id="empty"),
+        pytest.param("inputs//1/0.png", id="empty-component"),
+        pytest.param("inputs/./1/0.png", id="dot-component"),
+        pytest.param("/abs/inputs/1/0.png", id="absolute"),
+    ],
+)
+def test_corrupt_stored_managed_path_fails_closed_on_read(tmp_path: Path, corrupt: str) -> None:
+    """Повреждённый `local_path` из БД отклоняется при чтении, а не «чинится».
+
+    Строка копии дописывается в БД «снаружи»: repository обязан отдать значение
+    домену как есть, поэтому пустая строка не превращается в legacy-`None`, а
+    `inputs//1/0.png` не нормализуется `Path` до проверки.
+    """
+    manager = open_database(_database_path(tmp_path))
+    try:
+        repository = PeeweeJobRepository(manager)
+        # Legacy-Job без копий: строка копии появляется только из внешней записи.
+        job_id = repository.save(_managed_job().model_copy(update={"inputs": _inputs()})).id
+        assert job_id is not None
+        manager.database.execute_sql(
+            'INSERT INTO "managed_input_copies" ("input_id", "local_path") VALUES (?, ?)',
+            (_input_id(manager, job_id=job_id, position=0), corrupt),
+        )
+
+        with pytest.raises(ValidationError):
+            repository.get(job_id)
+        with pytest.raises(ValidationError):
+            repository.list_recent()
+    finally:
+        manager.close()
+
+
+@pytest.mark.parametrize("field", ["sha256", "mime_type", "size_bytes"])
+@pytest.mark.parametrize("has_copy", [False, True], ids=["legacy", "managed"])
+def test_stored_copy_requires_complete_metadata(tmp_path: Path, field: str, has_copy: bool) -> None:
+    """Неполные metadata из SQLite допустимы только при отсутствии строки копии."""
+    manager = open_database(_database_path(tmp_path))
+    try:
+        repository = PeeweeJobRepository(manager)
+        saved = repository.save(_managed_job())
+        assert saved.id is not None
+        input_id = _input_id(manager, job_id=saved.id, position=0)
+        # Имя колонки берётся только из фиксированного списка параметров теста.
+        manager.database.execute_sql(
+            f'UPDATE "inputs" SET "{field}" = NULL WHERE "id" = ?', (input_id,)
+        )
+        if has_copy:
+            with pytest.raises(ValidationError, match="sha256, mime_type и size_bytes"):
+                repository.get(saved.id)
+            with pytest.raises(ValidationError, match="sha256, mime_type и size_bytes"):
+                repository.list_recent()
+        else:
+            manager.database.execute_sql(
+                'DELETE FROM "managed_input_copies" WHERE "input_id" = ?', (input_id,)
+            )
+            restored = repository.get(saved.id)
+            assert restored is not None
+            assert restored.inputs[0].managed_path is None
+            assert getattr(restored.inputs[0], field) is None
+            assert repository.list_recent() == [restored]
+    finally:
+        manager.close()
+
+
+def test_stored_copy_rejects_negative_size_on_read(tmp_path: Path) -> None:
+    manager = open_database(_database_path(tmp_path))
+    try:
+        repository = PeeweeJobRepository(manager)
+        saved = repository.save(_managed_job())
+        assert saved.id is not None
+        manager.database.execute_sql(
+            'UPDATE "inputs" SET "size_bytes" = -1 WHERE "job_id" = ? AND "position" = 0',
+            (saved.id,),
+        )
+        with pytest.raises(ValidationError, match="не может быть отрицательным"):
+            repository.get(saved.id)
+        with pytest.raises(ValidationError, match="не может быть отрицательным"):
+            repository.list_recent()
+    finally:
+        manager.close()
+
+
+def test_missing_copy_row_reads_as_legacy_input(tmp_path: Path) -> None:
+    """Отсутствие строки копии — legacy-вход без managed-копии, а не ошибка чтения."""
+    manager = open_database(_database_path(tmp_path))
+    try:
+        repository = PeeweeJobRepository(manager)
+        job_id = repository.save(_managed_job().model_copy(update={"inputs": _inputs()})).id
+        assert job_id is not None
+        copy_rows = manager.database.execute_sql(
+            'SELECT COUNT(*) FROM "managed_input_copies"'
+        ).fetchone()
+        restored = repository.get(job_id)
+        recent = repository.list_recent()
+    finally:
+        manager.close()
+
+    assert copy_rows == (0,)
+    assert restored is not None
+    assert [ref.managed_path for ref in restored.inputs] == [None, None]
+    assert [ref.managed_path for ref in recent[0].inputs] == [None, None]
+
+
+def test_resaving_job_recreates_managed_copy_for_current_input_id(tmp_path: Path) -> None:
+    """Повторный save и смена статуса пересоздают строку копии под новый `input.id`."""
+    manager = open_database(_database_path(tmp_path))
+    try:
+        repository = PeeweeJobRepository(manager)
+        job_id = repository.save(_managed_job()).id
+        assert job_id is not None
+        first_input_id = _input_id(manager, job_id=job_id, position=0)
+        # Второй Job сдвигает нумерацию входов: прежний ID не может «случайно»
+        # остаться валидным после пересоздания строк первого Job.
+        other_id = repository.save(_managed_job(job_id=2)).id
+        assert other_id is not None and other_id != job_id
+
+        resaved = repository.save(
+            _managed_job().model_copy(
+                update={
+                    "id": job_id,
+                    "status": JobStatus.SUBMITTED,
+                    "submitted_at": CREATED_AT,
+                    "inputs": [
+                        *_managed_inputs(),
+                        _managed_input(
+                            position=2, source="refs/third.png", managed="inputs/1/2.png"
+                        ),
+                    ],
+                }
+            )
+        ).id
+        assert resaved == job_id
+
+        recreated = _input_id(manager, job_id=job_id, position=0)
+        old_input_row = manager.database.execute_sql(
+            'SELECT COUNT(*) FROM "inputs" WHERE "id" = ?', (first_input_id,)
+        ).fetchone()
+        orphan_rows = manager.database.execute_sql(
+            'SELECT COUNT(*) FROM "managed_input_copies" '
+            'WHERE "input_id" NOT IN (SELECT "id" FROM "inputs")'
+        ).fetchone()
+        rows = _managed_rows(manager, job_id=job_id)
+        other_rows = _managed_rows(manager, job_id=other_id)
+        restored = repository.get(job_id)
+    finally:
+        manager.close()
+
+    assert recreated != first_input_id
+    assert old_input_row == (0,)
+    assert orphan_rows == (0,)
+    assert rows == [(0, "inputs/1/0.png"), (2, "inputs/1/2.png")]
+    assert other_rows == [(0, "inputs/2/0.png")]
+    assert restored is not None
+    assert restored.status is JobStatus.SUBMITTED
+    assert [ref.managed_path for ref in restored.inputs] == [
+        Path("inputs/1/0.png"),
+        None,
+        Path("inputs/1/2.png"),
+    ]
+
+
+def test_duplicate_managed_path_keeps_previous_job_and_refs(tmp_path: Path) -> None:
+    """UNIQUE-конфликт пути откатывает весь save и не портит прежний Job и связи."""
+    manager = open_database(_database_path(tmp_path))
+    try:
+        repository = PeeweeJobRepository(manager)
+        job_id = repository.save(_managed_job()).id
+        assert job_id is not None
+        stored = repository.get(job_id)
+        assert stored is not None
+
+        duplicated = [
+            _managed_input(position=0, source="refs/robot.png", managed="inputs/1/0.png"),
+            _managed_input(
+                position=1,
+                source="refs/lab.png",
+                managed="inputs/1/0.png",
+                sha256="c" * 64,
+            ),
+        ]
+        with pytest.raises(IntegrityError):
+            repository.save(
+                stored.model_copy(
+                    update={
+                        "status": JobStatus.SUBMITTED,
+                        "submitted_at": CREATED_AT,
+                        "inputs": duplicated,
+                    }
+                )
+            )
+
+        kept = repository.get(job_id)
+        rows = _managed_rows(manager, job_id=job_id)
+        job_count = manager.database.execute_sql('SELECT COUNT(*) FROM "jobs"').fetchone()
+        input_count = manager.database.execute_sql('SELECT COUNT(*) FROM "inputs"').fetchone()
+    finally:
+        manager.close()
+
+    # Ни статус, ни прежние связи не пострадали: транзакция откатилась целиком.
+    assert kept == stored
+    assert kept.status is JobStatus.CREATED
+    assert rows == [(0, "inputs/1/0.png")]
+    assert job_count == (1,)
+    assert input_count == (2,)
+
+
+def test_duplicate_managed_path_rolls_back_new_job_completely(tmp_path: Path) -> None:
+    """Отказ на UNIQUE-пути не оставляет ни Job, ни входов, ни строк копий."""
+    manager = open_database(_database_path(tmp_path))
+    try:
+        duplicated = [
+            *_managed_inputs()[:1],
+            _managed_input(
+                position=1,
+                source="refs/lab.png",
+                managed="inputs/1/0.png",
+                sha256="c" * 64,
+            ),
+        ]
+        with pytest.raises(IntegrityError):
+            PeeweeJobRepository(manager).save(
+                _managed_job().model_copy(update={"inputs": duplicated})
+            )
+
+        counts = {
+            table: manager.database.execute_sql(f'SELECT COUNT(*) FROM "{table}"').fetchone()
+            for table in ("jobs", "inputs", "prompt_sources", "managed_input_copies")
+        }
+    finally:
+        manager.close()
+
+    assert counts == {
+        "jobs": (0,),
+        "inputs": (0,),
+        "prompt_sources": (0,),
+        "managed_input_copies": (0,),
+    }
 
 
 def test_completed_job_survives_close_and_reopen(tmp_path: Path) -> None:

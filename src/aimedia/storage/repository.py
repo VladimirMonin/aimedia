@@ -22,6 +22,9 @@ Repository — единственное место, где строка SQLite �
 - `local_path` и `source_path` хранятся в posix-форме (`Path.as_posix`),
   одинаковой на Windows и Linux;
 - порядок prompt sources, inputs и artifacts фиксируется колонкой `position`;
+- managed-копия входа (`CN-01`) хранится отдельной строкой `managed_input_copies`
+  с относительным путём и восстанавливается в `InputRef.managed_path`; отсутствие
+  строки — legacy-вход без копии, а не ошибка;
 - артефакты хранятся одной таблицей, а их принадлежность коллекции `JobResult`
   записывается позициями в `response_json` (`_result_artifact_positions`). Без
   этого `save` → `get` не восстанавливал бы агрегат точно: домен допускает
@@ -51,7 +54,6 @@ from aimedia.domain.costs import Cost, Usage
 from aimedia.domain.errors import JobError
 from aimedia.domain.inputs import (
     CompiledPrompt,
-    InputKind,
     InputRef,
     PromptSource,
     PromptSourceKind,
@@ -79,13 +81,27 @@ from aimedia.storage.models import (
     ArtifactRecord,
     InputRecord,
     JobRecord,
+    ManagedInputCopyRecord,
     PromptSourceRecord,
+    StorageModel,
 )
 
 # Ключ принадлежности артефакта коллекции `JobResult` внутри `response_json`.
 # Начинается с подчёркивания, чтобы не пересечься с provider metadata: это
 # структурная запись repository, а не часть нормализованного ответа provider.
 RESULT_ARTIFACT_POSITIONS_KEY = "_result_artifact_positions"
+
+# Модели одной операции repository: строка Job, её дочерние строки и связь входа с
+# managed-копией (schema v2, `CN-01`). Список один, поэтому связанная таблица не
+# может оказаться привязанной только в части вызовов; каждая операция получает
+# собственный bind, поэтому несколько `DatabaseManager` не делят состояние.
+_JOB_MODELS: tuple[type[StorageModel], ...] = (
+    JobRecord,
+    PromptSourceRecord,
+    InputRecord,
+    ArtifactRecord,
+    ManagedInputCopyRecord,
+)
 
 
 @dataclass(frozen=True)
@@ -208,9 +224,7 @@ class PeeweeJobRepository:
                 # read followed by a concurrent commit can fail on upgrade with
                 # SQLITE_BUSY_SNAPSHOT instead of honoring busy_timeout.
                 self._database.atomic("IMMEDIATE"),
-                self._database.bind_ctx(
-                    [JobRecord, PromptSourceRecord, InputRecord, ArtifactRecord]
-                ),
+                self._database.bind_ctx(_JOB_MODELS),
             ):
                 previous = self._stored_state(job)
                 record = self._upsert_job_row(job)
@@ -353,7 +367,7 @@ class PeeweeJobRepository:
 
     def get(self, job_id: int) -> Job | None:
         """Прочитать Job по локальному ID; `None`, если такого Job нет."""
-        with self._database.bind_ctx([JobRecord, PromptSourceRecord, InputRecord, ArtifactRecord]):
+        with self._database.bind_ctx(_JOB_MODELS):
             record = JobRecord.get_or_none(JobRecord.id == job_id)
             if record is None:
                 return None
@@ -371,7 +385,7 @@ class PeeweeJobRepository:
         точности timestamp, поэтому порядок стабилен даже у Job, созданных в одну
         секунду.
         """
-        with self._database.bind_ctx([JobRecord, PromptSourceRecord, InputRecord, ArtifactRecord]):
+        with self._database.bind_ctx(_JOB_MODELS):
             query = JobRecord.select()
             if statuses is not None:
                 query = query.where(JobRecord.status.in_([status.value for status in statuses]))
@@ -484,6 +498,12 @@ class PeeweeJobRepository:
         сохранённый агрегат не наблюдается частично. Внешние ключи объявлены с
         `CASCADE`, но дочерние строки удаляются явно: результат не зависит от
         момента включения `PRAGMA foreign_keys`.
+
+        Строка `managed_input_copies` создаётся сразу после своего входа и несёт
+        **новый** `input_id`: входы пересоздаются при каждом сохранении Job, а
+        файловое имя копии зависит от Job ID и position, а не от `input.id`.
+        Нарушение `UNIQUE(local_path)` (два входа с одним путём) откатывает всю
+        транзакцию: прежний Job и его связи остаются нетронутыми.
         """
         PromptSourceRecord.delete().where(PromptSourceRecord.job == record).execute()
         InputRecord.delete().where(InputRecord.job == record).execute()
@@ -500,7 +520,7 @@ class PeeweeJobRepository:
             )
 
         for input_ref in job.inputs:
-            InputRecord.create(
+            input_row = InputRecord.create(
                 job=record.id,
                 kind=input_ref.kind.value,
                 position=input_ref.position,
@@ -510,6 +530,11 @@ class PeeweeJobRepository:
                 sha256=input_ref.sha256,
                 metadata_json=_dump_json(dict(input_ref.metadata)),
             )
+            if input_ref.managed_path is not None:
+                ManagedInputCopyRecord.create(
+                    input=input_row.id,
+                    local_path=input_ref.managed_path.as_posix(),
+                )
 
         ordered_artifacts, _ = self._ordered_artifacts(job)
         for position, artifact in enumerate(ordered_artifacts):
@@ -617,19 +642,41 @@ class PeeweeJobRepository:
 
     @staticmethod
     def _inputs(record: JobRecord) -> list[InputRef]:
+        """Собрать входы Job вместе с относительным путём managed-копии.
+
+        Строки `managed_input_copies` читаются одним запросом по ID входов Job:
+        отсутствие строки — legacy-вход без копии, а не ошибка. Значение из БД
+        передаётся в домен **как есть**, через `InputRef.model_validate`: пустая
+        строка или путь вроде `inputs//1/0.png` должен быть отклонён доменной
+        проверкой, а не превращён в `None` или «починенный» `Path`-конверсией до
+        неё. Поэтому `_optional_path` к `managed_path` не применяется.
+        """
+        rows = list(
+            InputRecord.select().where(InputRecord.job == record.id).order_by(InputRecord.position)
+        )
+        managed_paths: dict[int, str] = {}
+        if rows:
+            managed_paths = {
+                copy.input_id: copy.local_path
+                for copy in ManagedInputCopyRecord.select().where(
+                    ManagedInputCopyRecord.input.in_([row.id for row in rows])
+                )
+            }
         return [
-            InputRef(
-                kind=InputKind(row.kind),
-                path=Path(row.source_path),
-                position=row.position,
-                mime_type=row.mime_type,
-                size_bytes=row.size_bytes,
-                sha256=row.sha256,
-                metadata=dict(_load_json(row.metadata_json) or {}),
+            InputRef.model_validate(
+                {
+                    "kind": row.kind,
+                    "path": row.source_path,
+                    "position": row.position,
+                    "mime_type": row.mime_type,
+                    "size_bytes": row.size_bytes,
+                    "sha256": row.sha256,
+                    # Сырое значение БД: `None` только при отсутствии строки копии.
+                    "managed_path": managed_paths.get(row.id),
+                    "metadata": _load_json(row.metadata_json) or {},
+                }
             )
-            for row in InputRecord.select()
-            .where(InputRecord.job == record.id)
-            .order_by(InputRecord.position)
+            for row in rows
         ]
 
     @staticmethod

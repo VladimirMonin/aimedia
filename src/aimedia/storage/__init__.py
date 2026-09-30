@@ -1,4 +1,4 @@
-"""Storage-слой aimedia: SQLite через Peewee, схема и её единственная миграция.
+"""Storage-слой aimedia: SQLite через Peewee, схема и единственная цепочка миграций.
 
 Слой отделён от домена (`aimedia.domain` остаётся IO-free) и от application:
 `tests/architecture/test_dependencies.py` проверяет, что ни домен, ни application
@@ -7,7 +7,9 @@
 необязательные безопасные события `database_opened`, `migration_started/completed/
 failed`, `job_created`, `job_state_changed`, `remote_ref_saved` (`storage/events.py`).
 C07a добавляет к ним `usage_recorded` и `cost_recorded`, которые пишутся после
-финального commit сохранения usage/cost.
+финального commit сохранения usage/cost. С `CN-01` схема — **v2**: миграция v2
+добавляет одну таблицу `managed_input_copies` (связь входа с managed-копией), а v1
+DDL остаётся неизменным.
 """
 
 from __future__ import annotations
@@ -74,6 +76,7 @@ from aimedia.storage.models import (
     ArtifactRecord,
     InputRecord,
     JobRecord,
+    ManagedInputCopyRecord,
     PromptSourceRecord,
     SchemaMigrationRecord,
 )
@@ -104,6 +107,7 @@ __all__ = [
     "MIGRATION_STARTED_EVENT",
     "MIGRATION_TABLE_NAME",
     "MIGRATIONS",
+    "ManagedInputCopyRecord",
     "Migration",
     "MigrationDefinitionError",
     "MigrationFailedError",

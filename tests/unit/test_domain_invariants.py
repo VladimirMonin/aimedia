@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from decimal import Decimal, localcontext
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -22,6 +23,8 @@ from aimedia.domain import (
     CurrencyTotal,
     DomainError,
     ImageGenerationRequest,
+    InputKind,
+    InputRef,
     InvalidJobStateTransitionError,
     Job,
     JobError,
@@ -565,3 +568,116 @@ def test_artifact_paths_preserve_order_and_skip_missing_local_path() -> None:
         "out/481/result_001.webp",
         "out/481/original.png",
     )
+
+
+# --- Managed-путь копии входа (CN-01) ---------------------------------------
+
+
+def managed_ref(**overrides: object) -> InputRef:
+    """Вход с managed-копией и проверенными метаданными: копия требует всех трёх."""
+    payload: dict[str, object] = {
+        "kind": InputKind.IMAGE,
+        "path": "refs/robot.png",
+        "position": 0,
+        "mime_type": "image/png",
+        "size_bytes": 4096,
+        "sha256": "a" * 64,
+        "managed_path": "inputs/481/0.png",
+    }
+    payload.update(overrides)
+    return InputRef.model_validate(payload)
+
+
+def test_managed_path_accepts_canonical_relative_form() -> None:
+    """Относительный managed-путь принимается и приводится к одной posix-форме."""
+    reference = managed_ref()
+
+    assert reference.managed_path == Path("inputs/481/0.png")
+    assert reference.managed_path is not None
+    assert reference.managed_path.as_posix() == "inputs/481/0.png"
+    # Провенанс исходного файла не подменяется копией.
+    assert reference.path == Path("refs/robot.png")
+
+    # Разделители Windows и Linux дают одну и ту же относительную форму.
+    windows_form = managed_ref(managed_path="inputs\\481\\0.png")
+    assert windows_form.managed_path == reference.managed_path
+
+
+@pytest.mark.parametrize("missing", ["sha256", "mime_type", "size_bytes"])
+@pytest.mark.parametrize("omitted", [False, True], ids=["null", "omitted"])
+def test_managed_copy_requires_verified_metadata(missing: str, omitted: bool) -> None:
+    """Managed-копия без SHA-256, MIME или размера отклоняется как противоречие.
+
+    Копия делается из проверенных байтов, поэтому её наличие без метаданных не
+    доказывает соответствие копии входу.
+    """
+    payload = managed_ref().model_dump()
+    if omitted:
+        del payload[missing]
+    else:
+        payload[missing] = None
+    with pytest.raises(ValidationError, match="sha256, mime_type и size_bytes"):
+        InputRef.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    ("field", "invalid"),
+    [("sha256", "not-a-hash"), ("mime_type", "not-a-mime"), ("size_bytes", -1)],
+)
+def test_managed_copy_rejects_invalid_metadata(field: str, invalid: object) -> None:
+    with pytest.raises(ValidationError):
+        managed_ref(**{field: invalid})
+
+
+@pytest.mark.parametrize("missing", ["sha256", "mime_type", "size_bytes"])
+def test_legacy_input_allows_incomplete_metadata(missing: str) -> None:
+    legacy = managed_ref(managed_path=None, **{missing: None})
+
+    assert legacy.managed_path is None
+    assert getattr(legacy, missing) is None
+
+
+def test_legacy_input_without_managed_copy_stays_valid() -> None:
+    """Вход без managed-копии (legacy) валиден без MIME, SHA-256 и размера."""
+    legacy = InputRef(kind=InputKind.IMAGE, path="refs/robot.png", position=0)
+
+    assert legacy.managed_path is None
+    assert (legacy.sha256, legacy.mime_type, legacy.size_bytes) == (None, None, None)
+    assert make_job(inputs=[legacy]).inputs == [legacy]
+
+    # Тот же вход, но уже со ссылкой на копию без метаданных — противоречие: правила
+    # несовместимы только вместе с `managed_path`.
+    with pytest.raises(ValidationError):
+        InputRef(
+            kind=InputKind.IMAGE,
+            path="refs/robot.png",
+            position=0,
+            managed_path="inputs/481/0.png",
+        )
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        pytest.param("/etc/passwd", id="absolute-posix"),
+        pytest.param("\\Windows\\system32\\config", id="absolute-windows"),
+        pytest.param("C:/inputs/481/0.png", id="drive-absolute"),
+        pytest.param("C:inputs/481/0.png", id="drive-relative"),
+        pytest.param("//server/share/0.png", id="unc-posix"),
+        pytest.param("\\\\server\\share\\0.png", id="unc-windows"),
+        pytest.param("inputs/../outputs/0.png", id="parent-traversal"),
+        pytest.param("..", id="parent-only"),
+        pytest.param("inputs/./0.png", id="dot-component"),
+        pytest.param("inputs//481/0.png", id="empty-component"),
+        pytest.param("inputs/481/", id="trailing-separator"),
+        pytest.param("", id="empty"),
+        pytest.param(481, id="not-a-path"),
+    ],
+)
+def test_managed_path_rejects_non_relative_lexical_forms(bad: object) -> None:
+    """Путь managed-копии проверяется лексически: выход за managed-root не проходит."""
+    with pytest.raises(ValidationError) as excinfo:
+        managed_ref(managed_path=bad)
+
+    # Отклонён именно путь, а не отсутствующие метаданные копии: они заполнены.
+    assert [error["loc"] for error in excinfo.value.errors()] == [("managed_path",)]

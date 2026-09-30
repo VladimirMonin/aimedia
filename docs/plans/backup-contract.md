@@ -3,7 +3,7 @@
 > [!abstract] Назначение и статус
 > Этот документ фиксирует **политику согласованной резервной копии** истории
 > (`database.sqlite3`) и managed-файлов: managed artifacts и managed-копий входов
-> (`CN-01`, планируется). Это контракт-инвариант для E05+,
+> (`CN-01`). Это контракт-инвариант для E05+,
 > а **не реализованная функция и не release feature**.
 >
 > - Backup CLI в v0.1.0 **не поставляется**: [`07-storage-history-costs.md`](07-storage-history-costs.md)
@@ -11,8 +11,9 @@
 >   фиксируется» указан незаданный backup format.
 > - Копирование artifacts на E04 **не реализовано**: файловый adapter публикации
 >   результатов появляется только на E05 ([`README.md`](README.md), E05).
-> - Managed-копии reference images (`CN-01`) **не реализованы**: таблицы
->   `managed_input_copies`, миграции v2 и каталога `inputs/` в коде нет
+> - Managed-копии reference images (`CN-01`) **реализованы только как схема и
+>   связь**: таблица `managed_input_copies` и миграция v2 есть, но файлов копий и
+>   каталога `inputs/` в коде нет
 >   ([`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии
 >   reference images»).
 >

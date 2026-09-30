@@ -688,7 +688,7 @@ def test_migration_in_outer_transaction_fails_without_success_event_or_row(
         assert "schema_migrations" not in manager.database.get_tables()
         assert _records(stream) == []
         outcome = apply_migrations(manager.database, logger=logger)
-        assert outcome.applied == (1,)
+        assert outcome.applied == tuple(range(1, LATEST_SCHEMA_VERSION + 1))
         assert _events(stream) == ["migration_started", "migration_completed"]
         assert current_schema_version(manager.database) == LATEST_SCHEMA_VERSION
     finally:
