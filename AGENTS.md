@@ -33,7 +33,7 @@
 | [CORE.domain-boundary](instructions/CORE.domain-boundary.instructions.md) | Изменение `src/aimedia/domain/`, provider/storage ports, статусов Job, денежных значений, DTO запросов/результатов, `tests/architecture/`, `tests/support/` или доменных тестов |
 | [REGISTRY.model-catalog](instructions/REGISTRY.model-catalog.instructions.md) | Изменение `src/aimedia/registry/`, `tests/contracts/`, `tests/unit/test_registry_*.py` или `tests/security/test_registry_data_only.py`: загрузка YAML, resolution/override, единый источник значений для validation и help/JSON, происхождение сведений и безопасные события Registry |
 | [APP.inputs-preparation](instructions/APP.inputs-preparation.instructions.md) | Изменение `src/aimedia/application/` (prompt compiler, подготовка reference images), `tests/unit/test_prompt_compiler.py`, `tests/unit/test_input_preparation.py`, `tests/support/image_fixtures.py` |
-| [PROCESSING.image-artifacts](instructions/PROCESSING.image-artifacts.instructions.md) | Изменение image artifact writer, конвертера, финализации Job или тестов outputs: пути, no-clobber, метаданные, orphan, backup |
+| [PROCESSING.image-artifacts](instructions/PROCESSING.image-artifacts.instructions.md) | Изменение image artifact writer, конвертера, финализации Job, тестов outputs или managed-копий reference images (CN-01, планируется): пути, no-clobber, метаданные, orphan, backup |
 | [CORE.code_intelligence](instructions/CORE.code_intelligence.instructions.md) | Поиск реализации, символов, связей, структурных паттернов и оценка влияния |
 | [WORKFLOW.native-pi-routing](instructions/WORKFLOW.native-pi-routing.instructions.md) | Делегирование реализации/аудита, выбор нативной модели, резерв и scope image-only |
 
@@ -65,8 +65,9 @@ runtime-поведение доказывают тесты и безопасны
 
 - Целевой стек: Python 3.12+, uv, Typer/Rich, httpx/asyncio, Pydantic,
   Peewee/SQLite, Pillow, YAML и platformdirs; версии подтверждаются lockfile и CI.
-- Целевой продукт этого репозитория — только image CLI через Polza. Speech/voice и STT/TTS
-  не выполняются здесь даже после первого релиза; текстовые генерации, embeddings,
+- Целевой продукт этого репозитория — только image CLI через Polza. Speech/voice и
+  STT/TTS принадлежат отдельному приложению: здесь они не выполняются и не
+  планируются даже после первого релиза. Текстовые генерации, embeddings,
   sqlite-vec, видео, GUI, MCP, сервер и брокер очередей не входят в v0.1.0.
 - `Job` — один запуск; retry создаёт новый Job; sync/recovery продолжает известное
   remote execution и не делает скрытый повторный submit; `Artifact` — сохранённый

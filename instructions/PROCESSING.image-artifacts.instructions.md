@@ -1,7 +1,7 @@
 ---
 applyTo: "src/aimedia/artifacts/**,src/aimedia/application/artifact_finalization.py,tests/integration/test_artifact_*.py,tests/integration/test_output_collisions.py,tests/security/test_output_names.py"
 name: "PROCESSING.ImageArtifacts"
-description: "Читай при изменении image artifact storage/finalization: декодирование PNG/JPEG/WebP, managed и --out пути, no-clobber публикация, ошибки и согласованность файлов с Job history."
+description: "Читай при изменении image artifact storage/finalization и managed-копий входов: декодирование PNG/JPEG/WebP, managed и --out пути, no-clobber публикация, ошибки, согласованность файлов с Job history и планируемый инвариант managed-копий reference images (CN-01, не реализован)."
 ---
 
 # PROCESSING — Локальные image artifacts
@@ -46,3 +46,24 @@ managed-файлов. Порт `ArtifactStorage` возвращает Artifact �
   никогда не пишут в пользовательский data-root; derived cache можно очистить,
   но не историю и не artifacts. При непроверенном backup опасную операцию
   остановить, не обещая физического стирания данных.
+
+## Managed-копии reference images — планируемый инвариант (CN-01) 🗂️
+
+Решение [`release-scope.md`, change note `CN-01`](../docs/plans/release-scope.md)
+распространяет managed-владельца на **reference images**: подготовленные входы Job
+должны сохраняться управляемыми копиями в managed-дереве app data и связываться с
+Job (относительный путь, `sha256`, MIME, размер, позиция). Копия создаётся из
+**проверенных байтов**, подчиняется тем же правилам no-clobber, `..`/root и
+symlink/junction, не перезаписывает и не удаляет пользовательский файл, а
+managed-копии входят в тот же согласованный quiescent offline backup-манифест,
+что и managed artifacts.
+
+**Не реализовано.** На HEAD `628af33` managed-копий reference images нет ни в
+коде, ни в схеме: SQLite schema — **v1**, миграция **v2** ещё не написана.
+Инвариант выше — цель, а не описание существующего поведения: ссылка на него не
+подтверждает реализацию, а schema v1 в коде не правится.
+
+Конкретику (точные managed-пути, состав миграции v2, negative-тесты, расширение
+`applyTo` и границ этого файла) добавляет задача `refs-archive`. До её приёмки
+нельзя заявлять managed-копии референсов существующей функцией или обещать
+восстановление исходника, удалённого пользователем.
