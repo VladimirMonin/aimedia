@@ -459,7 +459,7 @@ wheel/sdist — exit 0; независимый нативный SOL6-review — 
 | `tests/integration/test_finalization_failure.py` | Remote success и download/conversion failure оставляют failed Job с фактической стоимостью и данными для recovery |
 | `tests/integration/test_submit_persistence_failure.py` | При сбое сохранения remote ref не выполняется повторная генерация; диагностический канал сохраняет пригодные для разбирательства идентификаторы |
 | `tests/integration/test_result_invariants.py` | Image success без usable image не становится completed; partial result не теряется |
-| `tests/integration/test_managed_input_copies.py` | Managed-копия reference image (`CN-01`): файлы копий и связь с Job; переживает повторный save, смену статуса и reopen и остаётся читаемой после удаления исходника. Файловый слой ещё `NOT IMPLEMENTED`; связь и миграция v2 покрыты в `test_migrations.py`/`test_migration_failure.py`/`test_job_repository.py` |
+| `tests/integration/test_managed_inputs.py` (существует) | Managed-копия reference image (`CN-01`): файловый source-срез `aaf1c5e` сохраняет copies/links при reopen/resave и после удаления исходника; полный E07/CLI-сценарий ещё требуется. Связь и миграция v2 покрыты в `test_migrations.py`/`test_migration_failure.py`/`test_job_repository.py`; ручной backup/restore — в `test_manual_managed_backup.py` |
 
 **Логируется:** полная цепочка `job_created → validation_completed → provider_submit_accepted → remote_ref_saved → remote_completed → usage_recorded → artifact_saved → job_completed`. Допускаются дополнительные события, но не успешное завершение раньше обязательного artifact commit.
 
@@ -474,8 +474,10 @@ wheel/sdist — exit 0; независимый нативный SOL6-review — 
 reference images как managed-копии и сохраняет связи; ошибка публикации запрещает
 submit, опубликованный файл после неопределённого DB commit не удаляется и не
 повторяется ([`07-storage-history-costs.md`](07-storage-history-costs.md),
-«Managed-копии reference images»). Реализована только схема v2 со связью; порядок D03
-и работа с файлами копий остаются `NOT IMPLEMENTED`.
+«Managed-копии reference images»). Schema v2/связь и файловый source-срез `aaf1c5e`
+проверены отдельно: snapshot одного чтения, copies/resolve и confirmation hook.
+Полная композиция D03 с submit/polling/finalization и пользовательским CLI ещё
+`NOT IMPLEMENTED`; приёмка всего CN-01 не пройдена.
 
 ### E08. Параллельность, восстановление и защита от двойного запуска ⚡
 
