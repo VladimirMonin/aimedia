@@ -41,7 +41,7 @@
 | R23 | Неполная финализация не маскирует платный failure | Remote success + local error → saved actual cost, error и recoverable ref | E07/E08 | null | NOT_RUN | null |
 | R24 | Два локальных процесса не исполняют один Job одновременно | Cross-process contention test с одним фактическим submit | E08 | null | NOT_RUN | null |
 
-## Уточнение `CN-01` (часть схемы и связи реализована) 🗂️
+## Уточнение `CN-01` (schema/связь и отдельный файловый шов) 🗂️
 
 [`release-scope.md`](release-scope.md) `CN-01` расширяет два требования матрицы:
 байты копий входов долговечны. Контракт зафиксирован в
@@ -56,11 +56,13 @@ reference images».
 
 Первый code-срез `CN-01` дал поле `InputRef.managed_path` и таблицу v2 (миграция
 v1 → v2, no-op повторного apply, FK/cascade/UNIQUE и round trip связи покрыты
-focused offline-тестами). **Не реализованы** файлы managed-копий, каталог `inputs/`,
-порядок D03, backup-манифест. Поэтому состояние обеих строк остаётся `NOT_RUN`:
-`test_node_id` и `evidence_path` заполняются только после прогона на зафиксированном
-SHA и приёмки `CN-01`, а строка `R07` про «копию после удаления исходника»
-недоказуема без файлового слоя. Ожидаемые node IDs сюда не вписываются, а
+focused offline-тестами). Файловый шов добавляет реальные copies/resolve и
+confirmation hook; `tests/integration/test_managed_inputs.py` проверяет удаление
+исходника, reopen/resave, no-clobber, preflight и отказы FS/DB, MockHTTP Polza.
+`tests/integration/test_manual_managed_backup.py` — тест ручного quiescent manifest/restore
+inputs+outputs+DB, не runtime backup. Полная E07/CLI/D03/history-композиция и live
+**не реализованы/NOT_RUN**. Строки R07/R18 сохраняют release-статус `NOT_RUN` до
+зафиксированного SHA и независимой приёмки; writer evidence — на release-board.
 `CN-01`/`E06`/`E07` не считаются принятыми.
 
 ## Правила ведения матрицы

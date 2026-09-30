@@ -44,6 +44,7 @@ FORBIDDEN_EXTERNAL_ROOTS: frozenset[str] = frozenset(
 FORBIDDEN_INTERNAL_ROOTS: frozenset[str] = frozenset(
     {
         "aimedia.application",
+        "aimedia.artifacts",
         "aimedia.cli",
         "aimedia.config",
         "aimedia.logging",
@@ -77,6 +78,7 @@ FORBIDDEN_APPLICATION_EXTERNAL_ROOTS: frozenset[str] = frozenset(
 # Модули проекта, от которых application не зависит: presentation и infra.
 FORBIDDEN_APPLICATION_INTERNAL_ROOTS: frozenset[str] = frozenset(
     {
+        "aimedia.artifacts",
         "aimedia.cli",
         "aimedia.providers",
         "aimedia.registry",

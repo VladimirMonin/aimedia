@@ -10,7 +10,9 @@ from aimedia.application.inputs.image_probe import (
 )
 from aimedia.application.inputs.prepare import (
     ReferenceLimits,
+    ReferenceSnapshot,
     prepare_reference_images,
+    snapshot_reference_images,
 )
 
 __all__ = [
@@ -18,6 +20,8 @@ __all__ = [
     "ImageProbe",
     "InvalidImageContentError",
     "ReferenceLimits",
+    "ReferenceSnapshot",
     "prepare_reference_images",
+    "snapshot_reference_images",
     "probe_image",
 ]

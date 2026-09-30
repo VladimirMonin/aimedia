@@ -1,5 +1,5 @@
 ---
-applyTo: "src/aimedia/application/**, tests/unit/test_prompt_compiler.py, tests/unit/test_input_preparation.py, tests/unit/test_prepared_request_flow.py, tests/unit/test_input_events.py, tests/support/image_fixtures.py"
+applyTo: "src/aimedia/application/**, tests/unit/test_prompt_compiler.py, tests/unit/test_input_preparation.py, tests/unit/test_prepared_request_flow.py, tests/unit/test_input_events.py, tests/integration/test_managed_inputs.py, tests/integration/test_manual_managed_backup.py, tests/support/image_fixtures.py"
 name: "APP.InputsPreparation"
 description: "Читай при изменении src/aimedia/application/prompts, src/aimedia/application/inputs или их тестов: порядок и snapshot prompt-источников, подготовка reference images (MIME по содержимому, размер, SHA-256), лимиты без выдуманных model-specific чисел и границы application-слоя."
 ---
@@ -22,7 +22,7 @@ provider submit. План-источники — `docs/plans/04-cli-contract.md`
   IO-free и не импортирует `aimedia.application`.
 - `aimedia.application` не импортирует `httpx`, `peewee`, `PIL`, `typer`, `yaml`,
   `platformdirs`, `pydantic_settings`, `rich`, `sqlite3`, `requests`, `aiohttp`
-  и не зависит от `aimedia.cli`/`providers`/`registry`/`storage`/`search`.
+  и не зависит от `aimedia.cli`/`providers`/`registry`/`storage`/`artifacts`/`search`.
   Проверяется `tests/architecture/test_dependencies.py`.
 - Проверка структуры изображения использует только стандартную библиотеку
   (`zlib`, `struct`): Pillow остаётся зависимостью E05 (локальная конвертация), а не
@@ -76,16 +76,28 @@ provider submit. План-источники — `docs/plans/04-cli-contract.md`
 (флаг анимации VP8X **или** chunk ANIM/ANMF, даже при наличии VP8/VP8L)
 отклоняются как `UNSUPPORTED_INPUT_FORMAT` до submit.
 
-### Managed-копии входов (`CN-01`) — планируется
+### Managed-копии входов (`CN-01`) — файловый шов
 
-Будущий шаг подготовки возвращает небольшой application-снимок «`InputRef` +
-bytes»: байты остаются в application-слое и не попадают ни в домен, ни в SQLite.
-Транспортный запрос для отправки строится из безопасно разрешённых managed-путей,
-а `source_path` в истории сохраняет provenance исходного файла. Контракт и порядок
-до платного POST — [`07-storage-history-costs.md`](../docs/plans/07-storage-history-costs.md),
-раздел «Managed-копии reference images»; объём — `CN-01` в
-[`release-scope.md`](../docs/plans/release-scope.md). На текущем HEAD этого шага
-нет: `prepare_reference_images` по-прежнему возвращает только metadata.
+`snapshot_reference_images` возвращает `ReferenceSnapshot(ref, content)` с bytes
+`repr=False`: одно чтение источника, прежние probe/лимиты/события.
+`prepare_reference_images` сохраняет metadata-only API через ту же подготовку.
+Байты остаются в application, не входят в домен/SQLite.
+
+`inputs.archive.archive_reference_images` принимает уже подтверждённый CREATED
+image Job и matching snapshots. Порядок вызывающего E07-слоя: snapshot **до**
+первого создания Job; подтверждение ID → обязательный callback `validate_model`
+→ публикация всех копий через доменный `ManagedInputStorage` → save всех links
+→ сверка возвращённого и прочитанного Job → временный `ImageGenerationRequest`
+с абсолютными copy paths. В persisted inputs/request `path` остаётся provenance,
+`managed_path` — относительным. Hook не вызывает provider, не переводит ошибки
+validation в failed Job и не заменяет model-validation композицию E07/CLI.
+
+После возможного commit exception — только сверка известного ID, без повторного
+save/create/publish/POST. Без полного совпадения — `InputArchiveError`; опубликованные
+файлы сохраняются. Resolve проверяет actual bytes/hash/size/MIME без fallback к
+исходнику. Повторная архивация уже связанных копий запрещена. Контракт —
+[`07-storage-history-costs.md`](../docs/plans/07-storage-history-costs.md), «Managed-копии
+reference images». Полный E07/CLI и пользовательская history-интеграция не реализованы.
 
 ## Лимиты без выдуманных чисел
 
@@ -133,7 +145,7 @@ Job и его reference images не смешиваются с batch-элемен
 
 CLI-парсер (`--prompt`/`--prompt-file`/`--image` как Typer-опции) и Polza adapter —
 этапы E09 и E06. Локальная конвертация изображений и `ArtifactStorage` — E05.
-Managed-копии reference images (`CN-01`) — отдельная задача после E04. Model-aware
+Файловый шов managed-копий (`CN-01`) описан выше; его Runner/CLI-композиция — E07/E09. Model-aware
 validation (число refs по модели, разрешённые значения) — E03. Здесь описан только
 application-контракт подготовки данных, на который эти этапы опираются.
 
@@ -142,6 +154,7 @@ application-контракт подготовки данных, на котор�
 ```bash
 uv run --locked --no-env-file pytest tests/unit/test_prompt_compiler.py tests/unit/test_input_preparation.py
 uv run --locked --no-env-file pytest tests/unit/test_prepared_request_flow.py tests/unit/test_input_events.py
+uv run --locked --offline --no-env-file pytest tests/integration/test_managed_inputs.py tests/integration/test_manual_managed_backup.py
 uv run --locked --no-env-file pytest tests/architecture/test_dependencies.py
 uv run --locked --no-env-file python scripts/quality.py quick
 ```

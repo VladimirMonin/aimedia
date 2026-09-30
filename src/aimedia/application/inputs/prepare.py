@@ -66,6 +66,14 @@ class ReferenceLimits:
             raise ValueError("max_size_bytes должен быть положительным")
 
 
+@dataclass(frozen=True, slots=True)
+class ReferenceSnapshot:
+    """Проверенный вход и неизменённые байты одного чтения; не доменный DTO."""
+
+    ref: InputRef
+    content: bytes = field(repr=False)
+
+
 def prepare_reference_images(
     paths: Sequence[str | Path],
     *,
@@ -78,17 +86,43 @@ def prepare_reference_images(
     SHA-256 и размерами изображения в `metadata`. Пустой список допустим: модель
     без reference images не является ошибкой (минимум 0 в Registry).
     """
+    return tuple(
+        snapshot.ref for snapshot in snapshot_reference_images(paths, limits=limits, logger=logger)
+    )
+
+
+def snapshot_reference_images(
+    paths: Sequence[str | Path],
+    *,
+    limits: ReferenceLimits | None = None,
+    logger: EventLogger | None = None,
+) -> tuple[ReferenceSnapshot, ...]:
+    """Один раз прочитать источники до создания Job; сохранить байты для CN-01."""
     effective = limits if limits is not None else ReferenceLimits()
     try:
         prepared = _prepare_all(paths, limits=effective)
     except DomainError as exc:
         _log_validation_failed(logger, exc)
         raise
-    _log_input_prepared(logger, prepared)
+    _log_input_prepared(logger, tuple(snapshot.ref for snapshot in prepared))
     return prepared
 
 
-def _prepare_all(paths: Sequence[str | Path], *, limits: ReferenceLimits) -> tuple[InputRef, ...]:
+def validate_reference_content(ref: InputRef, content: bytes) -> None:
+    """Сверить snapshot/копию по тем же probe, SHA-256, размеру и MIME, без IO."""
+    probe = probe_image(content)
+    if (
+        ref.kind is not InputKind.IMAGE
+        or ref.size_bytes != len(content)
+        or ref.sha256 != hashlib.sha256(content).hexdigest()
+        or ref.mime_type != probe.mime_type
+    ):
+        raise ValueError("Reference bytes do not match verified metadata")
+
+
+def _prepare_all(
+    paths: Sequence[str | Path], *, limits: ReferenceLimits
+) -> tuple[ReferenceSnapshot, ...]:
     if limits.max_references is not None and len(paths) > limits.max_references:
         raise TooManyReferenceImagesError(
             f"Запрошено {len(paths)} reference images, допустимо не более {limits.max_references}.",
@@ -99,7 +133,7 @@ def _prepare_all(paths: Sequence[str | Path], *, limits: ReferenceLimits) -> tup
     )
 
 
-def _prepare_one(path: str | Path, *, position: int, limits: ReferenceLimits) -> InputRef:
+def _prepare_one(path: str | Path, *, position: int, limits: ReferenceLimits) -> ReferenceSnapshot:
     local_path = Path(path)
     details: dict[str, object] = {
         "path": local_path.as_posix(),
@@ -145,14 +179,17 @@ def _prepare_one(path: str | Path, *, position: int, limits: ReferenceLimits) ->
             },
         )
 
-    return InputRef(
-        kind=InputKind.IMAGE,
-        path=local_path,
-        position=position,
-        mime_type=probe.mime_type,
-        size_bytes=size_bytes,
-        sha256=hashlib.sha256(content).hexdigest(),
-        metadata={"width": probe.width, "height": probe.height},
+    return ReferenceSnapshot(
+        ref=InputRef(
+            kind=InputKind.IMAGE,
+            path=local_path,
+            position=position,
+            mime_type=probe.mime_type,
+            size_bytes=size_bytes,
+            sha256=hashlib.sha256(content).hexdigest(),
+            metadata={"width": probe.width, "height": probe.height},
+        ),
+        content=content,
     )
 
 

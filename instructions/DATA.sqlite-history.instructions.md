@@ -1,5 +1,5 @@
 ---
-applyTo: "src/aimedia/storage/**,tests/integration/test_migrations.py,tests/integration/test_migration_failure.py,tests/integration/test_job_repository.py,tests/integration/test_storage_events.py,tests/integration/test_sqlite_contention.py"
+applyTo: "src/aimedia/storage/**,tests/integration/test_migrations.py,tests/integration/test_migration_failure.py,tests/integration/test_job_repository.py,tests/integration/test_storage_events.py,tests/integration/test_sqlite_contention.py,tests/integration/test_managed_inputs.py,tests/integration/test_manual_managed_backup.py"
 name: "DATA.SqliteHistory"
 description: "Читай при изменении SQLite-истории aimedia: schema/migration runner, модели и repositories в src/aimedia/storage/ или их offline-тестов — версии v1/v2, неизменность v1 DDL, короткие транзакции, связь Job → managed-копия, disposable tmp-базы и проверенный quiescent backup перед рискованной миграцией/cleanup или ручной операцией агента с существующим data-root."
 ---
@@ -56,5 +56,13 @@ description: "Читай при изменении SQLite-истории aimedia
 
 ## Что не реализовано
 
-Схема v2 и связь входа с копией реализованы; **файлов** managed-копий (каталог
-`inputs/`, публикация), backup-манифеста, FTS5 и maintenance-команд — нет.
+Схема v2 и repository связи сохраняются без изменений файловым срезом CN-01.
+Application hook подтверждает полный Job (ID, provenance/managed paths, SHA/MIME/size,
+все позиции) после save и get. При save exception после возможного commit — сверка
+только известного Job, без повторной записи; без совпадения submit запрещён,
+опубликованные копии не удаляются. FS не входит в SQLite-транзакцию.
+
+Файловый adapter и ручной backup/restore offline-тест реализованы (owner —
+[PROCESSING.image-artifacts](PROCESSING.image-artifacts.instructions.md));
+полная E07/CLI/history-композиция, runtime backup-манифест, FTS5 и maintenance-команды
+не реализованы. Legacy-записи не получают копий задним числом.

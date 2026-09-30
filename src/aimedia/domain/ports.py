@@ -23,6 +23,7 @@ from pydantic import model_validator
 from aimedia.domain.artifacts import Artifact, ArtifactKind, ArtifactRole, RemoteArtifact
 from aimedia.domain.base import DomainModel
 from aimedia.domain.costs import Cost, CostReport, Usage
+from aimedia.domain.inputs import InputRef
 from aimedia.domain.job import Job
 from aimedia.domain.refs import (
     ProviderCapabilities,
@@ -161,6 +162,20 @@ class CostReportRepository(Protocol):
     ) -> CostReport:
         """Суммы по валютам за UTC-интервал создания Job [start, end)."""
         ...
+
+
+@runtime_checkable
+class ManagedInputStorage(Protocol):
+    """Неизменённые копии проверенных reference images, отдельно от artifacts.
+
+    save публикует no-clobber и возвращает provenance ref с относительным
+    managed_path. resolve_path проверяет путь и фактические SHA-256/MIME/размер;
+    отсутствующая или изменённая копия — отказ, без fallback к исходнику.
+    """
+
+    def save(self, *, job_id: int, ref: InputRef, content: bytes) -> InputRef: ...
+
+    def resolve_path(self, ref: InputRef) -> Path: ...
 
 
 @runtime_checkable

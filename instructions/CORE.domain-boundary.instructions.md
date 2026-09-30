@@ -21,7 +21,7 @@ description: "Читай при изменении src/aimedia/domain, provider/
   `platformdirs`, `pydantic_settings`, `asyncio`, `socket`, `sqlite3`, `urllib`,
   `requests`, `aiohttp`.
 - Домен **не зависит** от модулей проекта `cli`, `application`, `config`, `logging`,
-  `paths`, `providers`, `registry`, `storage`, `processing`, `search`.
+  `paths`, `providers`, `registry`, `storage`, `artifacts`, `processing`, `search`.
 - Домен **не выполняет IO**: вызовы `open`, `Path.read_*`, `Path.write_*`,
   `Path.iterdir` в пакете запрещены отдельным тестом.
 - Домен **не знает** о секретах, настройках, URL provider или схеме SQLite.
@@ -88,7 +88,8 @@ terminal — `completed`/`failed`/`cancelled` (инвариант 13).
 `src/aimedia/domain/ports.py` содержит контракты, реализуемые снаружи:
 `ProviderGateway` (минимальный, обязательный `submit`), `PollingProviderGateway`
 (опрос), `CancellableProviderGateway` (явная отмена), `JobRepository`,
-`ArtifactStorage`, `CostReportRepository` (read-only агрегирование расходов).
+`ArtifactStorage`, `ManagedInputStorage` (только save/resolve_path копий входов),
+`CostReportRepository` (read-only агрегирование расходов).
 
 - В портах **нет** методов-заглушек с `NotImplementedError`. Возможность provider
   выражается отдельным протоколом и `ProviderCapabilities`; application проверяет
@@ -140,7 +141,8 @@ reference snapshots`) и живёт в `src/aimedia/application/`:
   подготовленные данные (инвариант prompt history);
 - managed-копия входа (`CN-01`) не меняет границу домена: домен получает только
   необязательный относительный `InputRef.managed_path` (`base.ManagedRelativePath`),
-  байты и файловые операции остаются в application-слое, а копия входа не
+  snapshot-байты остаются в application, публикация/resolve — в наружном adapter
+  `artifacts.inputs.LocalManagedInputStorage` через `ManagedInputStorage`; копия входа не
   становится `Artifact` результата ([07-storage-history-costs.md](../docs/plans/07-storage-history-costs.md),
   «Managed-копии reference images»);
 - `ManagedRelativePath` проверяется **лексически** и без IO: абсолютные,

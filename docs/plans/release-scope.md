@@ -179,7 +179,7 @@ Polza закрывается на E06/E10.
 > заметка ниже не означает появившейся кода, теста или evidence. Текущее состояние
 > этапов — в [`release-board.md`](release-board.md).
 
-### CN-01. Долговечные managed-копии reference images (схема реализована, файлы — нет) 🗂️
+### CN-01. Долговечные managed-копии reference images (schema v2 + файловый шов) 🗂️
 
 **Что принимается.** Reference images, переданные пользователем в Job, должны
 сохраняться как управляемые копии в managed-дереве app data и связываться с Job
@@ -192,7 +192,7 @@ Polza закрывается на E06/E10.
 вперёд (текущая цепочка — v1 → v2), автоматический destructive downgrade не
 обещается (D11).
 
-**Ownership и безопасность (требования к будущей задаче).**
+**Ownership и безопасность (контракт).**
 
 - копия создаётся из **проверенных байтов** (структурная проверка входа, MIME по
   содержимому, `size_bytes` и SHA-256 по тем же байтам), а не по расширению;
@@ -222,10 +222,13 @@ reference images»: таблица v2, пути, ownership, порядок до 
 [`backup-contract.md`](backup-contract.md) и инструкции
 [`PROCESSING.image-artifacts`](../../instructions/PROCESSING.image-artifacts.instructions.md).
 
-Это правка **контракта**, а не реализация. Первый code-срез `CN-01` реализовал
-схему v2 `managed_input_copies`, поле `InputRef.managed_path` и связь в repository;
-DDL v1 в коде не меняется. **Не реализованы** файлы managed-копий, каталог `inputs/`,
-порядок до платного POST и backup-манифест: приёмка `CN-01` не пройдена.
+Первый принятый code-срез реализовал schema v2/DTO/repository. Отдельный файловый
+шов добавляет snapshot bytes одного чтения, no-clobber копии `inputs/`, проверенный
+resolve и hook подтверждения всех DB links до выдачи transport request. v1/v2 DDL
+и repository не меняются. Ручной backup manifest/restore проверяется на tmp-данных,
+не становится runtime feature. **Не реализованы:** полная E07/CLI/D03-композиция,
+пользовательская history show/retry/sync интеграция и backup API. Приёмка всего
+`CN-01` не пройдена; writer evidence/review статус — [`release-board.md`](release-board.md).
 
 ### CN-02. Лексический поиск остаётся, семантический — backlog следующего релиза 🔎
 

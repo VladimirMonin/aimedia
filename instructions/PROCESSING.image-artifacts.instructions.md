@@ -1,7 +1,7 @@
 ---
-applyTo: "src/aimedia/artifacts/**,src/aimedia/application/artifact_finalization.py,tests/integration/test_artifact_*.py,tests/integration/test_output_collisions.py,tests/security/test_output_names.py"
+applyTo: "src/aimedia/artifacts/**,src/aimedia/application/artifact_finalization.py,src/aimedia/application/inputs/archive.py,tests/integration/test_artifact_*.py,tests/integration/test_managed_inputs.py,tests/integration/test_manual_managed_backup.py,tests/integration/test_output_collisions.py,tests/security/test_output_names.py"
 name: "PROCESSING.ImageArtifacts"
-description: "Читай при изменении image artifact storage/finalization и managed-копий входов: декодирование PNG/JPEG/WebP, managed и --out пути, no-clobber публикация, ошибки, согласованность файлов с Job history и инвариант managed-копий reference images (CN-01: схема v2 и связь реализованы, файлы копий — нет)."
+description: "Читай при изменении image artifact storage/finalization и managed-копий входов: декодирование PNG/JPEG/WebP, managed и --out пути, no-clobber публикация, ошибки, согласованность файлов с Job history и инвариант managed-копий reference images (CN-01: schema v2 и файловый шов; без полного E07/CLI)."
 ---
 
 # PROCESSING — Локальные image artifacts
@@ -47,7 +47,7 @@ managed-файлов. Порт `ArtifactStorage` возвращает Artifact �
   но не историю и не artifacts. При непроверенном backup опасную операцию
   остановить, не обещая физического стирания данных.
 
-## Managed-копии reference images (CN-01): связь есть, файлов нет 🗂️
+## Managed-копии reference images (CN-01): файловый шов 🗂️
 
 Решение [`release-scope.md`, change note `CN-01`](../docs/plans/release-scope.md)
 распространяет managed-владельца на **reference images**: подготовленные входы Job
@@ -74,16 +74,28 @@ reference images»](../docs/plans/07-storage-history-costs.md); здесь то�
 - **Backup:** managed-копии входов входят в тот же quiescent offline манифест, что
   и managed artifacts ([backup-contract](../docs/plans/backup-contract.md)).
 
-**Реализовано и не реализовано.** В первом code-срезе `CN-01` реализованы только
-**DTO и связь**: доменное поле `InputRef.managed_path` (лексическая проверка без IO)
-и таблица schema v2 `managed_input_copies`, которую пересоздаёт repository вместе с
-входами при каждом `save`. **Не реализовано:** каталог `inputs/`, публикация
-no-clobber, безопасное чтение копии вместо исходника, порядок D03, обработка сбоя
-после публикации и backup-манифест. Поэтому managed-копия входного файла пока не
-существует как файл: нельзя обещать чтение Job после удаления исходника, ссылаться
-на копию как на сохранённый результат или выдавать её за artifact.
+**Реализовано:** `artifacts.inputs.LocalManagedInputStorage` реализует узкий порт
+`ManagedInputStorage` и переиспользует E05 `publish_output`. До mkdir/publish
+проверяет ID/position и bytes по существующему input probe/hash/size/MIME.
+Resolve разрешает только форму `inputs/<positive-id>/<position>[suffix].<MIME-ext>`,
+проверяет существующие ancestor/file symlink/junction, наличие и фактическую
+целостность копии; до чтения сверяет stat-размер, чтение ограничено recorded
+`size_bytes + 1` на случай роста после stat (без нового global cap). Исходник
+не перечитывается и не служит fallback.
 
-Конкретные тесты файлового слоя (публикация, collision/symlink, удаление исходника,
-отказ до и после commit, backup с отсутствующим файлом или неверным hash) добавляет
-следующий срез `CN-01`. До приёмки `CN-01` нельзя заявлять managed-копии референсов
-существующей функцией.
+Application hook `inputs.archive.archive_reference_images` подтверждает CREATED
+Job/snapshots и вызывает обязательный model validator до публикации; сохраняет
+все links и сверяет полный возвращённый/прочитанный Job до transport-ready.
+FS/DB не атомарны: при частичном отказе сохраняются все опубликованные файлы;
+после возможного commit выполняется одна сверка известного ID, без retry/cleanup.
+Первый эффект FS — mkdir `inputs/<job_id>` после preflight. Непубликуемые temp
+очищает только E05 publisher; конфликты/исходники не удаляются.
+
+Тесты `test_managed_inputs.py` используют реальные копии и Peewee, включая удаление
+исходника, коллизии, redirects, частичные отказы, rollback/unknown commit и MockHTTP
+через настоящий `PolzaProviderGateway`. `test_manual_managed_backup.py` проверяет
+ручную quiescent процедуру DB+inputs+outputs, manifest и изолированный restore.
+Это тестовое доказательство процедуры, не runtime backup API.
+
+**Не реализовано:** полный E07/CLI, history show/retry/sync интеграция, backup CLI/GC.
+Файловый шов не означает приёмки всего `CN-01` и не проверял пользовательские данные.

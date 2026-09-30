@@ -11,9 +11,9 @@
 >   фиксируется» указан незаданный backup format.
 > - Копирование artifacts на E04 **не реализовано**: файловый adapter публикации
 >   результатов появляется только на E05 ([`README.md`](README.md), E05).
-> - Managed-копии reference images (`CN-01`) **реализованы только как схема и
->   связь**: таблица `managed_input_copies` и миграция v2 есть, но файлов копий и
->   каталога `inputs/` в коде нет
+> - Managed-копии reference images (`CN-01`): schema v2/связь приняты;
+>   отдельный файловый шов публикует `inputs/` и подтверждает links, но полного
+>   E07/CLI ещё нет
 >   ([`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии
 >   reference images»).
 >
@@ -54,7 +54,7 @@
 5. **Проверить копию до объявления успеха:** для записей `ArtifactRecord` с
    `local_path` внутри managed дерева сопоставить **уникальные** относительные пути
    скопированным файлам и проверить их `size_bytes`/`sha256` по фактическим байтам.
-   Для строк `InputRecord` с managed-копией по `CN-01` (планируется) действуют те
+   Для строк `InputRecord` с managed-копией по `CN-01` действуют те
    же условия: относительный путь внутри managed root и совпадение
    `size_bytes`/`sha256` входной записи с фактическими байтами. Записи без
    локального пути (remote-only) не означают локальный файл. Явные внешние пути
@@ -79,7 +79,7 @@ remote-only и внешних ссылок `--out` (без раскрытия а
 Пути внутри app data — относительные ([`07-storage-history-costs.md`](07-storage-history-costs.md),
 «Portability»).
 
-### Managed-копии входов (`CN-01`, планируется)
+### Managed-копии входов (`CN-01`)
 
 Managed-копии reference images лежат в том же managed-дереве
 (`inputs/<job_id>/<position>.<ext>`, [`07-storage-history-costs.md`](07-storage-history-costs.md),
@@ -103,8 +103,10 @@ user data-root не используется и не перезаписывае�
 манифестом по путям, размерам и checksums. Исключённые внешние `--out` остаются
 внешними ссылками и могут быть недоступны после восстановления; не обещать
 восстановление их байтов. То же относится к legacy-входам без managed-копии. Тест
-restore относится к E05+, когда появится реальное копирование;
-до этого тест не создаётся.
+ручной процедуры реализован в `tests/integration/test_manual_managed_backup.py`:
+реальные tmp DB/inputs/outputs, свежий SQLite backup API в покое, записанный manifest,
+изолированный restore, отказ при missing/hash/size/temp. Это не backup feature,
+не evidence существующих пользовательских данных и не online backup.
 
 ## Что запрещено утверждать ❌
 

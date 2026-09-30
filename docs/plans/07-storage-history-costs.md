@@ -712,13 +712,15 @@ managed-дереве app data и связываются с Job. Это закр�
 место reference-only режима: пользователь может удалить или изменить исходник
 после выполнения Job.
 
-> [!important] Первый code-срез `CN-01` реализован не весь
-> Реализованы: доменное поле `InputRef.managed_path` (лексическая проверка без IO) и
-> таблица **v2** `managed_input_copies` в единственной цепочке `MIGRATIONS`; v1 DDL
-> не переписывается, legacy-строки не backfill-ятся. **Не реализованы:** файлы
-> managed-копий (каталог `inputs/`, публикация, чтение), порядок D03, обработка сбоя
-> после публикации и backup-манифест. Ссылка на этот раздел не подтверждает
-> существования managed-копии как файла. Объём — [`release-scope.md`](release-scope.md), `CN-01`.
+> [!important] Файловый шов `CN-01`, не полный E07/CLI
+> DTO и schema **v2** уже приняты; v1/v2 DDL и migrations здесь не меняются.
+> Добавлены `snapshot_reference_images` (ref + bytes одного чтения),
+> `LocalManagedInputStorage` (E05 no-clobber publish/проверенный resolve) и
+> `archive_reference_images` (подтверждённый CREATED Job → обязательная model
+> validation → все копии → save/get всех links → временный transport request).
+> Ручной quiescent backup DB+inputs+outputs проверяется offline-тестом manifest/restore,
+> но runtime backup API отсутствует. Полная D03-композиция Runner/CLI, history
+> show/retry/sync, FTS и live не реализованы/не проверены; весь `CN-01` не принят.
 
 ## Схема v2
 
@@ -788,9 +790,20 @@ Job. Ошибка публикации копии запрещает submit. SQL
   результат Job, копия — вход.
 - Байты копии не попадают ни в SQLite, ни в домен: таблица хранит только связь и
   относительный путь.
-- Application-слой формирует небольшой снимок «`InputRef` + bytes», а transport
-  request строится из безопасно разрешённых managed-путей; проверка фактических
-  байтов/hash в gateway перед POST сохраняется.
+- `application.inputs.prepare.snapshot_reference_images` формирует небольшой
+  `ReferenceSnapshot(ref, content)` (`content` — bytes, `repr=False`); metadata API
+  `prepare_reference_images` использует ту же подготовку и прежние probe/limits/events.
+  Источники читаются один раз **до первого создания Job**, не перечитываются для копии.
+- `application.inputs.archive.archive_reference_images` требует совпадающие
+  snapshots/inputs/request и подтверждённый CREATED Job, затем вызывает обязательный
+  callback `validate_model`. Композиция реального model validator и failed-переход
+  остаются владельцу E07; hook не импортирует concrete storage/provider/registry.
+- Через узкий порт `ManagedInputStorage(save/resolve_path)` наружный
+  `artifacts.inputs.LocalManagedInputStorage` публикует неизменённые байты.
+  После сохранения всех links hook сверяет полный возвращённый и прочитанный Job;
+  только временный `ImageGenerationRequest.images` получает абсолютные copy paths.
+  Persisted request/inputs сохраняют исходный `path` и относительный `managed_path`.
+  Gateway по-прежнему проверяет фактические bytes/hash перед POST.
 - Repository удаляет и пересоздаёт `inputs` при каждом сохранении Job, поэтому
   строка `managed_input_copies` пересоздаётся вместе с новым `input.id` в той же
   транзакции и восстанавливается при чтении. Файловое имя не зависит от `input.id`.
@@ -813,11 +826,12 @@ FS и SQLite не образуют общую атомарную транзак�
 - Windows stdlib threat model не расширяется: враждебная подмена каталогов после
   preflight и атомарная power-loss durability не обещаются.
 
-## Требуемые проверки при реализации (файловый слой — `NOT_RUN`)
+## Проверки файлового шва (полная приёмка CN-01 остаётся открытой)
 
-Первые два пункта покрыты первым code-срезом `CN-01` (миграция v1→v2 и пересоздание
-связи при повторном `save`); остальные — файловая работа, порядок D03, отказы
-публикации и backup — остаются `NOT_RUN` до следующего среза.
+Миграция/связь приняты отдельным DTO/SQLite-срезом. Реальные FS+SQLite проверки
+добавлены в `tests/integration/test_managed_inputs.py`; ручная процедура backup
+в `tests/integration/test_manual_managed_backup.py`. Итог writer-gates и пределы
+приёмки — [`release-board.md`](release-board.md); runtime backup и E07/CLI не доказаны.
 
 - миграция v1 → v2: DDL v1 не изменён, данные v1 сохранены, повторный apply — no-op,
   FK/`ON DELETE CASCADE` работают, сбой не оставляет половину v2;
@@ -956,7 +970,7 @@ Provider/CDN может:
 └── logs/
 ```
 
-Каталог `inputs/` — managed-копии reference images по `CN-01` (планируется):
+Каталог `inputs/` — managed-копии reference images по файловому шву `CN-01`:
 `inputs/<job_id>/<position>.<ext>`. Внешние `--out` байты в managed-копию не
 входят.
 
@@ -2116,8 +2130,8 @@ outputs/
 inputs/
 ```
 
-`inputs/` — managed-копии reference images по `CN-01` (до реализации файлового
-слоя копий их в дереве нет). Внешние `--out` байты в managed-копию не входят.
+`inputs/` — managed-копии reference images по файловому шву `CN-01`.
+Внешние `--out` байты в managed-копию не входят.
 
 ---
 
@@ -3170,7 +3184,8 @@ soft delete
 ```
 
 Managed-копии reference images не откладываются «на позже» по `CN-01`: схема v2 и
-связь входа с копией уже реализованы, а файловый слой копий — следующий срез.
+связь входа с копией уже реализованы; файловый шов добавлен отдельно, полная
+E07/CLI/history-композиция ещё не реализована.
 
 ---
 

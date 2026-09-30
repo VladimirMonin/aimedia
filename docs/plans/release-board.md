@@ -118,7 +118,7 @@ E07–E11 **не** содержат реализации, tests и evidence: ф�
 
 | ID | Работа | Зависимости | Что докажет приёмка | Состояние |
 |---|---|---|---|---|
-| CN-01 | Долговечные managed-копии reference images, связанные с Job (path/SHA-256/MIME/размер/позиция) в managed-дереве app data | E02 (inputs), E04 (storage v1) | Новая миграция **v2** без правки schema v1; no-clobber/ownership; Job→ref связь читается после удаления исходника; negative-тесты; managed-копии входят в quiesced backup-манифест. Контракт — [`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии reference images»; реализован первый code-срез: поле `InputRef.managed_path` и таблица v2 `managed_input_copies` со связью в repository. Не реализованы файлы копий, каталог `inputs/`, порядок D03 и backup-манифест | `IN_PROGRESS` (схема/связь — реализованы и покрыты offline-тестами; managed-файлы — `NOT IMPLEMENTED`; приёмка `CN-01` не пройдена) |
+| CN-01 | Долговечные managed-копии reference images, связанные с Job (path/SHA-256/MIME/размер/позиция) в managed-дереве app data | E02 (inputs), E04 (storage v1) | Новая миграция **v2** без правки schema v1; no-clobber/ownership; Job→ref связь читается после удаления исходника; negative-тесты; managed-копии входят в quiesced backup-манифест. Контракт — [`07-storage-history-costs.md`](07-storage-history-costs.md), «Managed-копии reference images»; реализован первый code-срез: поле `InputRef.managed_path` и таблица v2 `managed_input_copies` со связью в repository. Файловый шов добавляет snapshots, `inputs/` no-clobber publish/resolve, confirmation hook и tmp manual backup/restore тест; полная E07/CLI/history-композиция не реализована | `IN_PROGRESS` (DTO/SQLite принят; файловый шов — writer candidate, independent review pending; весь `CN-01` не принят) |
 | CN-02 | Лексический FTS5 и фильтры остаются обязательными; семантический/векторный поиск — backlog следующего релиза | E09 для FTS5 | FTS5/фильтры находят Jobs/prompts/ref-метаданные/artifacts; FTS5 не выдаётся за семантический поиск | `PENDING` (semantic — вне v0.1.0) |
 | CN-03 | Audio/speech/STT/TTS — отдельное приложение, вне планов и навигации этого репозитория | — | В `docs/plans/` нет речи как задачи aimedia; отменяемые положения `01` (раздел «Расширение на аудио» и примеры `aimedia audio ...`) явно superseded с сохранением исходного текста; ссылки не битые | `DONE` (документарно) |
 
@@ -130,6 +130,23 @@ Evidence вне Git: `artifacts/quality/a237d4f7e485d37a92f1467a490b74413537dcb1
 (`summary.json`, `clone-receipt.json`). Linux/release/live — `NOT_RUN`; это не
 приёмка файловых managed-копий, всего CN-01 или E06/E07.
 
+**Writer candidate — файловый шов CN-01 (поверх HEAD `0946685`, без commit):**
+`snapshot_reference_images`, `LocalManagedInputStorage`, `archive_reference_images`;
+DDL v1/v2 и repository не изменены. Добавлены **60** offline cases: реальные
+FS+SQLite copies/reopen/resave, source delete/mutate, no-clobber, traversal и
+symlink/junction (включая реальный Windows junction), partial publish/rollback/
+possible commit/неверное подтверждение/tamper, реальный Polza MockHTTP и ручной
+quiescent DB+inputs+outputs manifest/restore. После timeout-resume добавлены
+strict positive Job ID cases и stat/ограниченное size+1 чтение oversized tampered copy.
+Последний focused — **188 passed**, raw 0; свежий writer full — **1252 passed**,
+все **11** raw exit codes 0 (Windows); предыдущий full 1248/raw 0 сохранён отдельно.
+Evidence вне Git: `artifacts/quality/cn01-files-sol61-writer/` (summary/stdout/stderr),
+`cn01-files-raw-codes.json` рядом; ранние failed attempts сохранены отдельно,
+включая первый full с mypy raw 1 (pytest 1248 passed не маскирует failure).
+Independent review, frozen SHA/clean-clone verification — **PENDING**; полный
+E07/CLI/D03/history show/retry/sync и FTS — **NOT IMPLEMENTED**, Linux/release/live
+и реальные пользовательские данные — **NOT_RUN**. Это не приёмка всего CN-01.
+
 ## Зависимости и блокеры 🚧
 
 | ID | Блокер | Что блокирует | Что требуется, чтобы снять | Владелец |
@@ -139,7 +156,7 @@ Evidence вне Git: `artifacts/quality/a237d4f7e485d37a92f1467a490b74413537dcb1
 | B3 | Есть clean-clone gate для C09c2, но нет frozen candidate всего E06 (bindings/ценовой preflight отсутствуют) | E06 → E07, ворота G2 | Зафиксировать законченный E06 source SHA и прогнать применимые offline-gates на нём | интегратор |
 | B4 | Нет GitHub owner и явного разрешения на создание repo/push/tag/release | E11 | Точное имя owner и отдельное разрешение | владелец |
 | B5 | Live-бюджет расходуется только по заранее согласованному плану (≤ 200 ₽ суммарно, без автоматического платного retry) | Генерация asset, E10 live | Согласованный список вызовов на каждую модель/режим | владелец |
-| B6 | **RESOLVED (документарно)**: правка принятой спецификации под `CN-01` сделана — 07/03/README E04-E07/verification-matrix R07-R18/backup-contract и инструкции PROCESSING/CORE/DATA; контракт `e90e4c5`, DTO/SQLite-срез `a237d4f` | — | Оставшаяся реализация `CN-01` (файловые managed-копии, порядок D03, backup-манифест) — отдельная задача | исполнитель |
+| B6 | **RESOLVED (документарно)**: правка принятой спецификации под `CN-01` сделана — 07/03/README E04-E07/verification-matrix R07-R18/backup-contract и инструкции PROCESSING/CORE/DATA; контракт `e90e4c5`, DTO/SQLite-срез `a237d4f` | — | Файловый шов CN-01 — writer candidate; полная E07/CLI/D03/history-композиция и независимая приёмка ещё требуются | исполнитель |
 
 `B4` (GitHub owner и разрешение на публикацию) — единственный блокер, который
 останавливает зависимую работу целиком; остальные ограничивают конкретные этапы и
@@ -149,7 +166,7 @@ Evidence вне Git: `artifacts/quality/a237d4f7e485d37a92f1467a490b74413537dcb1
 
 | Ворота | Критерий | Текущее состояние (не E06/release candidate) |
 |---|---|---|
-| G0 | Нет незакрытого решения, от которого зависит реализация | Частично: E00 baseline D01–D16 принят, `CN-01`–`CN-03` зафиксированы; контракт `CN-01` синхронизирован со спецификацией, реализован его первый code-срез (schema v2 + связь), файловые managed-копии остаются `NOT IMPLEMENTED` |
+| G0 | Нет незакрытого решения, от которого зависит реализация | Частично: E00 baseline D01–D16 принят, `CN-01`–`CN-03` зафиксированы; контракт `CN-01` синхронизирован со спецификацией, реализован его первый code-срез (schema v2 + связь), файловый шов — отдельный writer candidate без принятой E07/CLI-композиции |
 | G1 | Функции согласованного scope существуют и интегрированы | Не выполнено: E07–E09 не начаты |
 | G2 | Обязательные offline-assertions выполнены на кандидате | C09c2: clean-clone full 1145 passed; CN-01 DTO/SQLite `a237d4f`: clean-clone full 1192 passed; E06/release candidate ещё нет |
 | G3 | Есть live evidence заявленных моделей/режимов | Не выполнено: `NOT_RUN` |

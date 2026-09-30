@@ -603,8 +603,11 @@ class InputRef(BaseModel):
 > «Managed-копии reference images»; объём — `release-scope.md`, `CN-01`.
 > **Реализовано**: поле с лексической проверкой без IO (абсолютные/drive-relative/
 > UNC-пути, `..` и `.` отклоняются; разделители приводятся к posix-форме) и связь
-> schema v2 `managed_input_copies`. **Не реализовано**: файлы копий, каталог
-> `inputs/`, порядок D03 и backup-манифест.
+> schema v2 `managed_input_copies`. Файловый шов добавляет наружный adapter
+> `LocalManagedInputStorage` через порт `ManagedInputStorage(save/resolve_path)`;
+> application хранит snapshot bytes и выдаёт временный transport request после
+> подтверждения всех links. Домен по-прежнему не выполняет IO. Полная D03-композиция
+> E07/CLI и runtime backup API **не реализованы**.
 
 `metadata` может содержать:
 
