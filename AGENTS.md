@@ -34,7 +34,7 @@
 | [REGISTRY.model-catalog](instructions/REGISTRY.model-catalog.instructions.md) | Изменение `src/aimedia/registry/`, `tests/contracts/`, `tests/unit/test_registry_*.py` или `tests/security/test_registry_data_only.py`: загрузка YAML, resolution/override, единый источник значений для validation и help/JSON, происхождение сведений и безопасные события Registry |
 | [APP.inputs-preparation](instructions/APP.inputs-preparation.instructions.md) | Изменение `src/aimedia/application/` (prompt compiler, подготовка reference images), `tests/unit/test_prompt_compiler.py`, `tests/unit/test_input_preparation.py`, `tests/support/image_fixtures.py` |
 | [PROCESSING.image-artifacts](instructions/PROCESSING.image-artifacts.instructions.md) | Изменение image artifact writer, конвертера, финализации Job, тестов outputs или managed-копий reference images (CN-01, планируется): пути, no-clobber, метаданные, orphan, backup |
-| [PROVIDER.polza-media](instructions/PROVIDER.polza-media.instructions.md) | Изменение `src/aimedia/providers/polza/` или `tests/contracts/test_polza_*.py`: фиксированный base URL, инжектируемый client, консервативная классификация submit/status, инвариант `SUBMIT_UNCERTAIN`, streaming cap, redaction, граница CDN (C09c2 NOT IMPLEMENTED) |
+| [PROVIDER.polza-media](instructions/PROVIDER.polza-media.instructions.md) | Изменение `src/aimedia/providers/polza/`, `tests/contracts/test_polza_*.py` или `tests/security/test_download_auth.py`: фиксированный base URL, инжектируемый client, консервативная классификация submit/status, инвариант `SUBMIT_UNCERTAIN`, streaming cap, redaction, реализованная граница CDN-скачивания (только документированный URL, внутренний DNS-пинящий пул, без bearer, политика DEBUG-журнала httpcore) |
 | [CORE.code_intelligence](instructions/CORE.code_intelligence.instructions.md) | Поиск реализации, символов, связей, структурных паттернов и оценка влияния |
 | [WORKFLOW.native-pi-routing](instructions/WORKFLOW.native-pi-routing.instructions.md) | Делегирование реализации/аудита, выбор нативной модели, резерв и scope image-only |
 
@@ -64,6 +64,11 @@ runtime-поведение доказывают тесты и безопасны
 
 ## Ключевые границы v0.1.0
 
+- aimedia — **личное image-only CLI**, а не универсальная платформа: выбирай
+  минимальное решение для подтверждённых сценариев и не добавляй абстракции,
+  совместимость или фичи «на будущее». Упрощение никогда не ослабляет: запрет bearer
+  на чужой/CDN-origin и SSRF-барьер, no-clobber запись артефактов, точные деньги и
+  запрет автоматического повторного оплаченного POST.
 - Целевой стек: Python 3.12+, uv, Typer/Rich, httpx/asyncio, Pydantic,
   Peewee/SQLite, Pillow, YAML и platformdirs; версии подтверждаются lockfile и CI.
 - Целевой продукт этого репозитория — только image CLI через Polza. Speech/voice и

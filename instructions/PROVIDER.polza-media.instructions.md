@@ -1,28 +1,35 @@
 ---
-applyTo: "src/aimedia/providers/polza/**,tests/contracts/test_polza_*.py"
+applyTo: "src/aimedia/providers/polza/**,tests/contracts/test_polza_*.py,tests/security/test_download_auth.py"
 name: "PROVIDER.PolzaMedia"
-description: "Читай при изменении src/aimedia/providers/polza или tests/contracts/test_polza_*: зафиксированный base URL, инжектируемый httpx.AsyncClient, консервативная классификация submit/status/result, инвариант SUBMIT_UNCERTAIN без второго POST, потоковый safety-cap, redaction и граница CDN-скачивания."
+description: "Читай при изменении src/aimedia/providers/polza или tests/contracts/test_polza_*, tests/security/test_download_auth.py: зафиксированный base URL, инжектируемый httpx.AsyncClient, консервативная классификация submit/status/result, инвариант SUBMIT_UNCERTAIN без второго POST, потоковый safety-cap, redaction и реализованная граница CDN-скачивания (только документированный URL, внутренний DNS-пинящий пул, без bearer, DEBUG-журнал транспорта)."
 ---
 
-# PROVIDER — Polza Media adapter (E06, C09c1)
+# PROVIDER — Polza Media adapter (E06, C09c1/C09c2)
 
-Эта инструкция фиксирует **реализованный на C09c1** контракт транспорта Polza Media.
+Эта инструкция фиксирует **реализованный** контракт транспорта Polza Media:
+submit/status/result на срезе C09c1 и безопасное скачивание remote artifact на
+срезе C09c2.
 План-источники — `docs/plans/05-provider-system.md` («Transport retry»,
-«Error mapping», «Retryable errors»), `docs/plans/08-job-execution.md` (правило
-v0.1: неизвестный outcome submit не повторяется автоматически), `docs/plans/README.md`
-(E06); принятая развилка — `docs/plans/decisions/implementation-baseline.md` (D10).
-Схема запросов/ответов — `docs/Get Media.txt`, `docs/Post Media.txt` (свидетельство
-схемы, а не подтверждённая живая поддержка конкретного model ID).
+«Error mapping», «Download responsibility»), `docs/plans/08-job-execution.md`
+(правило v0.1: неизвестный outcome submit не повторяется автоматически),
+`docs/plans/README.md` (E06); принятая развилка —
+`docs/plans/decisions/implementation-baseline.md` (D10). Схема запросов/ответов —
+`docs/Get Media.txt`, `docs/Post Media.txt` (свидетельство схемы, а не подтверждённая
+живая поддержка конкретного model ID).
 
 ## Владелец и границы
 
 `src/aimedia/providers/polza/` — инфраструктурный adapter: он зависит от домена,
-Registry и `httpx`, но обратной зависимости нет; это проверяет
-`tests/architecture/test_dependencies.py`.
+Registry и HTTP-транспорта (`httpx` в gateway, `httpcore` в download), но обратной
+зависимости нет; это проверяет `tests/architecture/test_dependencies.py`.
 
 - `gateway.py` — `PolzaProviderGateway`: `submit` (`POST /v1/media`),
   `get_status`/`fetch_result` (`GET /v1/media/{id}`); реализует доменные порты
   `ProviderGateway` и `PollingProviderGateway`.
+- `download.py` — `PolzaArtifactDownloader`: принимает доменную `RemoteArtifact` и
+  возвращает ограниченные сырые байты; **сам** строит `httpcore.AsyncConnectionPool`
+  над внутренним `DnsPinningBackend` (пул снаружи не инжектируется), не использует
+  `httpx.AsyncClient` gateway и не читает окружение.
 - `media/` — чистые mappers (`build_media_request`, `serialize_media_request`) и
   нормализация ответов (`decode_media_json`, `normalize_media_*`) без HTTP.
 - `__init__.py` намеренно **не** импортирует gateway, чтобы чистый mapper оставался
@@ -85,22 +92,63 @@ HTTP и submit-неоднозначностью не являются.
 (`PROVIDER_INVALID_REMOTE_REF`). Транспортный timeout на GET не маскируется под
 «недостаточно средств».
 
-## CDN и remote artifact — NOT IMPLEMENTED
+## CDN и remote artifact — реализовано на C09c2 🔒
 
-Скачивание remote artifact / CDN и SSRF-защита — срез C09c2, **не реализован**:
-`RemoteArtifact` остаётся ссылкой. Пока C09c2 нет, bearer не должен уходить на
-произвольный CDN-host. Скачивание обязано появиться отдельным срезом со своим
-контрактом redirect/SSRF и тестами (`tests/security/test_download_auth.py`), а не
-«дописаться» к gateway.
+Скачивание remote artifact — отдельный срез `download.py`
+(`PolzaArtifactDownloader` + `DnsPinningBackend` + приватный `_build_pinned_pool`),
+а не «дописанная» к gateway функция. Downloader ничего не пишет на диск, не читает
+`.env`/переменные окружения и не определяет MIME/контейнер: фактический формат
+проверяет downstream по полученным байтам (граница с
+[PROCESSING.ImageArtifacts](PROCESSING.image-artifacts.instructions.md)).
+
+- Bearer Polza **не** уходит на CDN: запрос не добавляет `Authorization`, cookie и
+  proxy-заголовки; proxy-переменные окружения не читаются (`proxy=None`), uds не
+  используется.
+- Одобрен **только документированный** host `s3.polza.ai` (`docs/Get Media.txt`
+  подтверждает image URL именно на нём). Любой другой host, **включая `cdn.polza.ai`**,
+  отклоняется **до DNS** (fail closed, без wildcard): недокументированный Polza CDN
+  не считается поддержанным без подтверждающего документа.
+- Поддерживается **только документированная** Polza форма доставки
+  (`docs/Get Media.txt`): абсолютный `https` URL одобренного host. Inline
+  `base64_data` и `provider_file_id` **не поддерживаются** и закрываются отказом
+  (fail closed).
+- Разрешены только `https` и порт `443`; запрещены userinfo, fragment, IP-literal,
+  управляющие символы, пробел, обратный слэш и scheme-relative форма; длина URL
+  ограничена до разбора. Подписанный query допускается только на одобренном origin и
+  никогда не попадает в `message`, `details` или traceback.
+- Редирект не отслеживается, **включая тот же host**; автоматического повтора нет
+  (`retries=0`, без собственного цикла). `Content-Encoding` отклоняется до чтения,
+  если **любое** его значение (по всем заголовкам и comma-токенам) не `identity`;
+  тело ограничено `max_artifact_bytes` до объединения/декомпрессии, `Content-Type` —
+  advisory; некорректный HTTP-ответ CDN типизируется как отказ без сырых байт. Разбор
+  всех заголовков идёт внутри guarded close, поэтому ответ закрывается на успехе,
+  отказе и отмене даже при враждебном `Content-Length`.
+- SSRF закрыт собственным `httpcore.AsyncNetworkBackend`, который downloader строит
+  **внутри**: произвольный `AsyncConnectionPool` снаружи не принимается. Каждый
+  `connect_tcp` резолвит host **один раз** в пределах **конечного** бюджета (DNS
+  ограничен `timeout_seconds`, зависший резолвер даёт типизированный отказ), требует,
+  чтобы **все** ответы были глобально-публичными (приватный, смешанный, IPv4-mapped,
+  multicast, reserved, CGNAT или loopback ответ закрывает соединение до TCP), и
+  передаёт прямому `AnyIOBackend` числовой адрес, а не host. Исходный hostname
+  остаётся в URL, поэтому TLS SNI и проверка сертификата выполняются по нему со
+  строгим ssl-контекстом по умолчанию. `timeout_seconds` конечен и положителен
+  (NaN/inf отклоняются); по умолчанию — `DEFAULT_DOWNLOAD_TIMEOUT_SECONDS`.
+- Логирование транспорта: downloader выставляет безопасный уровень логгера
+  `httpcore` (WARNING), потому что на DEBUG `httpcore` пишет request target
+  (подписанный query) и сырые заголовки ответа (`Location` с подписью) до отказа от
+  редиректа. Явно понижать уровень `httpcore.*` нельзя — это вернёт утечку; эта же
+  политика скрывает `Authorization` gateway, ходящего через `httpcore`.
 
 ## Проверки
 
 ```bash
 uv run --locked --offline --no-env-file python -m pytest tests/contracts -q
+uv run --locked --offline --no-env-file python -m pytest tests/security/test_download_auth.py -q
 uv run --locked --offline --no-env-file python -m ruff check .
 uv run --locked --offline --no-env-file python -m ruff format --check .
 uv run --locked --offline --no-env-file python -m mypy src/aimedia
 ```
 
-Тесты транспорта используют только `httpx.MockTransport`; сеть, `.env`, ключ и
-live-вызовы Polza в offline-контуре запрещены (`TEST.OfflineQuality`).
+Тесты транспорта используют только `httpx.MockTransport` и детерминированные
+двойники резолвера/`AsyncNetworkBackend`; реальные сокеты, `.env`, ключ и live-вызовы
+Polza в offline-контуре запрещены (`TEST.OfflineQuality`).
