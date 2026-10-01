@@ -70,6 +70,30 @@ Unqualified Gemini без provider DTO выбирал бы upstream автома
 binding остаются experimental/NOT_LIVE_VERIFIED. Регрессии —
 `tests/contracts/test_polza_priced_routing.py`.
 
+## Documented async submit для fixed bindings
+
+В том же exact-binding условии финансового фильтра для трёх remote IDs выше
+`build_media_request` добавляет **top-level JSON boolean `async: true`** до
+проверки окончательных `serialize_media_request` bytes. Count (`input.n` только
+для MIE), references и fixed routing не меняются. Caller `provider_options`
+не могут ни выключить, ни переопределить async; generic/synthetic/near-match
+mapping остаётся без async. Новых model tables, DTO/config/CLI flags нет.
+Источник — `docs/Post Media.txt` (MediaRequestDto async); это documented request,
+не подтверждение live async latency/acknowledgement для этих bindings.
+
+Принимается только существующий canonical response: безопасный `id`,
+`object: media.generation` и известный `status`. `pending`/`processing` дают exact
+opaque ref с operation MEDIA, который application подтверждает в истории до
+первого GET; immediate `completed` с пригодным image также сохраняется.
+Текст документа «taskId» не разрешает taskId alias: taskId-only (в том числе с
+object/status), missing/unsafe id, unknown object/status, malformed JSON и
+zero-image completed остаются `SUBMIT_UNCERTAIN`, `retryable=None`, без
+придуманного ref/billing или fallback POST. Parser не расширяется по
+неподтверждённому live shape. После durable ref локальный timeout сохраняет ref;
+restart/sync использует только GET. HTTP timeout и wait deadline не меняются.
+Регрессии — `test_polza_priced_routing.py`, `test_polza_gateway.py` и
+`tests/integration/test_single_image.py`.
+
 ## Инварианты транспорта
 
 `httpx.AsyncClient` инжектируется вызывающей стороной и переиспользуется всеми
@@ -105,7 +129,8 @@ Base URL зафиксирован как `https://polza.ai/api/v1` и не бе�
 - HTTP 408 и 5xx;
 - нечитаемого (`content-encoding`) или превысившего `max_response_bytes` тела;
 - 2xx без пригодного конверта: неразбираемый JSON, отсутствующий или небезопасный
-  `remote_job_id`, неизвестный `object`/`status`, `completed` без пригодного image.
+  `remote_job_id` (включая taskId-only), неизвестный `object`/`status`, `completed`
+  без пригодного image.
 
 Ошибка строится **вне** блока `except`, поэтому `__cause__` и `__context__` пусты.
 Явные отказы остаются различимыми и не превращаются в `SUBMIT_UNCERTAIN`:

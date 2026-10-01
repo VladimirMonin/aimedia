@@ -16,6 +16,7 @@ import pytest
 from fake_provider import FakeImageProvider, FakeScenario
 from image_fixtures import png_bytes
 
+from aimedia.application.execution import ImageServices, sync_image
 from aimedia.application.inputs import snapshot_reference_images
 from aimedia.application.prompts.compile import PromptCompiler, file_source, inline_source
 from aimedia.application.single_image import ImageExecutionSetup, ImageHistoryError, generate_image
@@ -36,6 +37,8 @@ from aimedia.domain import (
     ProviderRef,
     ProviderResult,
     RemoteArtifact,
+    RemoteJobRef,
+    RemoteOperation,
     SubmissionResult,
     UnknownModelError,
     Usage,
@@ -49,8 +52,10 @@ from aimedia.registry import (
     ProviderBinding,
     validate_model_request,
 )
+from aimedia.registry.builtin import load_builtin_registry
 from aimedia.registry.models import ModelRecord
 from aimedia.storage import PeeweeJobRepository, open_database
+from aimedia.storage.ownership import claim_job
 
 CANARY = "sensitive_CANARY_e07_signed_body"
 NOW = datetime(2026, 10, 3, tzinfo=UTC)
@@ -812,6 +817,263 @@ def test_real_polza_gateway_composed_after_created_uses_managed_transport(tmp_pa
         assert CANARY not in completed.model_dump_json() + rig.logs.getvalue()
     finally:
         manager.close()
+
+
+@pytest.mark.parametrize(
+    "model,refs",
+    [("qwen-image-2-1", 0), ("gemini-3-1-flash-image-preview", 1), ("gpt-5-4-image-2-mie", 0)],
+)
+@pytest.mark.parametrize("ack_status", ["pending", "processing", "completed"])
+def test_documented_async_ack_is_durable_before_get_and_finalizes(
+    tmp_path, model, refs, ack_status
+):
+    rig, manager = make_rig(tmp_path, Provider(provider_id="polza", cost="3.000"), refs=refs)
+    rig.request = rig.request.model_copy(
+        update={"model": ModelRef(id=model), "resolution": "1K", "aspect_ratio": "16:9"}
+    )
+    effective = ModelResolver(load_builtin_registry()).resolve(model, "polza")
+    ref = RemoteJobRef(
+        provider_id="polza", remote_job_id="opaque_async_007", operation=RemoteOperation.MEDIA
+    )
+    calls = []
+    completed_body = {
+        "id": ref.remote_job_id,
+        "object": "media.generation",
+        "status": "completed",
+        "data": [{"url": f"https://s3.polza.ai/x.png?sig={CANARY}"}],
+        "usage": {"cost_rub": "3.000", "output_units": 1},
+    }
+
+    async def flow():
+        def handler(sent):
+            calls.append(sent.method)
+            if sent.method == "POST":
+                body = json.loads(sent.content)
+                assert body["async"] is True and "async" not in body["input"]
+                assert body["model"] == effective.remote_model_id
+                assert len(body["input"].get("images", [])) == refs
+                return httpx.Response(
+                    200,
+                    json=completed_body
+                    if ack_status == "completed"
+                    else {
+                        "id": ref.remote_job_id,
+                        "object": "media.generation",
+                        "status": ack_status,
+                    },
+                )
+            stored = rig.repo.real.get(rig.repo.list_recent()[0].id)
+            assert stored.remote_ref == ref and stored.submitted_at == NOW
+            assert stored.status in (JobStatus.SUBMITTED, JobStatus.RUNNING)
+            assert sent.url.path == f"/api/v1/media/{ref.remote_job_id}"
+            return httpx.Response(200, json=completed_body)
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+
+            def prepare(request):
+                rig.prepare(request)
+                validate_model_request(effective, request)
+                return ImageExecutionSetup(
+                    binding=ProviderModelBinding(
+                        provider_id="polza", remote_model_id=effective.remote_model_id
+                    ),
+                    gateway=PolzaProviderGateway(
+                        client=client,
+                        api_key=CANARY,
+                        effective=effective,
+                        max_body_bytes=100000,
+                        max_response_bytes=100000,
+                    ),
+                )
+
+            rig.setup = prepare
+            return await rig.run()
+
+    for snapshot in rig.snapshots:
+        snapshot.ref.path.unlink()
+    try:
+        completed = asyncio.run(flow())
+        assert completed.status is JobStatus.COMPLETED
+        assert completed.remote_ref == ref
+        assert completed.cost.amount == Decimal("3.000")
+        assert completed.usage.output_units == 1
+        assert calls == (["POST"] if ack_status == "completed" else ["POST", "GET", "GET"])
+        artifact = completed.result.artifacts[0]
+        assert rig.artifacts.resolve_path(artifact).read_bytes() == png_bytes()
+        assert artifact.sha256 == hashlib.sha256(png_bytes()).hexdigest()
+        assert CANARY not in completed.model_dump_json() + rig.logs.getvalue()
+    finally:
+        manager.close()
+    with open_database(rig.root / "database.sqlite3") as reopened:
+        assert PeeweeJobRepository(reopened).get(completed.id) == completed
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"taskId": "opaque_async_007"},
+        {"taskId": "opaque_async_007", "object": "media.generation", "status": "pending"},
+        {
+            "id": "opaque_async_007",
+            "object": "media.generation",
+            "status": "completed",
+            "data": [],
+            "usage": {"cost_rub": "3.000"},
+        },
+        b"not-json",
+    ],
+    ids=["taskId-only", "taskId-with-status", "zero-images-with-cost", "malformed-json"],
+)
+def test_documented_async_unknown_submit_has_no_invented_ref_billing_or_artifacts(tmp_path, body):
+    rig, manager = make_rig(tmp_path, Provider(provider_id="polza"))
+    model = "qwen-image-2-1"
+    rig.request = rig.request.model_copy(update={"model": ModelRef(id=model)})
+    effective = ModelResolver(load_builtin_registry()).resolve(model, "polza")
+    calls = []
+
+    async def flow():
+        def handler(sent):
+            calls.append(sent.method)
+            assert sent.method == "POST" and json.loads(sent.content)["async"] is True
+            return (
+                httpx.Response(200, content=body)
+                if isinstance(body, bytes)
+                else httpx.Response(200, json=body)
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+
+            def prepare(request):
+                rig.prepare(request)
+                return ImageExecutionSetup(
+                    binding=ProviderModelBinding(
+                        provider_id="polza", remote_model_id=effective.remote_model_id
+                    ),
+                    gateway=PolzaProviderGateway(
+                        client=client,
+                        api_key=CANARY,
+                        effective=effective,
+                        max_body_bytes=100000,
+                        max_response_bytes=100000,
+                    ),
+                )
+
+            rig.setup = prepare
+            return await rig.run()
+
+    try:
+        failed = asyncio.run(flow())
+        assert failed.status is JobStatus.FAILED and failed.error.code == "SUBMIT_UNCERTAIN"
+        assert failed.error.retryable is None
+        assert failed.remote_ref is None and failed.cost is None and failed.usage is None
+        assert failed.artifacts == () and rig.downloads == []
+        assert calls == ["POST"]
+        assert rig.repo.get(failed.id) == failed
+    finally:
+        manager.close()
+
+
+@pytest.mark.parametrize("ack_status", ["pending", "processing"])
+def test_documented_async_known_ref_timeout_restarts_with_get_only_sync(tmp_path, ack_status):
+    rig, manager = make_rig(tmp_path, Provider(provider_id="polza", cost="3.000"), refs=1)
+    model = "gemini-3-1-flash-image-preview"
+    rig.request = rig.request.model_copy(update={"model": ModelRef(id=model)})
+    effective = ModelResolver(load_builtin_registry()).resolve(model, "polza")
+    ref = RemoteJobRef(
+        provider_id="polza", remote_job_id="opaque_async_007", operation=RemoteOperation.MEDIA
+    )
+    calls = []
+
+    async def initial():
+        def handler(sent):
+            calls.append(sent.method)
+            if sent.method == "POST":
+                assert json.loads(sent.content)["async"] is True
+            else:
+                assert rig.repo.list_recent()[0].remote_ref == ref
+                assert sent.url.path == f"/api/v1/media/{ref.remote_job_id}"
+            return httpx.Response(
+                200,
+                json={
+                    "id": ref.remote_job_id,
+                    "object": "media.generation",
+                    "status": ack_status if sent.method == "POST" else "processing",
+                },
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+
+            def prepare(request):
+                rig.prepare(request)
+                return ImageExecutionSetup(
+                    binding=ProviderModelBinding(
+                        provider_id="polza", remote_model_id=effective.remote_model_id
+                    ),
+                    gateway=PolzaProviderGateway(
+                        client=client,
+                        api_key=CANARY,
+                        effective=effective,
+                        max_body_bytes=100000,
+                        max_response_bytes=100000,
+                    ),
+                )
+
+            rig.setup = prepare
+            return await rig.run(wait_timeout=1.5)
+
+    try:
+        failed = asyncio.run(initial())
+        assert failed.status is JobStatus.FAILED and failed.error.code == "JOB_TIMEOUT"
+        assert failed.remote_ref == ref and failed.cost is None
+        assert calls == ["POST", "GET"]
+    finally:
+        manager.close()
+    with open_database(rig.root / "database.sqlite3") as reopened:
+        rig.repo = Repository(PeeweeJobRepository(reopened))
+        assert rig.repo.get(failed.id) == failed
+
+        async def restart():
+            def handler(sent):
+                calls.append(sent.method)
+                assert sent.method == "GET"
+                assert sent.url.path == f"/api/v1/media/{ref.remote_job_id}"
+                return httpx.Response(
+                    200,
+                    json={
+                        "id": ref.remote_job_id,
+                        "object": "media.generation",
+                        "status": "completed",
+                        "data": [{"url": f"https://s3.polza.ai/x.png?sig={CANARY}"}],
+                        "usage": {"cost_rub": "3.000", "output_units": 1},
+                    },
+                )
+
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                gateway = PolzaProviderGateway(
+                    client=client,
+                    api_key=CANARY,
+                    effective=effective,
+                    max_body_bytes=100000,
+                    max_response_bytes=100000,
+                )
+                services = ImageServices(
+                    repository=rig.repo,
+                    inputs=rig.inputs,
+                    artifacts=rig.artifacts,
+                    prepare=rig.setup,
+                    sync_gateway=lambda job: gateway,
+                    download=rig.download,
+                    claim=lambda job_id: claim_job(rig.root, job_id),
+                )
+                return await sync_image(failed.id, services, gateway)
+
+        recovered = asyncio.run(restart())
+        assert recovered.error is None and recovered.job.status is JobStatus.COMPLETED
+        assert recovered.job.remote_ref == ref
+        assert recovered.job.cost.amount == Decimal("3.000")
+        assert recovered.job.recovery.previous_error == failed.error
+        assert len(recovered.job.result.artifacts) == 1
+        assert calls == ["POST", "GET", "GET", "GET"]
 
 
 @pytest.mark.parametrize("stage", ["billing", "partial"])

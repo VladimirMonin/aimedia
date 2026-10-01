@@ -132,6 +132,31 @@
   перезапуск с сохранёнными prompts, refs — включая `remote_job_id` и `operation` —,
   cost и artifacts).
 
+### Принятое уточнение D10: documented async Media submit
+
+По принятому dialogue `16f9` на source `e751f97633eea5c33b8831186dad98d0af5f422b`
+для exact `qwen/image-2.1`, `google/gemini-3.1-flash-image-preview` и
+`openai/gpt-5.4-image-2@mie` в существующем fixed-provider условии добавляется
+только top-level boolean `async: true` до окончательного serialized body cap.
+only=[mie]/allow_fallbacks=false/Decimal-ceil RUB, count и references неизменны;
+caller options async не разрешены, generic/synthetic mapping неизменен.
+Источник: `docs/Post Media.txt` 269–275 (async), 117–126/161–166 и 285–355
+(canonical MediaStatus id/object/status). Противоречивый prose «taskId» не
+расширяет response parser: taskId-only, unsafe/missing id, unknown object/status,
+malformed JSON и zero-image completed дают SUBMIT_UNCERTAIN без нового
+ref/billing/POST. Canonical pending/processing ref подтверждается до GET;
+immediate completed поддерживается. Timeout с known ref и restart/sync —
+GET-only, без смены operation или угадывания endpoint. HTTP timeout30, domain,
+DDL, gateway/normalizer/config/CLI и Registry subsets не меняются.
+
+Уточнение — offline wire contract, не live acceptance: async response shape и
+latency реально не проверены. Исходный patch SHA — `NOT_COMMITTED`; E06/E10
+остаются OPEN, новые paid POST запрещены до отдельного разрешения. Проверки:
+`test_polza_priced_routing.py`, `test_polza_mie_count.py`, `test_polza_gateway.py`,
+`tests/integration/test_single_image.py`; owner —
+[PROVIDER.polza-media](../../../instructions/PROVIDER.polza-media.instructions.md).
+Наблюдения и lifetime accounting принадлежат release-board, не этому контракту.
+
 ## D11. Деньги и миграции
 
 - **ИП:** `07` рекомендует decimal TEXT и допускает разные migration runners

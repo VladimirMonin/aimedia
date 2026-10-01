@@ -38,6 +38,7 @@ def test_mie_mapper_exact_n_with_conservative_defaults(count, ratio):
     assert build_media_request(validated, [], max_body_bytes=4096) == {
         "model": REMOTE,
         "provider": {"only": ["mie"], "allow_fallbacks": False, "max_price": {"image": 4}},
+        "async": True,
         "input": {
             "prompt": "synthetic robot",
             "image_resolution": "1K",

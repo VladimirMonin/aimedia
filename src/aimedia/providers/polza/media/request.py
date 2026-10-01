@@ -22,6 +22,8 @@ effective definition модели; произвольная передача `pr
   логический count 1–4 передаётся как input.n, не generic max_images;
 - обязательные устойчивые поля и поддерживаемые provider options с документированным
   default передаются явно, без default — отклоняются до HTTP;
+- три exact fixed-MIE binding получают top-level boolean async=true до final cap;
+  generic mapping и caller provider_options не управляют этим правилом;
 - размер тела ограничен **явным локальным** safety-cap: это защита проекта, а не
   документированный лимит Polza или конкретной модели.
 
@@ -167,6 +169,7 @@ def build_media_request(
     }
     if effective.remote_model_id in _MIE_PRICED_MODELS:
         payload["provider"] = _build_mie_price_filter(effective)
+        payload["async"] = True
     _enforce_exact_body_size(payload, max_body_bytes=max_body_bytes)
     if effective.remote_model_id != _MIE_COUNT_MODEL and not _SAFE_REMOTE_MODEL_ID.fullmatch(
         effective.remote_model_id

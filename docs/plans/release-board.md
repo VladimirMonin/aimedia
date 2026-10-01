@@ -14,7 +14,9 @@
 | Поле | Значение |
 |---|---|
 | Принятый baseline E07–E09 | `8a09d186a650248715b6efcade96b81f69370613` (CLOSED/ACCEPTED offline, не live/release E10) |
-| Незавершённое | E06 live verification; MIE count source76 reviewed offline, experimental/NOT_LIVE_VERIFIED; новый financial filter pending current review; E10/E11 открыты. Статус worktree проверяется Git |
+| Текущий count/price offline baseline | `e751f97633eea5c33b8831186dad98d0af5f422b`, accepted offline; отдельные live observations ниже, не collective PASSED |
+| Незавершённое | E06/E10 OPEN; Registry experimental без activation. Новый documented async patch `NOT_COMMITTED`, independent review pending, async live NOT_RUN. E11 OPEN / publication permission absent. Статус worktree проверяется Git |
+| Lifetime paid accounting | total attempted POST 2; known cost 3 RUB; uncertain reserve 11 RUB; 3 + 11 ≤ cap 200 RUB. Reserve не zero и не доказанный billing |
 | Обязательный объём и отложенное | [`release-scope.md`](release-scope.md) + change notes `CN-01`–`CN-03` |
 | Требования R01–R24 | [`verification-matrix.md`](verification-matrix.md) |
 | Решения развилок E00 | [`decisions/implementation-baseline.md`](decisions/implementation-baseline.md) (D01–D16) |
@@ -121,8 +123,8 @@ Schema v2 archive и v3 FTS committed; ownership platform fix входит в ba
 | E07 | Одиночный application use case `single_image.generate_image`: prepared inputs → confirmed CREATED → validation/archive → один submit → ref/polling → billing → все artifacts → confirmed history | E04–E06 | `tests/integration/test_single_image.py`: реальная tmp SQLite/managed copies/Pillow, fake + Polza MockHTTP, ошибки без duplicate submit; independent reviews и clean release baseline подтверждены выше | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
 | E08 | Batch с ограниченной конкурентностью, partial failures, `retry`/`sync`, Ctrl+C, recovery и защита от двойного Runner | E07 | Peak active = лимит, partial outcome, submit_count = 1 при неизвестном исходе, restart без нового POST, cross-process guard | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
 | E09 | Полный CLI, JSON/exit codes, история, лексический FTS5, валютные сводки, atomic help | E03, E08 | Реальный argv, JSON/exit для текущей попытки, поиск prompts/ref provenance/managed paths/hashes/result artifacts после restart без чтения файлов, RUB/USD/unknown раздельно, packaged help вне cwd | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
-| E10 | Приёмка release candidate: Windows+Linux, offline quick/full/release, wheel+sdist, installed smoke, secret scan, агентский walkthrough, ограниченный live | E09 | Один frozen SHA; отсутствие обязательных `SKIP`/`XFAIL`/`NOT_RUN`; live-отчёт с model ID, режимом, ценой и датой | `PENDING` |
-| E11 | Публикация проверенного релиза | E10 + отдельное разрешение владельца | Annotated tag на проверенном SHA, wheel/sdist + checksums, установка по тегу с проверкой происхождения | `PENDING`, `BLOCKED` (login VladimirMonin известен; owner/target и разрешения не подтверждены) |
+| E10 | Приёмка release candidate: Windows+Linux, offline quick/full/release, wheel+sdist, installed smoke, secret scan, агентский walkthrough, ограниченный live | E09 | Один frozen SHA; отсутствие обязательных `SKIP`/`XFAIL`/`NOT_RUN`; live-отчёт с model ID, режимом, ценой и датой | `OPEN / IN_PROGRESS`, async live NOT_RUN, Gemini unknown |
+| E11 | Публикация проверенного релиза | E10 + отдельное разрешение владельца | Annotated tag на проверенном SHA, wheel/sdist + checksums, установка по тегу с проверкой происхождения | `OPEN / BLOCKED`, publication permission absent (login VladimirMonin известен; owner/target и разрешения не подтверждены) |
 
 **Историческая запись одиночного среза до укрупнения (не текущий статус):**
 E07 содержал частичное одиночное ядро и `tests/integration/test_single_image.py`;
@@ -183,9 +185,9 @@ Linux/release/live и реальные пользовательские данн
 
 | ID | Блокер | Что блокирует | Что требуется, чтобы снять | Владелец |
 |---|---|---|---|---|
-| B1 | **Частично снят:** documented experimental Qwen/Gemini bindings committed; MIE count subset по публичным Markdown добавлен в worktree. Живая генерация NOT_RUN | Закрытие E06, E10 live, G3 | Перед разрешённым платным POST сверить режим/цену и план на fixed SHA | исполнитель |
+| B1 | **Частично снят:** три experimental binding и count/price guard приняты offline e751. Qwen 1K no-ref observed completed; Gemini ref uncertain. Async live NOT_RUN | Закрытие E06, E10 live, G3 | Paid STOP; новый reviewed/committed/frozen SHA и отдельный bounded plan, без retry Job2 | исполнитель |
 | B2 | **RESOLVED для C09c1/C09c2**: `c794c0b` (1019) и `2110a5f` (1145) offline passed в чистых клонах, SOL6 предкоммитные reviews OK | — | E06 в целом остаётся открытым | исполнитель + интегратор |
-| B3 | **RESOLVED offline:** E07–E09 baseline `8a09d18` принят; E06 live открыт | Новый MIE slice требует fresh review/same-SHA gate, не повтор принятого аудита | Independent review → parent frozen-SHA verification | интегратор |
+| B3 | **RESOLVED offline:** E07–E09 `8a09d18`, count/price e751 приняты; E06 live открыт | Новый async slice требует fresh review/same-SHA gate, не повтор принятого аудита | Independent review → parent frozen-SHA verification | интегратор |
 | B4 | Authenticated login `VladimirMonin` известен; proposed target `VladimirMonin/aimedia`, но owner/target и create/push/tag/release authorization не подтверждены | E11 | Подтверждение owner/target и отдельное явное разрешение; login не authorization | владелец |
 | B5 | Live-бюджет расходуется только по заранее согласованному плану (≤ 200 ₽ суммарно, без автоматического платного retry) | Генерация asset, E10 live | Согласованный список вызовов на каждую модель/режим | владелец |
 | B6 | **RESOLVED offline:** CN-01 v2 archive и полная E07/CLI/D03/history/recovery композиция приняты на `8a09d18`; v3 FTS committed | — | Backup CLI отсутствует по scope, live отдельно | исполнитель |
@@ -280,7 +282,7 @@ billing до download сохраняются, COMPLETED запрещён, recove
 Fresh reviewer, final-SHA Linux runtime/installed acceptance и live — NOT_RUN;
 parent владеет staging/commit/frozen-SHA проверками. E10/E11 не закрыты.
 
-## Текущий source76 и финансовый fix перед первым live POST
+## Исторический source76 и финансовый fix перед первым live POST
 
 На source `76f93a2c1206ae5ced45bc47507578cf1e45775e` parent подтверждает native
 precommit source-review `4fc`: accepted, **1417 PASSED**. Windows/Linux same-SHA
@@ -296,6 +298,41 @@ Job total или 200 RUB. Live **STOP BEFORE FIRST PAID POST**: paid POST = 0,
 credential reads = 0; E06 live/E10/E11 остаются открытыми. Public-doc evidence:
 `artifacts/metadata/polza-media-priced-routing-2026-09-30.json`; writer gates:
 `artifacts/quality/priced-media-writer/` (отдельно от source76).
+
+## Текущий e751 baseline и documented async candidate
+
+Источник следующих **e751** фактов — задание владельца с same-SHA acceptance и
+live observations; writer этого среза не читал private receipts/keys/userdata и
+не повторял прежний OS/installed аудит. Count/price guard принят offline на
+`e751f97633eea5c33b8831186dad98d0af5f422b`: шесть actual-OS quick/full/release
+raw 0; Windows **1468 PASSED**, Linux **1464 PASSED + 4 junction SKIPPED**
+(не PASSED); installed Windows **116 argv**, Linux **18 smoke**, TLS verified.
+Эти результаты не распространяются на новые async bytes.
+
+| Наблюдение на e751 | POST | Outcome | Деньги / предел доказательства |
+|---|---|---|---|
+| Qwen no-ref 1K 1:1 | 1 | COMPLETED, real PNG + WebP 1024, restart verified | Known actual 3 RUB; только этот режим, не все refs/resolutions и не async |
+| Gemini ref 1K 16:9 (Job2) | 1 | SUBMIT_UNCERTAIN после ~30.26s, remote_ref/cost отсутствуют | Unknown private outcome/fee; reserve 11 RUB, причина не доказана; Job2 не повторять |
+
+**total attempted POST 2, known cost 3 RUB, uncertain reserve 11 RUB**;
+lifetime accounted 3 + 11 ≤ cap 200 RUB. Это не collective PASSED, резерв не
+обнуляется и не выдаётся за фактическую цену. Старые paid0 записи выше остаются
+историческими записями своих SHA.
+
+Принятый dialogue `16f9`: минимальный top-level boolean `async: true` для тех же
+трёх exact fixed-provider bindings до final serialized cap; routing/Decimal/count/
+references неизменны, caller override запрещён. Canonical pending/processing →
+durable exact ref до GET; immediate completed работает. TaskId-only/непригодный
+конверт остаётся uncertain, parser не расширяется, POST fallback нет.
+Owner — PROVIDER.polza-media; уточнение — baseline D10.
+
+Новый source SHA **NOT_COMMITTED**, независимый review **PENDING**, async live
+**NOT_RUN**; candidate offline evidence — `artifacts/quality/media-async-writer/`
+(фактические raw codes/manifest, не переиспользованные e751 runs). Registry остаётся
+experimental без activation. **E06/E10 OPEN; E11 OPEN / publication permission
+absent**. Paid/live STOP: нужны отдельное разрешение, reviewed committed/frozen
+SHA, применимые same-SHA OS/install/observer proofs и bounded plan; новые POST,
+retry Job2 и угадывание его ref по временной/model близости запрещены.
 
 ## Ссылки 🔗
 

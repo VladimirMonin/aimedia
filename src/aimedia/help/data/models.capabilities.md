@@ -25,12 +25,17 @@ MIE count binding подтверждён публичными guide/model Markdo
 это тарифы выбранного MIE, не default/всех upstreams. Для трёх встроенных binding
 adapter отправляет top-level `provider.only=[mie]`, `allow_fallbacks=false` и
 `max_price.image` — целочисленный потолок опубликованного effective максимума.
+Для этих exact bindings также отправляется top-level boolean `async: true`;
+это документированный запрос, не live-проверка async acknowledgement/latency.
+При canonical id/object/status ссылка сохраняется до polling; taskId-only или
+непригодный ответ остаётся SUBMIT_UNCERTAIN без повторного POST.
 Без такого DTO unqualified Gemini выбирает upstream автоматически, включая
 токенные тарифы, на которые цены MIE не распространяются. Новых model qualifiers
 нет. Это API price filter, не гарантия actual billing, будущей цены, total Job
 или бюджета 200 RUB. Фактические usage/cost берутся только из provider billing;
 неизвестные списания/reservations остаются неизвестными, не нулём.
-Все режимы NOT_LIVE_VERIFIED. Локальный WebP не native capability.
+Каталог не означает live-приёмку всех режимов; async NOT_LIVE_VERIFIED.
+Локальный WebP не native capability.
 
 {{model:qwen-image-2-1}}
 

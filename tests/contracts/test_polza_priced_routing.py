@@ -3,13 +3,23 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import hashlib
 import json
 from decimal import Decimal
 
 import httpx
 import pytest
+from image_fixtures import png_bytes
 
-from aimedia.domain import CompiledPrompt, ImageGenerationRequest, ModelRef, ProviderRef
+from aimedia.domain import (
+    CompiledPrompt,
+    ImageGenerationRequest,
+    InputKind,
+    InputRef,
+    ModelRef,
+    ProviderRef,
+)
 from aimedia.domain.errors import InvalidParameterValueError, UnsupportedParameterError
 from aimedia.providers.polza.gateway import POLZA_API_BASE_URL, PolzaProviderGateway
 from aimedia.providers.polza.media import build_media_request, serialize_media_request
@@ -62,17 +72,21 @@ def submit(effective, req, calls, cap=4096):
     return asyncio.run(run())
 
 
-@pytest.mark.parametrize("model,remote,ceiling", MODELS)
-def test_builtin_exact_selected_mie_body_and_one_serialized_post(model, remote, ceiling):
+@pytest.mark.parametrize(
+    "model,remote,ceiling,count",
+    [(*binding, 1) for binding in MODELS[:2]] + [(*MODELS[2], n) for n in range(1, 5)],
+)
+def test_builtin_exact_selected_mie_body_and_one_serialized_post(model, remote, ceiling, count):
     effective = definition(model)
-    req = request(model)
+    req = request(model, max_images=count)
     expected_input = {"prompt": "synthetic robot"}
     if model == "gpt-5-4-image-2-mie":
-        expected_input.update(aspect_ratio="auto", image_resolution="1K", n=1)
+        expected_input.update(aspect_ratio="auto", image_resolution="1K", n=count)
     expected = {
         "model": remote,
         "input": expected_input,
         "provider": {"only": ["mie"], "allow_fallbacks": False, "max_price": {"image": ceiling}},
+        "async": True,
     }
     assert payload(effective, req) == expected
     calls = []
@@ -85,10 +99,13 @@ def test_builtin_exact_selected_mie_body_and_one_serialized_post(model, remote, 
     decoded = json.loads(sent.content)
     assert type(decoded["provider"]["max_price"]["image"]) is int
     assert decoded["provider"]["allow_fallbacks"] is False
+    assert decoded["async"] is True
+    assert type(decoded["async"]) is bool
+    assert "async" not in decoded["input"]
 
 
 @pytest.mark.parametrize("model,remote,ceiling", MODELS)
-def test_exact_cap_includes_additional_routing_bytes(model, remote, ceiling):
+def test_exact_cap_includes_additional_routing_and_async_bytes(model, remote, ceiling):
     effective = definition(model)
     req = request(model)
     built = payload(effective, req)
@@ -96,11 +113,13 @@ def test_exact_cap_includes_additional_routing_bytes(model, remote, ceiling):
     without_routing = len(
         serialize_media_request({k: v for k, v in built.items() if k != "provider"})
     )
+    without_async = len(serialize_media_request({k: v for k, v in built.items() if k != "async"}))
     assert exact > without_routing
+    assert exact > without_async
     calls = []
     submit(effective, req, calls, exact)
     assert len(calls) == 1
-    for cap in (exact - 1, without_routing):
+    for cap in (exact - 1, without_routing, without_async):
         calls = []
         with pytest.raises(InvalidParameterValueError):
             submit(effective, req, calls, cap)
@@ -151,7 +170,13 @@ def test_ceiling_uses_effective_exact_decimal_published_max(
 
 @pytest.mark.parametrize(
     "remote",
-    ["synthetic/image", "qwen/image-2.1-other", "google/gemini-3.1-flash-image-preview-other"],
+    [
+        "synthetic/image",
+        "qwen/image-2.1-other",
+        "google/gemini-3.1-flash-image-preview-other",
+        "openai/gpt-5.4-image-2",
+        "openai/gpt-5.4-image-2-mie",
+    ],
 )
 def test_unknown_and_synthetic_mapping_unchanged_without_pricing(remote):
     model = "qwen-image-2-1"
@@ -170,6 +195,9 @@ def test_unknown_and_synthetic_mapping_unchanged_without_pricing(remote):
         {"only": ["other"]},
         {"allow_fallbacks": True},
         {"max_price": {"image": 999}},
+        {"async": False},
+        {"async": True},
+        {"async": "true"},
     ],
 )
 def test_untrusted_caller_options_cannot_override_fixed_routing(model, remote, ceiling, options):
@@ -177,3 +205,49 @@ def test_untrusted_caller_options_cannot_override_fixed_routing(model, remote, c
     with pytest.raises(UnsupportedParameterError):
         submit(definition(model), request(model, provider_options=options), calls)
     assert calls == []
+
+
+def test_gemini_reference_mapping_keeps_exact_async_wire_bytes(tmp_path):
+    model, remote, ceiling = MODELS[1]
+    content = png_bytes()
+    path = tmp_path / "reference.png"
+    path.write_bytes(content)
+    ref = InputRef(
+        kind=InputKind.IMAGE,
+        path=path,
+        position=0,
+        mime_type="image/png",
+        size_bytes=len(content),
+        sha256=hashlib.sha256(content).hexdigest(),
+    )
+    req = request(model, images=[ref], resolution="1K", aspect_ratio="16:9")
+    expected = {
+        "model": remote,
+        "input": {
+            "prompt": "synthetic robot",
+            "images": [
+                {
+                    "type": "base64",
+                    "data": "data:image/png;base64," + base64.b64encode(content).decode("ascii"),
+                }
+            ],
+            "aspect_ratio": "16:9",
+            "image_resolution": "1K",
+        },
+        "provider": {"only": ["mie"], "allow_fallbacks": False, "max_price": {"image": ceiling}},
+        "async": True,
+    }
+    exact_body = serialize_media_request(expected)
+    calls = []
+    submit(definition(model), req, calls, len(exact_body))
+    assert len(calls) == 1 and calls[0].content == exact_body
+    decoded = json.loads(calls[0].content)
+    assert decoded["async"] is True and "async" not in decoded["input"]
+    for cap in (
+        len(exact_body) - 1,
+        len(serialize_media_request({k: v for k, v in expected.items() if k != "async"})),
+    ):
+        calls = []
+        with pytest.raises(InvalidParameterValueError):
+            submit(definition(model), req, calls, cap)
+        assert calls == []

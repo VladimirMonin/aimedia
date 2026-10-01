@@ -62,6 +62,7 @@ from aimedia.registry import (
     ProviderBinding,
     validate_model_request,
 )
+from aimedia.registry.builtin import load_builtin_registry
 from aimedia.registry.models import ModelRecord
 
 MODEL_ID = "synthetic-image"
@@ -405,23 +406,52 @@ def test_submit_malformed_200_json_is_uncertain_without_body_leak(make_client: A
         {"id": REMOTE_ID, "object": "other", "status": "pending"},
         {"id": REMOTE_ID, "object": "media.generation", "status": "bogus"},
         {"id": REMOTE_ID, "object": "media.generation", "status": "completed"},
+        {"taskId": REMOTE_ID},
+        {"taskId": REMOTE_ID, "object": "media.generation", "status": "pending"},
+        {
+            "id": REMOTE_ID,
+            "object": "media.generation",
+            "status": "completed",
+            "data": [],
+            "usage": {"cost_rub": "3"},
+        },
     ],
-    ids=["missing-id", "unsafe-id", "invalid-object", "invalid-status", "completed-no-image"],
+    ids=[
+        "missing-id",
+        "unsafe-id",
+        "invalid-object",
+        "invalid-status",
+        "completed-no-image",
+        "taskId-only",
+        "taskId-with-status",
+        "completed-empty-images-with-cost",
+    ],
+)
+@pytest.mark.parametrize(
+    "model_id",
+    [MODEL_ID, "qwen-image-2-1", "gemini-3-1-flash-image-preview", "gpt-5-4-image-2-mie"],
 )
 def test_submit_200_without_usable_envelope_is_uncertain(
-    make_client: Any, body: dict[str, Any]
+    make_client: Any, body: dict[str, Any], model_id: str
 ) -> None:
     """2xx без пригодного конверта не даёт ссылки: исход неизвестен, повтор запрещён."""
     client, recorder = make_client(lambda request: _response(200, body))
-    gateway = _gateway(client)
+    effective = (
+        _effective()
+        if model_id == MODEL_ID
+        else ModelResolver(load_builtin_registry()).resolve(model_id, PROVIDER_ID)
+    )
+    gateway = _gateway(client, effective=effective)
     with pytest.raises(ProviderError) as excinfo:
-        run(gateway.submit(_request()))
+        run(gateway.submit(_request(model_id=model_id)))
 
+    if model_id != MODEL_ID:
+        assert json.loads(recorder.requests[0].content)["async"] is True
     error = excinfo.value
     assert error.error.code == SUBMIT_UNCERTAIN
     assert error.error.retryable is None
     assert error.error.details == {"operation": "submit"}
-    assert len(recorder.requests) == 1
+    assert [sent.method for sent in recorder.requests] == ["POST"]
     assert error.__cause__ is None
     assert error.__context__ is None
     assert "../escape" not in str(error.error.model_dump())

@@ -17,16 +17,24 @@
 **Документ является планом, а не отчётом о работающей программе.** При его составлении были только спецификации: результаты запуска реализации, отчёт CI и подтверждённый релиз ещё отсутствовали. Поэтому исходные статусы этапов — `NOT_STARTED`, а проверок — `NOT_RUN`; актуальные статусы и evidence вынесены на доску ниже. Названия будущих тестов и служебных скриптов задают работу для разработчиков; их наличие в тексте не означает, что они уже существуют.
 
 **Текущий baseline:** E07/E08/E09 CLOSED / ACCEPTED offline на
-`8a09d186a650248715b6efcade96b81f69370613`: downloader/CLI/batch/retry/sync,
-v2 managed archive, v3 FTS и kernel ownership реализованы. Fresh reviews
-`32e31e48` / `c4b4f239` OK; Windows 1366 PASSED / 12 raw 0, Linux 1362 PASSED
-+ 4 Windows-only SKIPPED / 12 raw 0 (не PASSED), installed `a69473fc84`.
-Evidence: `artifacts/quality/<sha>/{windows,linux,installed-ux-parent}`.
-E06 bindings остаются experimental/NOT_LIVE_VERIFIED; новый MIE count slice
-по публичным Markdown не означает live-приёмки. E10/E11 открыты, paid POST = 0,
-Authenticated login `VladimirMonin` известен, предложен target `VladimirMonin/aimedia`;
-owner/target и разрешения create/push/tag/release ещё не подтверждены. Login не
-означает authorization. Исторические записи ниже относятся к своим SHA.
+`8a09d186a650248715b6efcade96b81f69370613`; count/price wire guard принят offline
+на `e751f97633eea5c33b8831186dad98d0af5f422b`. По заданию владельца same-SHA
+Windows 1468 PASSED, Linux 1464 PASSED + 4 Windows-only junction SKIPPED (не
+PASSED); шесть actual-OS quick/full/release raw 0, installed Windows 116 argv /
+Linux 18 smoke и TLS verified. Это evidence e751, не нового async patch.
+Наблюдения live **на e751**: Qwen no-ref 1K 1:1 — один POST, COMPLETED, 3 RUB,
+real PNG + WebP 1024 и restart verified; Gemini ref 1K 16:9 — один POST,
+SUBMIT_UNCERTAIN после ~30.26s, без remote_ref/cost, причина не доказана.
+Lifetime: **total attempted POST 2, known cost 3 RUB, uncertain reserve 11 RUB**;
+3 + 11 ≤ 200 RUB, reserve не zero и не подтверждённое списание.
+Это не collective PASSED и не закрытие model/live gate: Registry experimental
+не активируется, E06/E10 OPEN. Documented async slice — `NOT_COMMITTED`,
+independent review pending, async live NOT_RUN; неизвестный Gemini Job2 не
+повторяется. Новых paid POST в этом срезе нет. E11 OPEN / publication permission
+absent. Authenticated login `VladimirMonin` и proposed `VladimirMonin/aimedia` не
+означают owner/target или create/push/tag/release authorization.
+Исторические записи ниже (включая paid POST = 0) относятся только к своим SHA;
+актуальное разделение acceptance/live/unknown — в [`release-board.md`](release-board.md).
 
 Текущее состояние этапов (что принято и на каком SHA, что в работе, какие блокеры и слоты доказательств открыты) ведётся отдельно в [`release-board.md`](release-board.md). Этот README остаётся картой плана и не подменяет доску статусов.
 
