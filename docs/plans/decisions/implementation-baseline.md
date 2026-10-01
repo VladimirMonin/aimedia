@@ -288,3 +288,104 @@ usage и unknown reservations остаются отдельными. Это ут
 sync остаётся GET-only. Zero-image malformed response сохраняет принятый C09
 invalid-response/submit-uncertain контракт; новый billing не выдумывается,
 ранее подтверждённые ref/cost не стираются. Один Job/paid POST, paid POST = 0.
+
+
+## Change note: безопасная HTTP-диагностика Media (OFFLINE PRECOMMIT)
+
+Доказанный локальный дефект: gateway сохранял HTTP status, но application
+`_safe_error` при построении нового JobError стирал diagnostics. Принята узкая
+application data policy: strict int 100–599 (не bool) в `details.http_status`,
+конечный enum из локального `Post Media.txt` ApiErrorBodyPresenter в provider_code
+(13 значений, включая api_key_revoked) и единственный документированный пример
+reason=noProvidersForModel. Неизвестные/malformed tokens и вся raw/message/
+headers/body/url/query/trace информация не сохраняются в Job/current CLI error.
+Adapter дополнительно отклоняет даже известный токен, содержащий injected secret.
+
+Это повторный контроль существующего JobError на границе хранения, без импорта
+Polza в application/domain, нового DTO/DDL или diagnostics framework. Конечные
+таблицы adapter/application намеренно независимы: первая контролирует недоверенный
+HTTP и известный секрет, вторая — любой provider port перед persistence.
+HTTP-классификация/retryability прежние: POST 408/5xx остаются SUBMIT_UNCERTAIN,
+retryable=None, без нового ref/cost или автоматического POST. Current sync использует
+тот же sanitizer и не подменяет прежнюю ошибку FAILED Job. Regression evidence —
+`test_polza_error_diagnostics.py`, `test_single_image.py`, `test_complete_cli.py`.
+Кандидат NOT_COMMITTED / NOT_LIVE_VERIFIED; исторические receipts не переписаны.
+
+
+## Исторический change note до CN-05: canonical Media model + DTO count
+
+По новому прямому заданию владельца после отдельных parent HTTP probes заменяется
+только remote binding `gpt-5-4-image-2-mie`: `openai/gpt-5.4-image-2` вместо
+`openai/gpt-5.4-image-2@mie`. Выбранный MIE по-прежнему задаётся через
+provider.only=[mie], allow_fallbacks=false, max_price.image=4; async=true.
+Logical ID/alias, цены, subset 1–4/default 1/text-only/1K/experimental неизменны.
+Старый qualifier отклоняется до POST; persisted исторические remote IDs/ref/cost
+не мигрируют и GET-only recovery не использует current Registry binding.
+
+Это уточнение **заменяет wire часть** прежней записи D06/D07 «документированный
+MIE count binding», не переписывая историческую запись. Локальный `Post Media.txt`
+ImageInputDto документирует `input.max_images` (1–6); принимается это поле вместо
+prior model-guide `input.n`, без расширения Registry до 6. `n` отдельного Images
+endpoint не переносится, endpoint остаётся POST /api/v1/media. Generic/Qwen/Gemini
+mapping, normalizer, deadlines, locks и DDL не меняются.
+
+Parent сообщил отдельные sanitized direct HTTP observations вне source CLI:
+qualified-n — 400 BAD_REQUEST, модель с @mie не найдена; base-n — canonical
+pending → completed, ровно один image, output_units=1, actual cost 4 RUB при n=2.
+Первое доказывает отказ qualifier **этого запроса**, не причину старого Job5/старого
+capture; второе не доказывает count=2 или безопасность автоматического повтора.
+Base-max также дал ровно один image/output_units=1/actual cost4 при max_images=2.
+Ни n, ни DTO max_images не доказали Media count=2. Это открытый live blocker,
+а не обещание исправленной множественной генерации. Их receipt names:
+qualified-n-http.json, base-n-http.json, base-max-http.json в выделенном
+`C:/PY/aimedia-polza-probes-2026-10-01/` (parent evidence, child не читал ключ/логи).
+Запрошенные два при одном пригодном результате остаются FAILED
+PROVIDER_INCOMPLETE_RESULT с known ref/cost; zero-image C09 не меняется.
+Новый source NOT_COMMITTED / NOT_LIVE_VERIFIED; count=2 нового source остаётся
+обязательным E06/E10 gate, без waiver. Старые receipts не переносятся на новый SHA.
+
+
+Финальный scope этого OFFLINE кандидата подтверждён владельцем: canonical Media
+base + DTO input.max_images + safe diagnostics, без Images adapter/нового model.
+Дополнительные parent Images probes не решили count: qualified ID дал HTTP400
+BAD_REQUEST/model not found; canonical base/top-level n=2 дал HTTP200 legacy
+created/dataarray с одним image, cost4, без id. Это не основание переносить
+Images response/endpoint в Media normalizer или расширять product routing.
+Receipts: images-qualified-n-http.json, images-base-n-http.json в том же parent
+probe root. На этом checkpoint lifetime 13 attempted POST, known33.6 +
+unknown77 = 110.6/200 RUB. Пользователь разрешил отдельные diagnostic repeats;
+прежний запрет новых MIE probes superseded, но автоматического Job retry,
+редактирования старых Job2/Job5 и разрешения публикации это не даёт.
+
+
+## CN-05 implementation: один output, все MIE настройки, несколько входных refs
+
+[Прямой принятый scope CN-05](../release-scope.md) supersedes прежний mandatory
+multi-output/count2/NO WAIVER gate. Multiple outputs одного submit отложены;
+несколько input images + prompt не откладываются. Исторические note/receipts выше
+остаются историей, не текущим требованием count2.
+
+Canonical Media ID openai/gpt-5.4-image-2, fixed MIE only/noFallback/async=true.
+В существующем GPT YAML включены documented MIE controls:1K/2K/4K,шесть ratios,
+prompt≤5000,multiple refs≤16 PNG/JPEG/WebP,exact Decimal RUB tiers4/7/11;
+новое max_images=1. Ceiling published max=11 исключает другие token-priced
+upstreams, не является billing. Sources: parent full guide/model-page fetch
+2026-10-01, local Post Media DTO. OpenAI extra ratios и undeclared quality/seed
+не включаются; неизвестный max bytes не выдумывается. Other Registry YAML,
+normalizer,ports/storage/DDL/deadlines unchanged.
+
+Registry validator содержит только tiny exact binding condition,не DSL:
+resolved/default auto только1K;1:1 не4K.15 допустимых pairs проверяются доPOST.
+Existing reference snapshots/archive/base64 objects используются напрямую;
+references являются inputs,не output count. Старые multi-output Job snapshots,
+GET-only recovery/required-result integrity/E05 multi-artifact failure cases
+сохраняются; tests явно создают disposable HISTORICAL snapshots,не новый
+builtin count2 submit.
+
+Parent observed single2K16:9 + two local PNG/JPEG refs completed/cost7;
+continuation по known ref одинGET/нольPOST,original180s processing capture сохранён.
+Receipt single-2k-two-refs-poll-known-http.json,parent evidence root. Это remote
+proof данного режима,не committed-source CLI/all-settings live acceptance.
+Lifetime checkpoint14POST,known40.6+unknown77=117.6/200;multiple-output probes
+stopped by deferral. New source NOT_COMMITTED/NOT_LIVE_VERIFIED;E06/E10 OPEN для
+CN-05 source/installed scenarios,E11 не авторизован.

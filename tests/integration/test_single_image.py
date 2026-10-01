@@ -1116,3 +1116,92 @@ def test_nonfinal_commit_interrupt_retains_known_snapshot_without_stale_failure_
             assert rig.artifacts.exists(snapshot.result.artifacts[0])
     finally:
         manager.close()
+
+
+@pytest.mark.parametrize(
+    "status", [100, 400, 599, True, False, 99, 600, "400", 400.0, None, {}, []]
+)
+def test_safe_error_preserves_only_strict_http_status(status):
+    from aimedia.application.single_image import _safe_error
+
+    safe = _safe_error(
+        JobError(
+            code="SUBMIT_UNCERTAIN",
+            message=CANARY,
+            provider_message=CANARY,
+            provider_code="api_key_revoked",
+            retryable=True,
+            details={
+                "http_status": status,
+                "reason": "noProvidersForModel",
+                "trace_id": CANARY,
+                "raw": CANARY,
+                "headers": {"Authorization": CANARY},
+                "url": CANARY,
+            },
+        ),
+        "Provider submit failed",
+    )
+    assert safe.details == {
+        "reason": "noProvidersForModel",
+        **({"http_status": status} if type(status) is int and 100 <= status <= 599 else {}),
+    }
+    assert safe.provider_code == "api_key_revoked" and safe.retryable is None
+    assert CANARY not in safe.model_dump_json()
+
+
+@pytest.mark.parametrize("stage", ["preparation", "submit", "result", "finalization"])
+def test_safe_http_diagnostics_persist_failed_job_and_reopen(tmp_path, stage):
+    class Rejected(Provider):
+        def reject(self):
+            raise ProviderError(
+                JobError(
+                    code="PROVIDER_HTTP_ERROR",
+                    message=CANARY,
+                    provider_message=CANARY,
+                    provider_code="BAD_REQUEST",
+                    retryable=False,
+                    details={
+                        "http_status": 400,
+                        "reason": "noProvidersForModel",
+                        "trace_id": CANARY,
+                        "body": CANARY,
+                    },
+                )
+            )
+
+        async def submit(self, request):
+            if stage == "submit":
+                self.submit_count += 1
+                self.reject()
+            return await super().submit(request)
+
+        async def fetch_result(self, ref):
+            if stage == "result":
+                self.reject()
+            return await super().fetch_result(ref)
+
+    rig, manager = make_rig(tmp_path, Rejected(asynchronous=stage == "result"))
+    if stage == "preparation":
+        rig.setup = lambda _: rig.provider.reject()
+    if stage == "finalization":
+
+        async def failed_download(_):
+            rig.provider.reject()
+
+        rig.downloader = failed_download
+    try:
+        failed = asyncio.run(rig.run())
+        assert failed.status is JobStatus.FAILED
+        assert failed.error.provider_code == "BAD_REQUEST"
+        assert failed.error.details == {"http_status": 400, "reason": "noProvidersForModel"}
+        assert failed.error.retryable is False
+        assert rig.provider.submit_count == (0 if stage == "preparation" else 1)
+        assert CANARY not in failed.model_dump_json() + rig.logs.getvalue()
+    finally:
+        manager.close()
+    reopened = open_database(rig.root / "database.sqlite3")
+    try:
+        assert PeeweeJobRepository(reopened).get(failed.id).error == failed.error
+    finally:
+        reopened.close()

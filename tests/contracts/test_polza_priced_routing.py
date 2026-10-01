@@ -30,7 +30,7 @@ from aimedia.registry.models import CatalogPricing
 MODELS = [
     ("qwen-image-2-1", "qwen/image-2.1", 6),
     ("gemini-3-1-flash-image-preview", "google/gemini-3.1-flash-image-preview", 11),
-    ("gpt-5-4-image-2-mie", "openai/gpt-5.4-image-2@mie", 4),
+    ("gpt-5-4-image-2-mie", "openai/gpt-5.4-image-2", 11),
 ]
 
 
@@ -74,14 +74,14 @@ def submit(effective, req, calls, cap=4096):
 
 @pytest.mark.parametrize(
     "model,remote,ceiling,count",
-    [(*binding, 1) for binding in MODELS[:2]] + [(*MODELS[2], n) for n in range(1, 5)],
+    [(*binding, 1) for binding in MODELS],
 )
 def test_builtin_exact_selected_mie_body_and_one_serialized_post(model, remote, ceiling, count):
     effective = definition(model)
     req = request(model, max_images=count)
     expected_input = {"prompt": "synthetic robot"}
     if model == "gpt-5-4-image-2-mie":
-        expected_input.update(aspect_ratio="auto", image_resolution="1K", n=count)
+        expected_input.update(aspect_ratio="auto", image_resolution="1K", max_images=count)
     expected = {
         "model": remote,
         "input": expected_input,
@@ -174,7 +174,7 @@ def test_ceiling_uses_effective_exact_decimal_published_max(
         "synthetic/image",
         "qwen/image-2.1-other",
         "google/gemini-3.1-flash-image-preview-other",
-        "openai/gpt-5.4-image-2",
+        "openai/gpt-5.4-image-2-other",
         "openai/gpt-5.4-image-2-mie",
     ],
 )
@@ -198,6 +198,9 @@ def test_unknown_and_synthetic_mapping_unchanged_without_pricing(remote):
         {"async": False},
         {"async": True},
         {"async": "true"},
+        {"n": 2},
+        {"max_images": 2},
+        {"input": {"max_images": 2, "n": 2}},
     ],
 )
 def test_untrusted_caller_options_cannot_override_fixed_routing(model, remote, ceiling, options):

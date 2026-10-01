@@ -134,6 +134,28 @@ def _validate(
     _validate_reference_images(effective, len(request.images))
     _validate_image_formats(effective, request)
     _validate_max_images(effective, request.max_images)
+    _validate_gpt_mie_settings(effective, request)
+
+
+def _validate_gpt_mie_settings(
+    effective: EffectiveModelDefinition, request: ImageGenerationRequest
+) -> None:
+    """Exact fixed-MIE catalog constraints; no generic conditional-rule language.
+
+    Defaults still come from the effective definition. Source: GPT model page
+    (2026-10-01): auto only at 1K; 1:1 unavailable at 4K.
+    """
+    if effective.provider_id != "polza" or effective.remote_model_id != "openai/gpt-5.4-image-2":
+        return
+    resolution_spec = effective.parameters.get("resolution")
+    ratio_spec = effective.parameters.get("aspect_ratio")
+    resolution = request.resolution or (resolution_spec.default if resolution_spec else None)
+    ratio = request.aspect_ratio or (ratio_spec.default if ratio_spec else None)
+    if (ratio == "auto" and resolution in {"2K", "4K"}) or (ratio == "1:1" and resolution == "4K"):
+        raise InvalidParameterValueError(
+            "Сочетание resolution/aspect_ratio не поддерживается GPT MIE.",
+            details={"parameter": "aspect_ratio", "resolution": resolution, "aspect_ratio": ratio},
+        )
 
 
 def _validate_binding(

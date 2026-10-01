@@ -36,6 +36,11 @@ Polza/FS. Источники — [08](../docs/plans/08-job-execution.md), baseli
   нельзя выдавать за success или классифицировать по старому `Job.error`.
   Успешное running observation старого FAILED остаётся success; общий finalizer
   передаёт текущую ошибку через `ImageAttemptFailed`, не стирая старую историю.
+  Непосредственный GET отказ использует тот же `_safe_error`, что single image:
+  strict numeric HTTP status и finite provider code/reason по
+  [APP.single-image-execution](APP.single-image-execution.instructions.md),
+  без provider text/trace/raw. Diagnostics текущей попытки не переносятся вместо
+  прежней ошибки FAILED Job; новый FAILED сохраняет безопасные поля.
 - GET retry — не больше трёх попыток, только retryable ошибки; finite HTTP timeout
   и общий deadline обычного ожидания. POST retry отсутствует технически.
 - Usage/cost подтверждаются до локального download/conversion, отсутствующий

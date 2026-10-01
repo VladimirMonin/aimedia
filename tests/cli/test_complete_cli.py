@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import hashlib
 import io
 import json
@@ -46,6 +47,9 @@ class OfflinePolza:
         self.fail_second_download = False
         self.expected_model = "qwen/image-2.1"
         self.requested_count = 1
+        self.expected_resolution = "1K"
+        self.expected_ratio = "auto"
+        self.expected_references = []
         self.billed_cost = "3.000"
         self.before_get = None
         self.before_download = None
@@ -57,16 +61,31 @@ class OfflinePolza:
         if request.method == "POST":
             payload = json.loads(request.content)
             assert payload["model"] == self.expected_model
-            assert "max_images" not in payload["input"]
-            if self.expected_model.endswith("@mie"):
-                assert payload["input"] == {
+            if self.expected_model == "openai/gpt-5.4-image-2":
+                expected_input = {
                     "prompt": "robot",
-                    "image_resolution": "1K",
-                    "aspect_ratio": "auto",
-                    "n": self.requested_count,
+                    "image_resolution": self.expected_resolution,
+                    "aspect_ratio": self.expected_ratio,
+                    "max_images": self.requested_count,
                 }
+                if self.expected_references:
+                    expected_input["images"] = [
+                        {
+                            "type": "base64",
+                            "data": f"data:{mime};base64,{base64.b64encode(content).decode()}",
+                        }
+                        for mime, content in self.expected_references
+                    ]
+                assert payload["input"] == expected_input
+                assert payload["provider"] == {
+                    "only": ["mie"],
+                    "allow_fallbacks": False,
+                    "max_price": {"image": 11},
+                }
+                assert payload["async"] is True
             else:
-                assert "n" not in payload["input"]
+                assert "max_images" not in payload["input"]
+            assert "n" not in payload["input"]
             self.next_id += 1
             remote = f"aig_{self.next_id}"
             if self.mode == "uncertain":
@@ -92,7 +111,17 @@ class OfflinePolza:
             if self.mode == "interrupt":
                 raise asyncio.CancelledError()
             if self.mode == "unauthorized":
-                return httpx.Response(401, json={"error": CANARY})
+                return httpx.Response(
+                    401,
+                    json={
+                        "error": {
+                            "code": "api_key_revoked",
+                            "message": CANARY,
+                            "trace_id": CANARY,
+                            "metadata": {"reason": "noProvidersForModel", "raw": CANARY},
+                        }
+                    },
+                )
             if self.mode == "remote-failed":
                 return httpx.Response(
                     200, json={"id": remote, "object": "media.generation", "status": "failed"}
@@ -121,6 +150,7 @@ class OfflinePolza:
                     "cost": self.billed_cost,
                     "cost_rub": self.billed_cost,
                     "images": self.output_count,
+                    "output_units": self.output_count,
                 },
                 "provider_text": CANARY,
             },
@@ -586,6 +616,9 @@ def test_sync_reports_current_failure_not_previous_job_error(
         monkeypatch.setattr(bootstrap.PillowArtifactStorage, "save", fail_save)
     failed = invoke(runner, ["jobs", "sync", str(original.id)], code)
     assert not failed["ok"] and failed["error"]["code"] == error_code
+    if mode == "unauthorized":
+        assert failed["error"]["provider_code"] == "api_key_revoked"
+        assert failed["error"]["details"] == {"http_status": 401, "reason": "noProvidersForModel"}
     observed = failed["data"][0]
     assert observed["status"] == "failed"
     assert observed["remote_ref"] == original.remote_ref.model_dump(mode="json")
@@ -642,7 +675,7 @@ def test_valid_jpg_parser_alias_creates_real_jpeg_artifact(tmp_path, offline_cli
 
 
 MIE_MODEL = "gpt-5-4-image-2-mie"
-MIE_REMOTE = "openai/gpt-5.4-image-2@mie"
+MIE_REMOTE = "openai/gpt-5.4-image-2"
 
 
 def configure_mie(server, count):
@@ -669,9 +702,9 @@ def mie_args(count):
     ]
 
 
-@pytest.mark.parametrize("count", [1, 2, 4])
+@pytest.mark.parametrize("count", [1])
 @pytest.mark.parametrize("keep_original", [False, True])
-def test_mie_count_one_post_durable_ref_billing_before_verified_files(
+def test_mie_single_one_post_durable_ref_billing_before_verified_files(
     tmp_path, offline_cli, count, keep_original
 ):
     runner, server, backends = offline_cli
@@ -721,20 +754,47 @@ def test_mie_count_one_post_durable_ref_billing_before_verified_files(
     assert subprocess_cli(tmp_path, ["jobs", "costs"])["totals"][0]["amount"] == server.billed_cost
 
 
+def seed_historical_mie_job(tmp_path, offline_cli, count):
+    """Disposable historical count snapshot, never a new builtin count>1 submit.
+
+    The composed CLI first establishes a durable ref with today's single output
+    request. Only the fixture's SQLite snapshot represents an old multi-output
+    request; all following public sync calls must be GET-only.
+    """
+    from aimedia.domain.job import Job
+
+    runner, server, _ = offline_cli
+    configure_mie(server, 1)
+    server.mode = "interrupt"
+    invoke(runner, mie_args(1), 130)
+    with DatabaseManager(tmp_path / "data" / "database.sqlite3") as manager:
+        repository = PeeweeJobRepository(manager)
+        job = repository.list_recent()[0]
+        assert job.remote_ref is not None and job.cost is None
+        data = job.model_dump()
+        data["request"]["max_images"] = count
+        data.update(status="submitted", error=None, completed_at=None)
+        historical = repository.save(Job.model_validate(data))
+    server.mode = "count"
+    server.output_count = count
+    server.billed_cost = f"{count * 4}.000"
+    return historical.id
+
+
 @pytest.mark.parametrize("count,returned", [(2, 1), (4, 2)])
-def test_mie_short_result_keeps_billing_ref_reopen_then_get_only_recovery(
+def test_historical_mie_short_result_keeps_billing_ref_reopen_then_get_only_recovery(
     tmp_path, offline_cli, count, returned
 ):
     runner, server, backends = offline_cli
-    configure_mie(server, count)
+    historical_id = seed_historical_mie_job(tmp_path, offline_cli, count)
     server.output_count = returned
-    failed = invoke(runner, mie_args(count), 4)["data"]["job"]
+    failed = invoke(runner, ["jobs", "sync", str(historical_id)], 4)["data"][0]
     assert failed["status"] == "failed"
     assert failed["error"]["code"] == "PROVIDER_INCOMPLETE_RESULT"
     assert failed["error"]["retryable"] is True
     assert failed["cost"]["amount"] == server.billed_cost
     assert failed["remote_ref"]["remote_job_id"] == "aig_1"
-    assert not backends[0].connects
+    assert not any(backend.connects for backend in backends)
     assert not list((tmp_path / "data" / "outputs").rglob("*.png"))
     shown = subprocess_cli(tmp_path, ["jobs", "show", str(failed["id"])])
     assert {key: shown[key] for key in failed} == failed
@@ -751,11 +811,11 @@ def test_mie_short_result_keeps_billing_ref_reopen_then_get_only_recovery(
     assert subprocess_cli(tmp_path, ["jobs", "costs"])["totals"][0]["amount"] == server.billed_cost
 
 
-def test_mie_second_download_failure_reuses_partial_without_post(tmp_path, offline_cli):
+def test_historical_mie_second_download_failure_reuses_partial_without_post(tmp_path, offline_cli):
     runner, server, _ = offline_cli
-    configure_mie(server, 2)
+    historical_id = seed_historical_mie_job(tmp_path, offline_cli, 2)
     server.fail_second_download = True
-    failed = invoke(runner, mie_args(2), 7)["data"]["job"]
+    failed = invoke(runner, ["jobs", "sync", str(historical_id)], 7)["data"][0]
     assert failed["status"] == "failed"
     first = failed["result"]["artifacts"][0]
     completed = invoke(runner, ["jobs", "sync", str(failed["id"])])["data"][0]
@@ -767,7 +827,8 @@ def test_mie_second_download_failure_reuses_partial_without_post(tmp_path, offli
 
 
 @pytest.mark.parametrize(
-    "model,count", [(MIE_MODEL, 5), (MODEL, 2), ("gemini-3-1-flash-image-preview", 2)]
+    "model,count",
+    [(MIE_MODEL, 2), (MIE_MODEL, 5), (MODEL, 2), ("gemini-3-1-flash-image-preview", 2)],
 )
 def test_count_rejection_before_http(tmp_path, offline_cli, model, count):
     runner, server, backends = offline_cli
@@ -784,35 +845,48 @@ def test_mie_packaged_views_help_and_missing_key(tmp_path, offline_cli, monkeypa
     assert model["remote_model_id"] == MIE_REMOTE
     assert model["status"] == "experimental"
     assert model["parameters"]["max_images"]["default"] == 1
-    assert model["parameters"]["resolution"]["values"] == ["1K"]
-    assert model["pricing"]["by_resolution"] == {"1K": "4"}
+    assert model["parameters"]["resolution"]["values"] == ["1K", "2K", "4K"]
+    assert model["parameters"]["max_images"]["max"] == 1
+    assert model["inputs"]["images"]["max"] == 16
+    assert model["pricing"]["by_resolution"] == {"1K": "4", "2K": "7", "4K": "11"}
     assert model["pricing"]["unit_parameter"] is None
     assert "NOT_LIVE_VERIFIED" in model["provenance"]["source"]
     help_view = invoke(runner, ["help", "models.capabilities"])["data"]["markdown"]
-    assert MIE_REMOTE in help_view and "input.n" in help_view
+    assert MIE_REMOTE in help_view and "input.max_images" in help_view
     monkeypatch.delenv("POLZA_API_KEY", raising=False)
-    job = invoke(runner, mie_args(2), 4)["data"]["job"]
-    assert job["request"]["max_images"] == 2
+    job = invoke(runner, mie_args(1), 4)["data"]["job"]
+    assert job["request"]["max_images"] == 1
     assert job["error"]["code"] == "PROVIDER_AUTHENTICATION"
     assert not server.calls
 
 
-def test_mie_reference_and_higher_resolution_rejected_in_subset(tmp_path, offline_cli):
+@pytest.mark.parametrize(
+    "extra",
+    [
+        ["--resolution", "2K"],
+        ["--resolution", "4K"],
+        ["--resolution", "4K", "--aspect-ratio", "1:1"],
+        ["--resolution", "8K"],
+        ["--aspect-ratio", "2:3"],
+        ["--quality", "high"],
+        ["--seed", "1"],
+    ],
+)
+def test_mie_invalid_pairs_and_undeclared_settings_rejected_before_http(
+    tmp_path, offline_cli, extra
+):
     runner, server, _ = offline_cli
-    ref = tmp_path / "synthetic-reference.png"
-    ref.write_bytes(png_bytes())
-    for extra in (["--image", str(ref)], ["--resolution", "2K"], ["--resolution", "4K"]):
-        job = invoke(runner, [*mie_args(2), *extra], 3)["data"]["job"]
-        assert job["status"] == "failed" and job["cost"] is None
+    job = invoke(runner, [*mie_args(1), *extra], 3)["data"]["job"]
+    assert job["status"] == "failed" and job["cost"] is None
     assert not server.calls
 
 
 def test_mie_zero_images_is_malformed_submit_not_known_billing_or_resubmit(tmp_path, offline_cli):
     runner, server, backends = offline_cli
-    configure_mie(server, 2)
+    configure_mie(server, 1)
     server.mode = "complete"
     server.output_count = 0
-    job = invoke(runner, mie_args(2), 4)["data"]["job"]
+    job = invoke(runner, mie_args(1), 4)["data"]["job"]
     assert job["error"]["code"] == "SUBMIT_UNCERTAIN"
     assert job["error"]["retryable"] is None
     assert job["remote_ref"] is None and job["cost"] is None
@@ -821,11 +895,13 @@ def test_mie_zero_images_is_malformed_submit_not_known_billing_or_resubmit(tmp_p
     assert sum(method == "POST" for method, _ in server.calls) == 1
 
 
-def test_mie_malformed_zero_get_preserves_previously_confirmed_ref_cost(tmp_path, offline_cli):
+def test_historical_mie_malformed_zero_get_preserves_previously_confirmed_ref_cost(
+    tmp_path, offline_cli
+):
     runner, server, _ = offline_cli
-    configure_mie(server, 2)
+    historical_id = seed_historical_mie_job(tmp_path, offline_cli, 2)
     server.output_count = 1
-    failed = invoke(runner, mie_args(2), 4)["data"]["job"]
+    failed = invoke(runner, ["jobs", "sync", str(historical_id)], 4)["data"][0]
     server.output_count = 0
     server.billed_cost = "0"
     malformed = invoke(runner, ["jobs", "sync", str(failed["id"])], 4)
@@ -836,3 +912,227 @@ def test_mie_malformed_zero_get_preserves_previously_confirmed_ref_cost(tmp_path
     assert observed["status"] == "failed"
     assert not observed["result"]["artifacts"]
     assert sum(method == "POST" for method, _ in server.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "status,provider_code,reason",
+    [
+        (400, "BAD_REQUEST", "noProvidersForModel"),
+        (401, "api_key_revoked", "noProvidersForModel"),
+        (408, "REQUEST_TIMEOUT", "noProvidersForModel"),
+        (503, "SERVICE_UNAVAILABLE", "noProvidersForModel"),
+        (400, CANARY, CANARY),
+        (400, "BAD_REQUEST_" + CANARY, "noProvidersForModel_" + CANARY),
+        (400, {}, []),
+    ],
+)
+def test_http_diagnostics_current_generate_error_db_and_restart_show(
+    tmp_path, offline_cli, monkeypatch, caplog, status, provider_code, reason
+):
+    runner, server, _ = offline_cli
+    caplog.set_level("DEBUG")
+    configure_mie(server, 1)
+    calls = []
+
+    def reject(request):
+        calls.append(request.method)
+        assert json.loads(request.content)["input"]["max_images"] == 1
+        return httpx.Response(
+            status,
+            json={
+                "error": {
+                    "code": provider_code,
+                    "message": CANARY,
+                    "trace_id": CANARY,
+                    "details": {"raw": CANARY, "headers": CANARY, "url": CANARY},
+                    "metadata": {"reason": reason, "raw": CANARY, "provider_name": CANARY},
+                },
+                "trace_id": CANARY,
+            },
+            headers={"X-Provider-Raw": CANARY},
+        )
+
+    monkeypatch.setattr(server, "handle", reject)
+    payload = invoke(runner, mie_args(1), 4)
+    error = payload["error"]
+    job = payload["data"]["job"]
+    assert job["status"] == "failed" and job["error"] == error
+    known_code = (
+        provider_code
+        if isinstance(provider_code, str)
+        and provider_code
+        in {"BAD_REQUEST", "api_key_revoked", "REQUEST_TIMEOUT", "SERVICE_UNAVAILABLE"}
+        else None
+    )
+    assert error["provider_code"] == known_code
+    assert error["details"] == {
+        "http_status": status,
+        **({"reason": reason} if reason == "noProvidersForModel" else {}),
+    }
+    assert error["code"] == (
+        "SUBMIT_UNCERTAIN"
+        if status in {408, 503}
+        else "PROVIDER_AUTHENTICATION"
+        if status == 401
+        else "PROVIDER_HTTP_ERROR"
+    )
+    if status in {408, 503}:
+        assert error["retryable"] is None
+    assert job["remote_ref"] is None and job["cost"] is None
+    shown = subprocess_cli(tmp_path, ["jobs", "show", str(job["id"])])
+    assert shown["error"] == error
+    assert calls == ["POST"] and not server.calls
+    assert CANARY not in caplog.text
+    for file in (tmp_path / "data").glob("*.sqlite3*"):
+        assert CANARY.encode() not in file.read_bytes()
+
+
+def test_historical_short_base_result_cost_four_and_legacy_qualifier_snapshot_survive_get_only_sync(
+    tmp_path, offline_cli
+):
+    from aimedia.domain.job import Job
+
+    runner, server, _ = offline_cli
+    historical_id = seed_historical_mie_job(tmp_path, offline_cli, 2)
+    server.output_count = 1
+    server.billed_cost = "4.000"
+    failed = invoke(runner, ["jobs", "sync", str(historical_id)], 4)["data"][0]
+    assert failed["error"]["code"] == "PROVIDER_INCOMPLETE_RESULT"
+    assert failed["cost"] == {"amount": "4.000", "currency": "RUB"}
+    assert failed["remote_ref"] and failed["usage"]["output_units"] == 1
+    # Disposable historical fixture: updating Registry never migrates old bindings.
+    with DatabaseManager(tmp_path / "data" / "database.sqlite3") as manager:
+        repository = PeeweeJobRepository(manager)
+        stored = repository.get(failed["id"])
+        legacy = repository.save(
+            Job.model_validate(
+                {
+                    **stored.model_dump(),
+                    "remote_model_id": "openai/gpt-5.4-image-2@mie",
+                }
+            )
+        )
+    shown = subprocess_cli(tmp_path, ["jobs", "show", str(legacy.id)])
+    for field in ("remote_model_id", "remote_ref", "request", "cost", "error"):
+        assert shown[field] == legacy.model_dump(mode="json")[field]
+    with DatabaseManager(tmp_path / "data" / "database.sqlite3") as manager:
+        assert PeeweeJobRepository(manager).get(legacy.id) == legacy
+    server.output_count = 2
+    recovered = invoke(runner, ["jobs", "sync", str(legacy.id)])["data"][0]
+    assert recovered["status"] == "completed"
+    assert recovered["remote_model_id"] == "openai/gpt-5.4-image-2@mie"
+    assert recovered["remote_ref"] == failed["remote_ref"]
+    assert recovered["cost"] == failed["cost"]
+    assert recovered["recovery"]["previous_error"] == failed["error"]
+    assert sum(method == "POST" for method, _ in server.calls) == 1
+
+
+MIE_VALID_PAIRS = [
+    (resolution, ratio)
+    for resolution in ("1K", "2K", "4K")
+    for ratio in ("auto", "1:1", "9:16", "16:9", "4:3", "3:4")
+    if not (ratio == "auto" and resolution != "1K") and not (ratio == "1:1" and resolution == "4K")
+]
+
+
+@pytest.mark.parametrize("resolution,ratio", MIE_VALID_PAIRS)
+def test_mie_single_cli_all_documented_pairs_one_post_price11(
+    tmp_path, offline_cli, resolution, ratio
+):
+    runner, server, _ = offline_cli
+    configure_mie(server, 1)
+    server.expected_resolution = resolution
+    server.expected_ratio = ratio
+    server.billed_cost = {"1K": "4.000", "2K": "7.000", "4K": "11.000"}[resolution]
+    job = invoke(runner, [*mie_args(1), "--resolution", resolution, "--aspect-ratio", ratio])[
+        "data"
+    ]["job"]
+    assert job["status"] == "completed" and job["remote_model_id"] == MIE_REMOTE
+    assert job["cost"]["amount"] == server.billed_cost
+    assert job["request"]["resolution"] == resolution
+    assert job["request"]["aspect_ratio"] == ratio
+    assert len(job["result"]["artifacts"]) == 1
+    assert sum(method == "POST" for method, _ in server.calls) == 1
+
+
+@pytest.mark.parametrize("final_format", ["png", "jpeg", "webp"])
+def test_mie_single_multi_input_png_jpeg_2k_16_9_archives_deleted_sources_and_reopens_fts(
+    tmp_path, offline_cli, final_format
+):
+    runner, server, _ = offline_cli
+    configure_mie(server, 1)
+    server.expected_resolution = "2K"
+    server.expected_ratio = "16:9"
+    server.billed_cost = "7.000"
+    jpeg = io.BytesIO()
+    Image.new("RGB", (4, 3), "blue").save(jpeg, format="JPEG")
+    contents = [png_bytes(), jpeg.getvalue()]
+    paths = [tmp_path / "geometryguide.png", tmp_path / "paletteguide.jpeg"]
+    for path, content in zip(paths, contents, strict=True):
+        path.write_bytes(content)
+    server.expected_references = [("image/png", contents[0]), ("image/jpeg", contents[1])]
+    deleted = False
+
+    def verify_archives_then_delete_sources():
+        nonlocal deleted
+        with DatabaseManager(tmp_path / "data" / "database.sqlite3") as manager:
+            stored = PeeweeJobRepository(manager).list_recent()[0]
+            assert stored.remote_ref is not None and len(stored.inputs) == 2
+            for ref, content in zip(stored.inputs, contents, strict=True):
+                copy = tmp_path / "data" / ref.managed_path
+                assert copy.read_bytes() == content
+                assert ref.sha256 == hashlib.sha256(content).hexdigest()
+        if not deleted:
+            for path in paths:
+                path.unlink()
+            deleted = True
+
+    server.before_get = verify_archives_then_delete_sources
+    job = invoke(
+        runner,
+        [
+            *mie_args(1),
+            "--resolution",
+            "2K",
+            "--aspect-ratio",
+            "16:9",
+            "--image",
+            str(paths[0]),
+            "--image",
+            str(paths[1]),
+            "--format",
+            final_format,
+        ],
+    )["data"]["job"]
+    assert job["status"] == "completed" and deleted and not any(p.exists() for p in paths)
+    assert job["cost"] == {"amount": "7.000", "currency": "RUB"}
+    assert job["usage"]["output_units"] == 1 and len(job["result"]["artifacts"]) == 1
+    artifact = job["result"]["artifacts"][0]
+    with Image.open(tmp_path / "data" / artifact["local_path"]) as image:
+        image.load()
+        assert image.format == final_format.upper()
+    shown = subprocess_cli(tmp_path, ["jobs", "show", str(job["id"])])
+    assert shown["inputs"] == job["inputs"] and shown["cost"] == job["cost"]
+    assert len(shown["managed_inputs"]) == 2
+    for item, content in zip(shown["managed_inputs"], contents, strict=True):
+        with Image.open(item["path"]) as image:
+            image.load()
+        assert Path(item["path"]).read_bytes() == content
+    found = subprocess_cli(tmp_path, ["jobs", "search", "geometryguide"])
+    assert [item["id"] for item in found] == [job["id"]]
+    assert subprocess_cli(tmp_path, ["jobs", "costs"])["totals"][0]["amount"] == "7.000"
+    assert sum(method == "POST" for method, _ in server.calls) == 1
+
+
+def test_mie_seventeen_references_and_unknown_argv_are_pre_http(tmp_path, offline_cli):
+    runner, server, _ = offline_cli
+    args = mie_args(1)
+    for i in range(17):
+        path = tmp_path / f"ref{i}.png"
+        path.write_bytes(png_bytes())
+        args += ["--image", str(path)]
+    failed = invoke(runner, args, 3)["data"]["job"]
+    assert failed["error"]["code"] == "TOO_MANY_REFERENCE_IMAGES"
+    assert failed["cost"] is None and failed["remote_ref"] is None
+    invoke(runner, [*mie_args(1), "--async"], 2)
+    assert not server.calls

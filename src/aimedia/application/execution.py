@@ -15,6 +15,7 @@ from aimedia.application.single_image import (
     ImageExecutionSetup,
     ImageHistoryError,
     _fail,
+    _safe_error,
     _save_confirmed,
     _updated,
     finish_image_result,
@@ -293,9 +294,5 @@ async def sync_image(
         except ImageAttemptFailed as exc:
             return SyncResult(exc.job, exc.error)
         except ProviderError as exc:
-            error = JobError(
-                code=exc.error.code,
-                message="Provider sync failed",
-                retryable=exc.error.retryable,
-            )
+            error = _safe_error(exc.error, "Provider sync failed")
             return SyncResult(_fail(services.repository, job, error, datetime.now(UTC)), error)

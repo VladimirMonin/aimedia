@@ -46,7 +46,18 @@ Use case нового Job подключён к публичному CLI; batch/
   Decimal raw канонизируется JSON-строкой. Произвольные strings/containers
   отбрасываются; metadata сохраняет только числовые timestamps/warning_count.
   Resolved remote model ID хранится отдельным typed полем Job, не из raw metadata.
-  Ошибка сохраняет проверенный код/retryable и фиксированное сообщение, не body/details.
+  Ошибка сохраняет проверенный внутренний код/retryable и фиксированное сообщение.
+  `_safe_error` переносит только `details.http_status` со strict `int` 100–599
+  (не bool), конечный `provider_code` enum ApiErrorBodyPresenter (13 значений,
+  включая api_key_revoked) и `details.reason=noProvidersForModel` из локального
+  `docs/Post Media.txt`. Это application data policy над существующим JobError,
+  не импорт Polza adapter и не универсальный diagnostics framework. Adapter
+  исключает токены с известным ему API key; application не знает секрет.
+  Любой unknown/malformed token, trace ID, provider_message, raw/details/headers/
+  body/url/query/prompts отбрасывается. Та же политика применяется к текущей
+  sync-ошибке; прежний FAILED error не переписывается. Безопасные поля доходят до
+  persisted Job, reopen/jobs show JSON и текущего CLI error. SUBMIT_UNCERTAIN
+  сохраняет retryable=None; diagnostics не дают ref/billing или право retry.
 - Output directory/base name/keep-original сохраняются как локальные execution
   metadata, не provider data. ORIGINAL имеет отдельную роль; partial FINAL positions
   переиспользуются recovery без повторной публикации.

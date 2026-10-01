@@ -35,22 +35,37 @@ Registry и HTTP-транспорта (`httpx` в gateway, `httpcore` в downloa
 - `__init__.py` намеренно **не** импортирует gateway, чтобы чистый mapper оставался
   доступен без сетевого транспорта.
 
-## Подтверждённый count binding
+## GPT MIE: один результат, все настройки и входные референсы (CN-05)
 
-`media.request.build_media_request` направляет `max_images` в `input.n` **только**
-для exact remote `openai/gpt-5.4-image-2@mie` (public guide/model Markdown).
-Это experimental, NOT_LIVE_VERIFIED text-only 1K subset, не generic mapping framework.
-Qwen/Gemini и generic-schema `max_images` сохраняют прежнее поведение.
-Неподтверждённые `@` qualifiers/URL/не-ASCII/ID сверх 128 символов отклоняются
-до HTTP; qualifier не становится endpoint и не меняет opaque remote job ID/GET.
-MIE цена RUB 4/image в 1K — metadata, не billing total и не верхняя цена
-неквалифицированного token-priced маршрута. References/higher resolutions известны
-документации, но не включены/не проверены этим count slice.
+Canonical remote `openai/gpt-5.4-image-2`; MIE выбирается только через fixed
+ProviderDto.only=[mie], не model qualifier. Новый запрос передаёт Media
+`input.max_images=1`; больше одного результата отложено прямым решением владельца
+[CN-05](../docs/plans/release-scope.md). Common DTO max 6 не разрешает новый count>1.
+Старый @mie и неподтверждённые qualifiers отклоняются до HTTP; endpoint неизменен.
+
+Registry объявляет все документированные MIE resolutions/ratios, prompt≤5000 и
+≤16 входных reference images PNG/JPEG/WebP. Число/размеры/форматы/defaults берутся
+из effective definition; неизвестный max reference bytes не выдумывается.
+Exact-binding conditional check принадлежит registry.validator: auto (включая
+omitted/default auto) только 1K; 1:1 не поддерживается в 4K. OpenAI upstream
+extra ratios/quality/seed не приписываются MIE. Existing input snapshot/archive
+и mapper кодируют реальные проверенные bytes в ImageInputDto.images base64 objects,
+без uploader/storage port или чтения исходника после snapshot.
+
+Pricing — exact Decimal MIE tiers по resolution, не actual billing/другие
+upstreams. ProviderDto.max_price.image — ceiling published effective max
+(для полного GPT MIE каталога 11), only/noFallback/async=true неизменны.
+References являются inputs, не количеством Jobs/outputs. Старые multi-output
+Job binding/ref/cost не мигрируют; их GET-only sync и generic multi-artifact
+processing сохраняются, но не доказывают новые multi-output submits.
+Binding остаётся experimental / NOT_LIVE_VERIFIED до отдельных source CLI proofs.
+Регрессии: test_polza_mie_count.py, test_polza_priced_routing.py и public CLI
+single/all-settings/multiref/legacy snapshot tests.
 
 ## Фиксированный финансовый фильтр Media
 
 Для exact remote `qwen/image-2.1`, `google/gemini-3.1-flash-image-preview` и
-`openai/gpt-5.4-image-2@mie` mapper добавляет **top-level**
+`openai/gpt-5.4-image-2` mapper добавляет **top-level**
 `provider={only:[mie],allow_fallbacks:false,max_price:{image:<integer>}}`.
 Источник wire-контракта — [MediaRequestDto / ProviderDto](https://polza.ai/docs/api-reference/media/create.md)
 и [Nano guide](https://polza.ai/docs/gaidy/nanobanano-2.md).
@@ -74,8 +89,7 @@ binding остаются experimental/NOT_LIVE_VERIFIED. Регрессии —
 
 В том же exact-binding условии финансового фильтра для трёх remote IDs выше
 `build_media_request` добавляет **top-level JSON boolean `async: true`** до
-проверки окончательных `serialize_media_request` bytes. Count (`input.n` только
-для MIE), references и fixed routing не меняются. Caller `provider_options`
+проверки окончательных `serialize_media_request` bytes. Single output (`input.max_images=1` для GPT MIE), references и fixed routing не меняются. Caller `provider_options`
 не могут ни выключить, ни переопределить async; generic/synthetic/near-match
 mapping остаётся без async. Новых model tables, DTO/config/CLI flags нет.
 Источник — `docs/Post Media.txt` (MediaRequestDto async); это documented request,
@@ -121,7 +135,9 @@ Base URL зафиксирован как `https://polza.ai/api/v1` и не бе�
 Оплаченный `POST` не повторяется автоматически: второй submit создаёт новую
 генерацию и второе списание. Устойчивое правило: **любой ответ, который не
 доказывает непринятие запроса, даёт `SUBMIT_UNCERTAIN` с `retryable=None`,
-`details={"operation": "submit"}` и фиксированным сообщением без provider-данных.**
+`details.operation=submit` и фиксированным сообщением без сырого provider-текста.
+HTTP 408/5xx могут дополнительно нести только безопасные diagnostics ниже;
+это не доказательство непринятия и не разрешение повторного POST.**
 
 `SUBMIT_UNCERTAIN` обязателен для:
 
@@ -141,6 +157,27 @@ Base URL зафиксирован как `https://polza.ai/api/v1` и не бе�
 остаётся `REMOTE_GENERATION_FAILED` и не маскируется под неоднозначность.
 `UnknownModelError`, `UnknownProviderError` и ошибки входных файлов поднимаются до
 HTTP и submit-неоднозначностью не являются.
+
+## Безопасные diagnostics HTTP-отказа
+
+`gateway._http_error` сохраняет numeric `details.http_status` и читает только
+`error.code` из конечного enum `ApiErrorBodyPresenter` в `docs/Post Media.txt`:
+BAD_REQUEST, UNAUTHORIZED, api_key_revoked, INSUFFICIENT_BALANCE, FORBIDDEN,
+NOT_FOUND, REQUEST_TIMEOUT, CONFLICT, PAYLOAD_TOO_LARGE, TOO_MANY_REQUESTS,
+BAD_GATEWAY, SERVICE_UNAVAILABLE, INTERNAL_ERROR. Они идут в `JobError.provider_code`,
+не заменяют внутреннюю HTTP-классификацию. Из `error.metadata.reason` разрешён
+только документированный пример `noProvidersForModel` → `details.reason`.
+Неизвестные/malformed значения и duplicate-key JSON отбрасываются; HTTP-код
+не меняется. Нечитаемое/oversized тело сохраняет прежний transport отказ/closure.
+Токены, содержащие инжектированный API key, отклоняются даже при совпадении с
+allowlist; это относится и к существующему bounded trace ID. Сырые message,
+raw/details/headers/body/url/query и provider_name не копируются.
+
+Application повторно ограничивает persist/current CLI diagnostics; trace ID
+не сохраняется в Job. Владелец этой data policy —
+[APP.single-image-execution](APP.single-image-execution.instructions.md).
+Тесты: `tests/contracts/test_polza_error_diagnostics.py`,
+`tests/integration/test_single_image.py`, `tests/cli/test_complete_cli.py`.
 
 ## GET status/result
 

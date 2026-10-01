@@ -16,7 +16,25 @@
 
 **Документ является планом, а не отчётом о работающей программе.** При его составлении были только спецификации: результаты запуска реализации, отчёт CI и подтверждённый релиз ещё отсутствовали. Поэтому исходные статусы этапов — `NOT_STARTED`, а проверок — `NOT_RUN`; актуальные статусы и evidence вынесены на доску ниже. Названия будущих тестов и служебных скриптов задают работу для разработчиков; их наличие в тексте не означает, что они уже существуют.
 
-**Текущий baseline:** E07/E08/E09 CLOSED / ACCEPTED offline на
+**Текущий OFFLINE PRECOMMIT fix-set (CN-05):** исходный source
+`8de7a10009b8198209320aa70c26e49540e7f1ed`. Canonical Media
+`openai/gpt-5.4-image-2` + fixed MIE routing/async/published-max cap11,
+один output (`input.max_images=1`), все документированные MIE настройки и
+несколько входных references. HTTP status/finite safe code/reason сохраняются.
+Кандидат **NOT_COMMITTED / NOT_LIVE_VERIFIED**, fresh review pending.
+
+[CN-05](release-scope.md) — прямое изменение scope: несколько outputs отложены;
+прежний count=2 mandatory / NO WAIVER отменён, не ослаблен молча. E06/E10 OPEN
+для new-source single-image/settings/multiple-input-reference CLI acceptance;
+E11 не авторизован. Parent direct 2K/16:9 + два local refs (PNG/JPEG) observed
+completed/cost7, known-ref continuation один GET/ноль POST; это не installed CLI
+proof нового SHA. HTTP timeout/default wait не меняются; wait configurable,
+recovery GET-only. Lifetime checkpoint после single/multiref parent probe:
+**14 attempted POST, known40.6 + unknown reserve77 = 117.6/200 RUB**.
+Multi-output probes остановлены по deferral; child POST0, Job2/Job5 и старые
+receipts не изменены. Текущие слоты — в release-board.
+
+**Исторический baseline (e751):** E07/E08/E09 CLOSED / ACCEPTED offline на
 `8a09d186a650248715b6efcade96b81f69370613`; count/price wire guard принят offline
 на `e751f97633eea5c33b8831186dad98d0af5f422b`. По заданию владельца same-SHA
 Windows 1468 PASSED, Linux 1464 PASSED + 4 Windows-only junction SKIPPED (не
@@ -375,14 +393,17 @@ Provider-specific renaming выполняет adapter согласно реше�
 - [x] Удаление модели не ломает чтение старой Job history.
 - [x] Ни один API ID или лимит не перенесён из условного примера без проверки.
 
-**Историческое ограничение E03:** на SHA E03 каталог был пуст. Сейчас Qwen/Gemini
-имеют documented experimental bindings; третий `gpt-5-4-image-2-mie` по публичным
-[guide](https://polza.ai/docs/gaidy/gpt-5-4-image-2.md) и
-[model page](https://polza.ai/models/openai/gpt-5.4-image-2.md) — text-only 1K
-count subset, exact `openai/gpt-5.4-image-2@mie`, не alias и не live.
-Цена MIE 4 RUB/image не относится к default-openai token pricing. References и
-higher resolutions известны API, но не включены/не проверены здесь. Каталог
-не доказывает реальную генерацию; Qwen/Gemini count >1 остаётся fail-closed.
+**Историческое ограничение E03:** на SHA E03 каталог был пуст. Qwen/Gemini
+имеют documented experimental bindings. GPT MIE после CN-05 использует canonical
+`openai/gpt-5.4-image-2` и fixed ProviderDto.only=[mie], без @mie qualifier.
+Документированные MIE enums/limits/defaults/pricing находятся в одном YAML:
+все настройки resolutions/ratios, prompt и multiple input references включены;
+новый output count только1. Tiny exact validation исключает auto вне1K и1:1 в4K.
+Source: [guide](https://polza.ai/docs/gaidy/gpt-5-4-image-2.md),
+[model page](https://polza.ai/models/openai/gpt-5.4-image-2.md), local Media DTO.
+Pricing MIE не относится к другим token-priced upstreams. Каталог experimental;
+documented/all-settings offline не означают полный live PASS. Qwen/Gemini YAML
+не меняются; старые multi-output history/processing сохранены.
 
 ### E04. SQLite, миграции, история и деньги 🗄️
 

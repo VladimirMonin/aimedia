@@ -409,7 +409,7 @@ def test_builtin_catalog_is_documented_experimental_not_live_verified() -> None:
     assert {record.providers["polza"].remote_model_id for record in records} == {
         "qwen/image-2.1",
         "google/gemini-3.1-flash-image-preview",
-        "openai/gpt-5.4-image-2@mie",
+        "openai/gpt-5.4-image-2",
     }
     for record in records:
         assert record.status.value == "experimental"
@@ -420,8 +420,15 @@ def test_builtin_catalog_is_documented_experimental_not_live_verified() -> None:
         else:
             assert "polza.ai/docs/gaidy/gpt-5-4-image-2.md" in record.verification.source
             assert "polza.ai/models/openai/gpt-5.4-image-2.md" in record.verification.source
-            assert record.parameters["max_images"].max == 4
-            assert record.pricing.by_resolution == {"1K": Decimal("4")}
+            assert record.parameters["max_images"].max == 1
+            assert record.inputs["prompt"].max_chars == 5000
+            assert record.inputs["images"].max == 16
+            assert record.inputs["images"].formats == ("png", "jpeg", "webp")
+            assert record.pricing.by_resolution == {
+                "1K": Decimal("4"),
+                "2K": Decimal("7"),
+                "4K": Decimal("11"),
+            }
             assert record.pricing.unit_parameter is None
     gemini = next(record for record in records if record.model_id.startswith("gemini"))
     assert gemini.inputs["images"].max == 8

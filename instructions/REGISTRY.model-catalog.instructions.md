@@ -77,13 +77,21 @@ Registry v0.1 различает только:
   (Guide), несмотря на catalog 14. Явное использование требует
   `--allow-experimental`; missing unit parameter не выдумывается, >1 output
   отклоняется adapter до POST. Синтетические IDs остаются только в tests.
-- Третий binding `gpt-5-4-image-2-mie` → `openai/gpt-5.4-image-2@mie`
-  подтверждён публичными guide/model Markdown: experimental/NOT_LIVE_VERIFIED,
-  text-only 1K count subset. Лимиты/defaults/ratios — в единственном YAML;
-  `input.n` принадлежит adapter только этого exact binding. RUB 4/image в 1K
-  не переносится на неквалифицированный token-priced маршрут. Reference URLs и
-  higher resolutions документированы, но не включены/не проверены здесь; это
-  локальный conservative subset, а не заявление о полном provider capability.
+- `gpt-5-4-image-2-mie` → canonical `openai/gpt-5.4-image-2`, fixed MIE only
+  в adapter, experimental/NOT_LIVE_VERIFIED. По прямому решению CN-05 включены все
+  документированные MIE настройки: enum/defaults и exact Decimal pricing в одном
+  YAML, prompt≤5000 и images≤16 с PNG/JPEG/WebP через inputs/capabilities. Max byte
+  size неизвестен; не выдумывать его. Новое max_images min=max=default=1,
+  multiple_outputs=false. Ни seed/quality, ни extra ratios другого upstream не
+  объявляются из common DTO. Registry Qwen/Gemini не меняются.
+- `validator._validate_gpt_mie_settings` — маленькое exact Polza/canonical GPT
+  правило из model page: auto (omitted берётся из effective default) только 1K,
+  1:1 недопустимо в 4K. Это три исключённых пары из документированных enums,
+  не generic conditional DSL/schema/новый framework. Все остальные 15 пар
+  проходят через тот же public validation и adapter до одного POST.
+  Изменение этого устойчивого правила требует источника и contract/CLI regressions.
+  Старые multi-output Job snapshots/GET-only recovery не проверяются по новому
+  count cap и не мигрируют. Generic processing нескольких artifacts сохраняется.
 - `CatalogPricing` — typed exact Decimal metadata RUB по resolution для **выбранного
   MIE**, не всех/default upstreams. Опубликованный максимум вычисляется из текущих
   tiers. Для трёх exact builtins Python adapter использует ceiling этого effective

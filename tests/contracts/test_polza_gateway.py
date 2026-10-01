@@ -749,7 +749,7 @@ def _assert_redacted_trace_error(
     formatted = "".join(traceback.format_exception(error))
     assert CANARY not in formatted
     assert CANARY not in str(error.error.model_dump())
-    assert "UNAUTHORIZED" not in str(error.error.model_dump())
+    assert error.error.provider_code == "UNAUTHORIZED"
 
 
 @pytest.mark.parametrize(("status", "code", "retryable"), _GET_HTTP_ERROR_CASES)
@@ -791,7 +791,12 @@ def test_submit_ambiguous_http_statuses_are_uncertain(make_client: Any, status: 
     error = excinfo.value
     assert error.error.code == SUBMIT_UNCERTAIN
     assert error.error.retryable is None
-    assert error.error.details == {"operation": "submit"}
+    assert error.error.details == {
+        "operation": "submit",
+        "http_status": status,
+        "trace_id": _TRACE_ID,
+    }
+    assert error.error.provider_code == "UNAUTHORIZED"
     assert len(recorder.requests) == 1  # нет автоматического повторного POST
     assert error.__cause__ is None
     assert error.__context__ is None

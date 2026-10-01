@@ -518,12 +518,45 @@ def _updated(job: Job, **fields: object) -> Job:
     return Job.model_validate({**job.model_dump(), **fields})
 
 
+# Application persistence policy, not an adapter dependency. Only the documented
+# ApiErrorBodyPresenter enum / ApiErrorMetadataPresenter example in
+# docs/Post Media.txt may cross this boundary as provider diagnostics.
+_SAFE_PROVIDER_CODES = frozenset(
+    {
+        "BAD_REQUEST",
+        "UNAUTHORIZED",
+        "api_key_revoked",
+        "INSUFFICIENT_BALANCE",
+        "FORBIDDEN",
+        "NOT_FOUND",
+        "REQUEST_TIMEOUT",
+        "CONFLICT",
+        "PAYLOAD_TOO_LARGE",
+        "TOO_MANY_REQUESTS",
+        "BAD_GATEWAY",
+        "SERVICE_UNAVAILABLE",
+        "INTERNAL_ERROR",
+    }
+)
+_SAFE_PROVIDER_REASONS = frozenset({"noProvidersForModel"})
+
+
 def _safe_error(error: JobError, message: str) -> JobError:
     code = error.code if re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", error.code) else "PROVIDER_ERROR"
+    details: dict[str, object] = {}
+    status = error.details.get("http_status")
+    if type(status) is int and 100 <= status <= 599:
+        details["http_status"] = status
+    reason = error.details.get("reason")
+    if isinstance(reason, str) and reason in _SAFE_PROVIDER_REASONS:
+        details["reason"] = reason
+    provider_code = error.provider_code
     return JobError(
         code=code,
         message=message,
+        provider_code=provider_code if provider_code in _SAFE_PROVIDER_CODES else None,
         retryable=None if code == "SUBMIT_UNCERTAIN" else error.retryable,
+        details=details,
     )
 
 

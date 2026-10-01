@@ -21,19 +21,25 @@ aimedia image generate --prompt-file base.md --prompt "Full body" --prompt-file 
 managed `outputs/<job_id>`. Нет скрытой второй копии; no-clobber suffix при конфликте.
 `--keep-original` сохраняет отдельный ORIGINAL. `--name` — безопасное базовое имя.
 
-`--max-images` — outputs одного submit, не количество Jobs. Применяется лишь когда
-модель объявляет такой параметр. Qwen/Gemini по-прежнему отклоняют значения больше
-1 до POST. Для `gpt-5-4-image-2-mie` используется документированный `input.n`:
+Новый запрос создаёт один результат; `--max-images` поддерживает только 1 в
+текущих bindings. Несколько выходных images одного запроса отложены. Batch
+отдельных Jobs и несколько входных `--image` остаются доступными.
 
 ```text
-aimedia image generate --prompt "Two synthetic robots" --model gpt-5-4-image-2-mie --allow-experimental --max-images 2 --format webp --keep-original --json
+aimedia image generate --prompt "Combine layout and palette" --model gpt-5-4-image-2-mie --allow-experimental --resolution 2K --aspect-ratio 16:9 --image layout.png --image palette.jpeg --format webp --json
 ```
 
-Это experimental / NOT_LIVE_VERIFIED text-only subset; ограничения — в
-`models show`. Если completed remote result содержит меньше запрошенных images,
-Job не становится COMPLETED: ref/billing сохранены, `jobs sync` продолжает только GET,
-без скрытого повторного POST. `--seed`/`--quality` также не принимаются без
-документированной поддержки. `models show <id> --json` показывает реальные ограничения.
+GPT MIE включает документированные настройки и несколько входных references;
+лимиты/defaults/pricing — в `models show`. Auto (включая default) только при 1K;
+1:1 недоступно при 4K. `--seed`/`--quality` без документированной поддержки не
+принимаются. Experimental / NOT_LIVE_VERIFIED — не обещание всех live сценариев.
+Inputs архивируются до POST; managed копии/история сохраняются после удаления
+исходников. `--format` остаётся локальным PNG/JPEG/WebP.
+
+Исторический Job, запросивший несколько outputs, сохраняет свой snapshot.
+Недостаточный пригодный результат не становится COMPLETED: ref/billing остаются,
+`jobs sync` продолжает только GET, без скрытого повторного POST. Zero-image
+некорректного ответа не создаёт выдуманное billing/ref.
 
 `--poll-interval` (по умолчанию 1 секунда) и `--wait-timeout` (300 секунд) конечны.
 Timeout/Ctrl+C прекращают локальное ожидание, не отменяют remote execution.

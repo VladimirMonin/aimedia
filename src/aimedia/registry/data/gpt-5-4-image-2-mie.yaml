@@ -6,26 +6,27 @@ status: experimental
 capabilities:
   text_to_image: true
   reference_images:
-    supported: false
-  multiple_outputs:
     supported: true
-    min: 1
-    max: 4
+    max: 16
+  multiple_outputs: false
 inputs:
   prompt:
     supported: true
     required: true
+    max_chars: 5000
   images:
-    supported: false
+    supported: true
+    max: 16
+    formats: [png, jpeg, webp]
 outputs:
   images:
     supported: true
     min: 1
-    max: 4
+    max: 1
 parameters:
   resolution:
     type: enum
-    values: [1K]
+    values: [1K, 2K, 4K]
     default: 1K
     required: true
   aspect_ratio:
@@ -33,20 +34,23 @@ parameters:
     values: [auto, '1:1', '9:16', '16:9', '4:3', '3:4']
     default: auto
     required: true
+    description: MIE auto only at 1K; 1:1 is unavailable at 4K.
   max_images:
     type: integer
     min: 1
-    max: 4
+    max: 1
     default: 1
-    description: Logical output count; this exact Polza binding maps to input.n.
+    description: One output per new request (CN-05); multiple input references are separate.
 providers:
   polza:
-    remote_model_id: openai/gpt-5.4-image-2@mie
+    remote_model_id: openai/gpt-5.4-image-2
 verification:
-  checked_at: 2026-09-30
-  source: https://polza.ai/docs/gaidy/gpt-5-4-image-2.md ; https://polza.ai/models/openai/gpt-5.4-image-2.md (MIE 1K RUB 4 per image, not total Job or unqualified token pricing; public documentation only; NOT_LIVE_VERIFIED; text-only 1K subset; reference URLs and higher resolutions documented but not enabled or verified here)
+  checked_at: 2026-10-01
+  source: https://polza.ai/docs/gaidy/gpt-5-4-image-2.md ; https://polza.ai/models/openai/gpt-5.4-image-2.md (MIE single output with documented settings and up to 16 input images; only MIE pricing RUB 4/7/11 by resolution, not other token-priced upstreams; canonical Media ID with ProviderDto.only=[mie], guide @mie qualifier not accepted by Media; public documentation and parent observations, NOT_LIVE_VERIFIED for this source)
 pricing:
   currency: RUB
   unit_parameter: null
   by_resolution:
     1K: "4"
+    2K: "7"
+    4K: "11"

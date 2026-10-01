@@ -118,6 +118,27 @@ _SAFE_REMOTE_ID: Final = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}\Z")
 # Разрешённый trace ID из error-конверта: короткий ASCII machine-токен, не текст.
 _SAFE_TRACE_ID: Final = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
 
+# Local data policy from docs/Post Media.txt, ApiErrorBodyPresenter enum.
+# Unknown extensions are deliberately dropped; these tokens are not messages.
+_SAFE_API_ERROR_CODES: Final = frozenset(
+    {
+        "BAD_REQUEST",
+        "UNAUTHORIZED",
+        "api_key_revoked",
+        "INSUFFICIENT_BALANCE",
+        "FORBIDDEN",
+        "NOT_FOUND",
+        "REQUEST_TIMEOUT",
+        "CONFLICT",
+        "PAYLOAD_TOO_LARGE",
+        "TOO_MANY_REQUESTS",
+        "BAD_GATEWAY",
+        "SERVICE_UNAVAILABLE",
+        "INTERNAL_ERROR",
+    }
+)
+_SAFE_API_ERROR_REASONS: Final = frozenset({"noProvidersForModel"})
+
 _MEDIA_SEGMENT: Final = "/media"
 _STATUS_ERROR_CODES: Final[dict[int, tuple[str, bool | None]]] = {
     401: (_PROVIDER_AUTHENTICATION, False),
@@ -304,7 +325,7 @@ class PolzaProviderGateway:
         if 300 <= status < 400:
             raise self._redirect_error(status)
         if not 200 <= status < 300:
-            raise self._http_error(status, _extract_trace_id(raw_body), uncertain=uncertain)
+            raise self._http_error(status, raw_body, uncertain=uncertain)
         if uncertain:
             # 2xx с неразбираемым телом: submit мог быть принят, поэтому исход
             # неоднозначен и повторный POST запрещён. Новая ошибка строится вне
@@ -319,13 +340,16 @@ class PolzaProviderGateway:
             return decoded
         return decode_media_json(raw_body)
 
-    def _submit_uncertain(self) -> ProviderError:
+    def _submit_uncertain(
+        self, *, diagnostics: dict[str, object] | None = None, provider_code: str | None = None
+    ) -> ProviderError:
         """Неоднозначный исход submit: повтор запрещён, тело/ID/URL не раскрываются.
 
         Используется для каждого пути, где оплаченный POST мог быть принят:
         транспортный сбой, HTTP 408/5xx, нечитаемое или превысившее safety-лимит
-        тело, 2xx без пригодного конверта. `details` фиксированы и не несут
-        provider-данных; `retryable=None` запрещает неявный автоматический повтор.
+        тело, 2xx без пригодного конверта. Только HTTP-отказ может дополнить
+        `operation` безопасными diagnostics из конечного allowlist; сырого текста
+        нет. `retryable=None` запрещает неявный автоматический повтор.
         """
         return ProviderError(
             JobError(
@@ -335,7 +359,8 @@ class PolzaProviderGateway:
                     "submit запрещён, требуется явное решение."
                 ),
                 retryable=None,
-                details={"operation": "submit"},
+                provider_code=provider_code,
+                details={"operation": "submit", **(diagnostics or {})},
             )
         )
 
@@ -361,7 +386,7 @@ class PolzaProviderGateway:
             )
         )
 
-    def _http_error(self, status: int, trace_id: str | None, *, uncertain: bool) -> ProviderError:
+    def _http_error(self, status: int, body: bytes, *, uncertain: bool) -> ProviderError:
         """Типизировать HTTP-ошибку; для submit неоднозначные статусы → SUBMIT_UNCERTAIN.
 
         408 и 5xx не доказывают, что задание не принято (сервер мог обработать
@@ -369,16 +394,16 @@ class PolzaProviderGateway:
         Явные отказы остаются различимыми: 400/401/402/403, а 429 — это отказ до
         обработки, а не неизвестный исход.
         """
+        provider_code, diagnostics = _extract_error_diagnostics(body, self._api_key)
+        details: dict[str, object] = {"http_status": status, **diagnostics}
         if uncertain and (status == 408 or 500 <= status < 600):
-            return self._submit_uncertain()
+            return self._submit_uncertain(diagnostics=details, provider_code=provider_code)
         code, retryable = _status_error_code(status)
-        details: dict[str, object] = {"http_status": status}
-        if trace_id is not None:
-            details["trace_id"] = trace_id
         return ProviderError(
             JobError(
                 code=code,
                 message="Provider вернул ошибку HTTP.",
+                provider_code=provider_code,
                 retryable=retryable,
                 details=details,
             )
@@ -493,26 +518,53 @@ def _status_error_code(status: int) -> tuple[str, bool | None]:
     return (_PROVIDER_HTTP_ERROR, None)
 
 
-def _extract_trace_id(body: bytes) -> str | None:
-    """Извлечь allowlisted безопасный trace ID из error-конверта.
+def _unique_error_fields(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """Ambiguous duplicate fields cannot supply trusted diagnostics."""
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate error field")
+        result[key] = value
+    return result
 
-    Разбор ведётся отдельно от рабочего `decode_media_json`: некорректное тело не
-    должно подменять HTTP-ошибку. Ошибка разбора просто не даёт trace ID. Сырое
-    тело, message и URL в результат не попадают.
+
+def _extract_error_diagnostics(body: bytes, api_key: str) -> tuple[str | None, dict[str, object]]:
+    """Read only finite API tokens and existing bounded trace ID, never raw text.
+
+    Parsing failure drops diagnostics, not HTTP classification. A token containing
+    the injected secret is rejected even when it otherwise matches the allowlist.
     """
-    decoded: object = None
     try:
-        decoded = json.loads(body)
-    except (ValueError, UnicodeError):
-        return None
+        decoded = json.loads(body, object_pairs_hook=_unique_error_fields)
+    except (ValueError, UnicodeError, RecursionError):
+        return None, {}
     if not isinstance(decoded, dict):
-        return None
+        return None, {}
     error = decoded.get("error")
-    error_trace = error.get("trace_id") if isinstance(error, dict) else None
-    for candidate in (decoded.get("trace_id"), error_trace):
-        if isinstance(candidate, str) and _SAFE_TRACE_ID.fullmatch(candidate) is not None:
-            return candidate
-    return None
+    if not isinstance(error, dict):
+        error = {}
+    candidate_code = error.get("code")
+    provider_code = (
+        candidate_code
+        if isinstance(candidate_code, str)
+        and candidate_code in _SAFE_API_ERROR_CODES
+        and api_key not in candidate_code
+        else None
+    )
+    details: dict[str, object] = {}
+    metadata = error.get("metadata")
+    reason = metadata.get("reason") if isinstance(metadata, dict) else None
+    if isinstance(reason, str) and reason in _SAFE_API_ERROR_REASONS and api_key not in reason:
+        details["reason"] = reason
+    for candidate in (decoded.get("trace_id"), error.get("trace_id")):
+        if (
+            isinstance(candidate, str)
+            and _SAFE_TRACE_ID.fullmatch(candidate) is not None
+            and api_key not in candidate
+        ):
+            details["trace_id"] = candidate
+            break
+    return provider_code, details
 
 
 __all__ = [

@@ -15,8 +15,9 @@
 |---|---|
 | Принятый baseline E07–E09 | `8a09d186a650248715b6efcade96b81f69370613` (CLOSED/ACCEPTED offline, не live/release E10) |
 | Текущий count/price offline baseline | `e751f97633eea5c33b8831186dad98d0af5f422b`, accepted offline; отдельные live observations ниже, не collective PASSED |
-| Незавершённое | E06/E10 OPEN; Registry experimental без activation. Новый documented async patch `NOT_COMMITTED`, independent review pending, async live NOT_RUN. E11 OPEN / publication permission absent. Статус worktree проверяется Git |
-| Lifetime paid accounting | total attempted POST 2; known cost 3 RUB; uncertain reserve 11 RUB; 3 + 11 ≤ cap 200 RUB. Reserve не zero и не доказанный billing |
+| Текущий source fix-set | исходный `8de7a10009b8198209320aa70c26e49540e7f1ed`; canonical Media + safe diagnostics + GPT single/all-settings/multiple-input-refs (CN-05); cap11/async/MIE-only, NOT_COMMITTED / NOT_LIVE_VERIFIED, fresh review pending |
+| Незавершённое | E06/E10 OPEN: single output/all-settings/multiple input refs нового committed CLI; Registry experimental. CN-05 отложил multiple outputs и отменил count2/NO WAIVER gate. OS/installed/live нового source ещё не приняты. E11 не авторизован |
+| Lifetime paid accounting | После parent single 2K/two-refs probe: attempted POST14; known40.6 RUB; unknown reserve77 RUB; 117.6 ≤ cap200 RUB. Child POST0; multi-output probes stopped by CN-05; reserve не zero |
 | Обязательный объём и отложенное | [`release-scope.md`](release-scope.md) + change notes `CN-01`–`CN-03` |
 | Требования R01–R24 | [`verification-matrix.md`](verification-matrix.md) |
 | Решения развилок E00 | [`decisions/implementation-baseline.md`](decisions/implementation-baseline.md) (D01–D16) |
@@ -185,7 +186,7 @@ Linux/release/live и реальные пользовательские данн
 
 | ID | Блокер | Что блокирует | Что требуется, чтобы снять | Владелец |
 |---|---|---|---|---|
-| B1 | **Частично снят:** три experimental binding и count/price guard приняты offline e751. Qwen 1K no-ref observed completed; Gemini ref uncertain. Async live NOT_RUN | Закрытие E06, E10 live, G3 | Paid STOP; новый reviewed/committed/frozen SHA и отдельный bounded plan, без retry Job2 | исполнитель |
+| B1 | **Частично снят:** три experimental binding и count/price guard приняты offline e751. Qwen 1K no-ref observed completed; Gemini ref uncertain. Async live NOT_RUN | Закрытие E06, E10 live, G3 | CN-05 single/settings/multiref plan на новом reviewed/committed SHA; multi-output probes stopped, без retry Job2 | исполнитель |
 | B2 | **RESOLVED для C09c1/C09c2**: `c794c0b` (1019) и `2110a5f` (1145) offline passed в чистых клонах, SOL6 предкоммитные reviews OK | — | E06 в целом остаётся открытым | исполнитель + интегратор |
 | B3 | **RESOLVED offline:** E07–E09 `8a09d18`, count/price e751 приняты; E06 live открыт | Новый async slice требует fresh review/same-SHA gate, не повтор принятого аудита | Independent review → parent frozen-SHA verification | интегратор |
 | B4 | Authenticated login `VladimirMonin` известен; proposed target `VladimirMonin/aimedia`, но owner/target и create/push/tag/release authorization не подтверждены | E11 | Подтверждение owner/target и отдельное явное разрешение; login не authorization | владелец |
@@ -373,3 +374,60 @@ assertion raw ORM error → StorageError для directory leaf).
 Linux/live/clean clone/немодифицированный installed loopback NOT_RUN. Отсутствующий
 официальный unit parameter для нескольких outputs не придуман; returned images
 сохраняются все, multi-output request live остаётся NOTPROVEN. Stage/commit не выполнены.
+
+
+## Исторический follow-up до CN-05: Media DTO/count + безопасная HTTP-ошибка
+
+Исходный source `8de7a10009b8198209320aa70c26e49540e7f1ed`: исторические четыре
+live count=1 приняты отдельно; старый MIE n=2 failed/not proven. Новый fix-set
+не наследует эти receipts. По parent direct probes qualified-n HTTP400
+BAD_REQUEST относится к непризнанному @mie qualifier **нового diagnostic запроса**;
+причина старого MIE Job5 не устанавливается задним числом. Canonical base-n дал
+completed с одним image/output_units=1/actual cost4 при n=2; base-max дал те же
+один image/output_units=1/cost4 при max_images=2. Ни один case не доказал
+count=2 — live blocker сохраняется.
+
+Кандидат меняет только remote binding на canonical base, Media count поле на
+input.max_images и whitelist diagnostics HTTP-ошибки через persisted/current CLI.
+MIE only/noFallback/cap4/async=true и Registry subset остаются. Старые Job2/Job5
+не изменяются/не повторяются; history binding сохраняется без миграции.
+Решение/разрешённые поля — change notes в implementation-baseline; regressions —
+Polza count/priced routing/error diagnostics + single image/current CLI/reopen.
+Consolidated release gate и независимый review кандидата ещё не приняты.
+Новый source NOT_COMMITTED / NOT_LIVE_VERIFIED; E06/E10 OPEN, обязательный
+count=2 NO WAIVER, E11 not authorized. Parent direct HTTP probe не source CLI
+и не frozen SHA evidence. Предыдущие датированные pass/fail записи сохранены.
+
+
+Final scope подтверждён отдельно: canonical Media + DTO max_images + safe error,
+NO Images adapter. Parent Images qualified/base probes также не доказали count=2:
+HTTP400 для qualifier; canonical top-level n=2 — HTTP200 legacy created/один image/
+cost4/без id. Это диагностические observations, не новая routing authority.
+Отдельный parent Seedream4/max_images=2 probe также дал один image/cost3;
+это не новый binding и не count=2 proof этого source.
+На checkpoint после шести новых probes lifetime 13 POST, known33.6 + unknown77 =
+110.6/200 RUB. Явное разрешение пользователя на diagnostic repeats supersedes
+прежний MIE STOP для probes, но не разрешает автоматический retry Job/DB writes
+или публикацию. Child выполняет только OFFLINE release/freeze; E06/E10 OPEN.
+
+
+## CN-05: GPT single image / all MIE settings / multiple input references
+
+Прямое решение владельца отложило несколько выходных изображений одного запроса.
+Прежний count2 mandatory/NO WAIVER gate отменён по принятому scope, не как QA waiver.
+Все входные refs + prompt обязательны; batch отдельных Jobs не отложен.
+Кандидат объединяет reviewed safe-error/canonical-ID fix с включением всех MIE
+controls: один YAML enums/defaults/лимиты,15 допустимых setting pairs,prompt≤5000,
+refs≤16 PNG/JPEG/WebP; нет выдуманного byte-limit/quality/seed. Only MIE/noFallback/
+async и exact Decimal guard сохраняются, GPT cap11. Старые multi-output snapshots
+и generic finalizer/GET-only sync не удаляются.
+
+Parent direct single2K16:9 + two local PNG/JPEG refs succeeded/cost7 after known-ref
+continuation (один GET,ноль POST). Source observation:
+`single-2k-two-refs-poll-known-http.json` в parent probe root. Original180s processing
+capture unchanged; задержка не основание повышать HTTP30/default wait. Это remote
+proof одного режима, не source/installed CLI acceptance нового SHA.
+Lifetime checkpoint14POST,known40.6+unknown77=117.6/200. Multiple-output probes
+stopped; authorized single/settings live остаётся у parent. NOT_COMMITTED /
+NOT_LIVE_VERIFIED,E06/E10 OPEN для CN-05 scenarios,E11 not authorized;fresh review
+и frozen gate required. Прежние датированные evidence/отчёты не переписаны.

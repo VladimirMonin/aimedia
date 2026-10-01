@@ -18,8 +18,8 @@ effective definition модели; произвольная передача `pr
 - `max_images` всегда уходит, когда модель объявляет точное поле (включая
   доменное значение `1`, независимо от model default); без поля `1` опускается,
   а значения больше `1` отклоняются; граница generic схемы Polza — не более 6.
-  Единственное подтверждённое исключение — exact GPT-5.4 Image 2 @mie binding:
-  логический count 1–4 передаётся как input.n, не generic max_images;
+  Exact GPT-5.4 Image 2 с fixed MIE provider routing использует Media
+  input.max_images=1 по CN-05 (references — отдельные входы);
 - обязательные устойчивые поля и поддерживаемые provider options с документированным
   default передаются явно, без default — отклоняются до HTTP;
 - три exact fixed-MIE binding получают top-level boolean async=true до final cap;
@@ -61,11 +61,11 @@ _REFERENCE_PARAMETER = "--image"
 _MAX_IMAGES_PARAMETER = "max_images"
 # ImageInputDto constrains this field independently of model-specific limits.
 _MAX_SCHEMA_IMAGES = 6
-# Public GPT-5.4 Image 2 guide: this exact qualified binding alone uses input.n.
-_MIE_COUNT_MODEL = "openai/gpt-5.4-image-2@mie"
+# Canonical Media model identity; MIE is selected only by the fixed ProviderDto.
+_GPT_MIE_MODEL = "openai/gpt-5.4-image-2"
 # MediaRequestDto.provider selects upstreams without inventing model qualifiers.
 _MIE_PRICED_MODELS = frozenset(
-    {"qwen/image-2.1", "google/gemini-3.1-flash-image-preview", _MIE_COUNT_MODEL}
+    {"qwen/image-2.1", "google/gemini-3.1-flash-image-preview", _GPT_MIE_MODEL}
 )
 _SAFE_REMOTE_MODEL_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_./-]{0,127}\Z")
 _STABLE_SCHEMA_ENUMS = {
@@ -171,9 +171,7 @@ def build_media_request(
         payload["provider"] = _build_mie_price_filter(effective)
         payload["async"] = True
     _enforce_exact_body_size(payload, max_body_bytes=max_body_bytes)
-    if effective.remote_model_id != _MIE_COUNT_MODEL and not _SAFE_REMOTE_MODEL_ID.fullmatch(
-        effective.remote_model_id
-    ):
+    if not _SAFE_REMOTE_MODEL_ID.fullmatch(effective.remote_model_id):
         raise InvalidParameterValueError(
             "Недопустимый remote model ID или неподтверждённый qualifier Polza.",
             details={"parameter": "remote_model_id"},
@@ -351,13 +349,14 @@ def _apply_declared_parameters(
                 details={"parameter": name, **({"required": True} if using_default else {})},
             )
         input_payload[provider_field] = value
-    if effective.remote_model_id == _MIE_COUNT_MODEL:
-        if not 1 <= request.max_images <= 4:
+    if effective.remote_model_id == _GPT_MIE_MODEL:
+        if request.max_images != 1:
             raise InvalidParameterValueError(
-                "Число изображений вне документированной границы count binding.",
-                details={"parameter": _MAX_IMAGES_PARAMETER, "min": 1, "max": 4},
+                "Новый GPT MIE запрос поддерживает один результат (CN-05).",
+                details={"parameter": _MAX_IMAGES_PARAMETER, "min": 1, "max": 1},
             )
-        input_payload["n"] = request.max_images
+        # Media ImageInputDto field; the prior model-guide n does not prove count.
+        input_payload[_MAX_IMAGES_PARAMETER] = request.max_images
     elif _include_max_images(request.max_images, effective):
         input_payload[_MAX_IMAGES_PARAMETER] = request.max_images
 

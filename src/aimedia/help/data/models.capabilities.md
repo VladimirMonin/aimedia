@@ -41,17 +41,20 @@ adapter отправляет top-level `provider.only=[mie]`, `allow_fallbacks=f
 
 {{model:gemini-3-1-flash-image-preview}}
 
-## GPT-5.4 Image 2 MIE: count subset
+## GPT-5.4 Image 2 MIE: один результат и несколько входных изображений
 
-`gpt-5-4-image-2-mie` использует только точный `openai/gpt-5.4-image-2@mie`:
-логический `max_images` передаётся как `input.n`, один Job и один платный POST.
-Это text-only / 1K subset. Reference URL и более высокие resolutions документированы
-API, но не проверены и не включены здесь; это не заявление об отсутствии поддержки
-у provider. Не alias GPT Image 2.5/Sunburst. NOT_LIVE_VERIFIED.
+`gpt-5-4-image-2-mie` использует canonical `openai/gpt-5.4-image-2` с fixed MIE
+routing (only=[mie], без fallback) и Media `input.max_images=1`.
+Несколько выходных images в одном запросе отложены по прямому решению владельца;
+несколько `--image` — входные референсы, не output count.
 
-Цена Registry относится к одному изображению MIE в включённом режиме, не к total
-Job. Неквалифицированный/default-openai маршрут имеет токенную цену: ставки MIE
-не являются его верхней ценой. Catalog unitParam не опубликован и не выдуман.
-Фактический total берётся только из billing provider до download.
+Включены документированные MIE настройки, prompt и references; значения/лимиты/
+цены показаны ниже из Registry. Условные ограничения: auto (в том числе default)
+только в 1K; 1:1 недоступно в 4K. Seed/quality и пропорции других upstreams не
+принимаются. Не alias GPT Image 2.5/Sunburst. Experimental / NOT_LIVE_VERIFIED.
+
+Цена Registry — metadata выбранного MIE, не обещание actual billing.
+Без fixed MIE routing другой upstream может иметь токенную цену. Фактическая
+стоимость сохраняется только из ответа provider до download.
 
 {{model:gpt-5-4-image-2-mie}}
