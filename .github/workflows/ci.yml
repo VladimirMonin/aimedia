@@ -37,6 +37,9 @@ jobs:
         run: uv sync --locked
 
       - name: Run offline quality checks
+        env:
+          # Typer иначе принудительно включает ANSI при GITHUB_ACTIONS=true даже без TTY.
+          _TYPER_FORCE_DISABLE_TERMINAL: "1"
         run: uv run --locked --no-env-file python scripts/quality.py full --report-dir artifacts/quality
 
       - name: Upload quality evidence

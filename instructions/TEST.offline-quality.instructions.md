@@ -118,6 +118,14 @@ uv run --locked --no-env-file mypy src/aimedia
   каталог, чтобы работать при прямом запуске.
 - CI (`.github/workflows/ci.yml`) повторяет `full` на Windows и Linux offline, без
   секретов и без live-вызовов.
+- Только шаг CI, запускающий quality, задаёт `_TYPER_FORCE_DISABLE_TERMINAL=1`:
+  установленный Typer иначе считает `GITHUB_ACTIONS`, `FORCE_COLOR` или `PY_COLORS`
+  основанием принудительно включить terminal rendering даже для captured stdout.
+  Override сохраняет non-TTY контур CLI-проверок; `GITHUB_ACTIONS` не удаляется,
+  runtime и assertions не меняются, ANSI из результата не фильтруется. При
+  обновлении Typer перепроверь поддержку override и focused bootstrap suite:
+  окружение `GITHUB_ACTIONS=true` без override, то же с override и обычное без
+  CI/color flags; сохраняй сырые exit codes, включая воспроизведённый failure.
 
 ## Границы
 
