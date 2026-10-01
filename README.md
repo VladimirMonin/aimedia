@@ -2,9 +2,10 @@
 
 Личная Python 3.12 image-only CLI утилита через Polza: генерация/batch, SQLite
 история, managed reference copies, retry/sync, FTS5 поиск, точные расходы и
-автономная Markdown справка. E07–E09 реализуются одной связной поставкой;
-кандидат ещё требует независимого review/frozen SHA, Linux и ограниченной live
-приёмки. Это **не опубликованный релиз**; модели документированы, но live unverified.
+автономная Markdown справка. Runtime `f7fb04e6` принят: Windows/Linux offline,
+wheel/sdist и установленный пакет, агентский walkthrough, реальные Qwen/GPT
+сценарии. [Отчёт и границы приёмки](docs/plans/progress/e10-f7fb04e6.acceptance.md).
+Это **не опубликованный релиз**: GitHub repo/tag/release ещё не авторизованы.
 
 ## Установка для разработки
 
@@ -34,8 +35,10 @@ uv run --locked --no-env-file aimedia config init
 uv run --locked --no-env-file aimedia image generate --prompt "A watercolor laboratory robot" --model qwen-image-2-1 --allow-experimental --format webp --name robot
 ```
 
-`--allow-experimental` подтверждает выбор documented, но ещё не проверенной live
-модели. `--out` требует существующий каталог; по умолчанию файл в managed outputs.
+`--allow-experimental` явно разрешает experimental запись каталога: наличие
+отдельного live receipt не активирует все модели/режимы как stable. Проверенные
+комбинации перечислены в отчёте. `--out` требует существующий каталог;
+по умолчанию файл в managed outputs.
 Промпты inline/file перемежаются в исходном порядке; `--image` повторяется.
 Ссылки на проверенные copies остаются читаемыми после удаления исходников.
 
@@ -43,14 +46,18 @@ uv run --locked --no-env-file aimedia image generate --prompt "A watercolor labo
 uv run --locked --no-env-file aimedia image batch prompts/*.md --model qwen-image-2-1 --allow-experimental --concurrency 3 --json
 ```
 
-Несколько outputs **одного** Job/POST — отдельный documented experimental MIE
-count binding (text-only 1K, NOT_LIVE_VERIFIED), не batch и не alias GPT Image 2.5.
-Qwen/Gemini `--max-images > 1` остаётся fail-closed. RUB 4/image относится только к
-MIE 1K, не к total Job и не к неквалифицированному token-priced OpenAI маршруту.
-Reference URLs и higher resolutions известны API, но не включены/не проверены здесь.
+**Один выходной image на Job/POST**; `--max-images > 1` отклоняется до HTTP.
+Несколько выходных изображений отложены по CN-05, batch независимых Jobs работает.
+GPT binding `gpt-5-4-image-2-mie` → canonical `openai/gpt-5.4-image-2` через MIE:
+1K/2K/4K, ratios auto/1:1/9:16/16:9/4:3/3:4; auto только1K, square не4K.
+Prompt≤5000, до16 PNG/JPEG/WebP refs; `--image` повторяется в нужном порядке.
+Все15 setting pairs проверены offline, шесть representative pairs/ref0–3 — live.
+Тарифы MIE4/7/11 RUB; image price filter11 — guard, не гарантия Job total/billing.
+`quality`/`seed` для этого binding не поддерживаются. Используйте существующие
+локальные `boat.png` и `cup.jpg` в следующем **платном** примере:
 
 ```text
-uv run --locked --no-env-file aimedia image generate --prompt "Two synthetic robots" --model gpt-5-4-image-2-mie --allow-experimental --max-images 2 --format webp --keep-original --json
+uv run --locked --no-env-file aimedia image generate --prompt "A still life combining the boat and cup references" --model gpt-5-4-image-2-mie --allow-experimental --resolution 2K --aspect-ratio 1:1 --image boat.png --image cup.jpg --max-images 1 --format webp --keep-original --json
 uv run --locked --no-env-file aimedia jobs recent --json
 uv run --locked --no-env-file aimedia jobs show 1 --json
 uv run --locked --no-env-file aimedia jobs search "laboratory robot" --json

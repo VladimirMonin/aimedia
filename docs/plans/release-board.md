@@ -14,11 +14,12 @@
 | Поле | Значение |
 |---|---|
 | Принятый baseline E07–E09 | `8a09d186a650248715b6efcade96b81f69370613` (CLOSED/ACCEPTED offline, не live/release E10) |
-| Текущий count/price offline baseline | `e751f97633eea5c33b8831186dad98d0af5f422b`, accepted offline; отдельные live observations ниже, не collective PASSED |
-| Текущий source fix-set | исходный `8de7a10009b8198209320aa70c26e49540e7f1ed`; canonical Media + safe diagnostics + GPT single/all-settings/multiple-input-refs (CN-05); cap11/async/MIE-only, NOT_COMMITTED / NOT_LIVE_VERIFIED, fresh review pending |
-| Незавершённое | E06/E10 OPEN: single output/all-settings/multiple input refs нового committed CLI; Registry experimental. CN-05 отложил multiple outputs и отменил count2/NO WAIVER gate. OS/installed/live нового source ещё не приняты. E11 не авторизован |
-| Lifetime paid accounting | После parent single 2K/two-refs probe: attempted POST14; known40.6 RUB; unknown reserve77 RUB; 117.6 ≤ cap200 RUB. Child POST0; multi-output probes stopped by CN-05; reserve не zero |
-| Обязательный объём и отложенное | [`release-scope.md`](release-scope.md) + change notes `CN-01`–`CN-03` |
+| Принятый runtime E06/E10 | `f7fb04e6768aaf1c04c575166e5b73a5e4e95473`; canonical GPT/MIE, один output, все согласованные controls/multiple input refs; [приёмка 2026-10-01](progress/e10-f7fb04e6.acceptance.md) |
+| Offline/package/installed | Шесть Windows/Linux quick/full/release raw0; Windows1667 / Linux1663+4 junction SKIPPED; coverage93%; 81 package matches; Windows120 argv, Linux44 console, strict local TLS отдельно |
+| Реальная CLI-приёмка | 7 completed Jobs: Qwen1 + GPT6; три tiers/шесть ratios/ref0–3; 14 output files/6 managed refs; 20 new-process history/FTS/cost argv; SOL6.1 540 assertions raw0 + visual supplemental ACCEPT_SCOPED_LIVE_CLI |
+| Незавершённое | E11 NOT_AUTHORIZED: GitHub owner/target и отдельное разрешение repo/push/tag/release; публикация и tag-install NOT_RUN. Catalog остаётся experimental; all15pairs/16refs live не заявлены; multiple outputs отложены CN-05 |
+| Lifetime paid accounting | 21 attempted POST; known87.6 RUB + прежний unknown reserve77 RUB = conservative164.6/200 RUB. Новые7 POST: actual47 RUB; автоматических retries0, старые uncertain Jobs не изменялись |
+| Обязательный объём и отложенное | [`release-scope.md`](release-scope.md) + change notes `CN-01`–`CN-05` |
 | Требования R01–R24 | [`verification-matrix.md`](verification-matrix.md) |
 | Решения развилок E00 | [`decisions/implementation-baseline.md`](decisions/implementation-baseline.md) (D01–D16) |
 | Каркас отчёта этапа | [`progress/stage-report.template.json`](progress/stage-report.template.json) |
@@ -63,7 +64,12 @@ E04–E05 — разделы «Приёмка E04» и «Приёмка E05» в
 - Схема SQLite на E04 — версия **v1**. Новые данные сверх v1 оформляются миграцией
   v2 по `CN-01`, а не правкой v1.
 
-## E06: Polza adapter и проверенные bindings — `IN_PROGRESS` 🔌
+## E06: Polza adapter и проверенные bindings — `ACCEPTED` на f7 🔌
+
+[Scoped source/offline/installed/live приёмка](progress/e10-f7fb04e6.acceptance.md):
+Qwen и canonical GPT/MIE, реальные settings/ordered refs/стоимость. Каталог не
+активирован blanket stable; границы отдельных режимов перечислены в отчёте.
+Следующие C09 строки — исторические приёмки подсрезов, не текущие блокеры.
 
 ### Что уже committed
 
@@ -108,7 +114,7 @@ experimental запись по публичным Markdown, paid POST = 0, MCP r
 - Подключение downloader к Job, проверка/сохранение его байтов и recovery — E07–E08,
   не доказаны срезом C09c2. Приёмка wheel/sdist и installed-CLI smoke — слот E10.
 
-## E07–E09: CLOSED / ACCEPTED на `8a09d18`; E10–E11 открыты ⏳
+## E07–E09: ACCEPTED на `8a09d18`; E10 ACCEPTED на f7; E11 не авторизован ⏳
 
 Fresh whole-source review `32e31e48` и correction review `c4b4f239` — OK.
 Evidence baseline: `artifacts/quality/8a09d186a650248715b6efcade96b81f69370613/`
@@ -124,7 +130,7 @@ Schema v2 archive и v3 FTS committed; ownership platform fix входит в ba
 | E07 | Одиночный application use case `single_image.generate_image`: prepared inputs → confirmed CREATED → validation/archive → один submit → ref/polling → billing → все artifacts → confirmed history | E04–E06 | `tests/integration/test_single_image.py`: реальная tmp SQLite/managed copies/Pillow, fake + Polza MockHTTP, ошибки без duplicate submit; independent reviews и clean release baseline подтверждены выше | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
 | E08 | Batch с ограниченной конкурентностью, partial failures, `retry`/`sync`, Ctrl+C, recovery и защита от двойного Runner | E07 | Peak active = лимит, partial outcome, submit_count = 1 при неизвестном исходе, restart без нового POST, cross-process guard | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
 | E09 | Полный CLI, JSON/exit codes, история, лексический FTS5, валютные сводки, atomic help | E03, E08 | Реальный argv, JSON/exit для текущей попытки, поиск prompts/ref provenance/managed paths/hashes/result artifacts после restart без чтения файлов, RUB/USD/unknown раздельно, packaged help вне cwd | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
-| E10 | Приёмка release candidate: Windows+Linux, offline quick/full/release, wheel+sdist, installed smoke, secret scan, агентский walkthrough, ограниченный live | E09 | Один frozen SHA; отсутствие обязательных `SKIP`/`XFAIL`/`NOT_RUN`; live-отчёт с model ID, режимом, ценой и датой | `OPEN / IN_PROGRESS`, async live NOT_RUN, Gemini unknown |
+| E10 | Приёмка release candidate: Windows+Linux, offline quick/full/release, wheel+sdist, installed smoke, secret scan, агентский walkthrough, ограниченный live | E09 | Один frozen runtime SHA; [OS/package/UX/TLS/live и независимая приёмка](progress/e10-f7fb04e6.acceptance.md); 4 Windows-only Linux skips раскрыты, не PASS | `ACCEPTED` на `f7fb04e6`; не публикация E11 |
 | E11 | Публикация проверенного релиза | E10 + отдельное разрешение владельца | Annotated tag на проверенном SHA, wheel/sdist + checksums, установка по тегу с проверкой происхождения | `OPEN / BLOCKED`, publication permission absent (login VladimirMonin известен; owner/target и разрешения не подтверждены) |
 
 **Историческая запись одиночного среза до укрупнения (не текущий статус):**
@@ -182,15 +188,16 @@ Linux/release/live и реальные пользовательские данн
 ## Зависимости и блокеры 🚧
 
 Исторические B3/B6 зависимости offline интеграции сняты приёмкой `8a09d18`.
-Открыт E06 live gate, не интеграция downloader/CLI или CN-01/v3.
+E06/E10 закрыты scoped приёмкой f7. Открыт только зависимый E11;
+неизвестные исторические расходы77 RUB сохранены, не превращены в actual/zero.
 
 | ID | Блокер | Что блокирует | Что требуется, чтобы снять | Владелец |
 |---|---|---|---|---|
-| B1 | **Частично снят:** три experimental binding и count/price guard приняты offline e751. Qwen 1K no-ref observed completed; Gemini ref uncertain. Async live NOT_RUN | Закрытие E06, E10 live, G3 | CN-05 single/settings/multiref plan на новом reviewed/committed SHA; multi-output probes stopped, без retry Job2 | исполнитель |
-| B2 | **RESOLVED для C09c1/C09c2**: `c794c0b` (1019) и `2110a5f` (1145) offline passed в чистых клонах, SOL6 предкоммитные reviews OK | — | E06 в целом остаётся открытым | исполнитель + интегратор |
-| B3 | **RESOLVED offline:** E07–E09 `8a09d18`, count/price e751 приняты; E06 live открыт | Новый async slice требует fresh review/same-SHA gate, не повтор принятого аудита | Independent review → parent frozen-SHA verification | интегратор |
+| B1 | **RESOLVED scoped:** f7 Qwen1 + GPT6 реальных completed CLI Jobs, live settings/refs/cost/restart проверены; старый Gemini uncertain не переписан | — | Границы live vs offline — [приёмка](progress/e10-f7fb04e6.acceptance.md); никаких retries старых uncertain | исполнитель |
+| B2 | **RESOLVED:** C09c1/C09c2 и их интеграция приняты; same-SHA f7 source/offline/installed/live подтверждены | — | E06 scoped ACCEPTED | исполнитель + интегратор |
+| B3 | **RESOLVED:** E07–E09 baseline и f7 async/canonical/single/settings/refs приняты source/offline/live | — | Fresh SOL6.1 source + evidence review; повтор принятого аудита не требуется | интегратор |
 | B4 | Authenticated login `VladimirMonin` известен; proposed target `VladimirMonin/aimedia`, но owner/target и create/push/tag/release authorization не подтверждены | E11 | Подтверждение owner/target и отдельное явное разрешение; login не authorization | владелец |
-| B5 | Live-бюджет расходуется только по заранее согласованному плану (≤ 200 ₽ суммарно, без автоматического платного retry) | Генерация asset, E10 live | Согласованный список вызовов на каждую модель/режим | владелец |
+| B5 | Финитный план выполнен: conservative164.6/200 RUB, включая прежний reserve77; новые actual47 RUB | Новые, ещё не разрешённые платные вызовы | Остаток35.4 RUB не является разрешением расширять план | владелец |
 | B6 | **RESOLVED offline:** CN-01 v2 archive и полная E07/CLI/D03/history/recovery композиция приняты на `8a09d18`; v3 FTS committed | — | Backup CLI отсутствует по scope, live отдельно | исполнитель |
 
 **Public catalog metadata (два GET без ключа, paid POST = 0):**
@@ -211,14 +218,14 @@ Linux/release/live и реальные пользовательские данн
 
 ## Критерии релиза (ворота G0–G7) 🚦
 
-| Ворота | Критерий | Текущее состояние (не E06/release candidate) |
+| Ворота | Критерий | Текущее состояние |
 |---|---|---|
-| G0 | Нет незакрытого решения, от которого зависит реализация | Частично: E00 baseline D01–D16 принят, `CN-01`–`CN-03` зафиксированы; контракт `CN-01` синхронизирован со спецификацией, реализован его первый code-срез (schema v2 + связь), файловый source-срез `aaf1c5e` принят отдельно, полная E07/CLI-композиция принята на `8a09d18` |
-| G1 | Функции согласованного scope существуют и интегрированы | E07–E09 приняты на `8a09d18`; новый count binding остаётся experimental, не release acceptance |
-| G2 | Обязательные offline-assertions выполнены на кандидате | Baseline `8a09d18`: Windows 1366 PASSED / Linux 1362 PASSED + 4 SKIPPED, 12 raw 0; новый count slice требует своего frozen-SHA gate |
-| G3 | Есть live evidence заявленных моделей/режимов | Не выполнено: `NOT_RUN` |
-| G4 | Собранные distributions и установленный пакет работают вне checkout | Выполнено для baseline `8a09d18` (installed evidence выше); новый slice ещё требует same-SHA install |
-| G5 | Reviewer проверил evidence на одном SHA | Выполнено для baseline `8a09d18`, новый slice требует fresh review |
+| G0 | Нет незакрытого решения, от которого зависит реализация | E00 baseline и CN-01–CN-05 приняты; нерешённая authorization относится к публикации, не реализации |
+| G1 | Функции согласованного scope существуют и интегрированы | ACCEPTED f7: один output/multiple input refs/all agreed controls; catalog experimental раскрыт, multi-output deferred |
+| G2 | Обязательные offline-assertions выполнены на кандидате | f7: Windows1667 PASSED / Linux1663 PASSED + 4 Windows-only SKIPPED; шесть quick/full/release raw0; coverage93% |
+| G3 | Есть live evidence заявленных моделей/режимов | f7: Qwen1 + GPT6 completed; реальные параметры/refs/files/cost/restart; не blanket all-models/all-pairs claim |
+| G4 | Собранные distributions и установленный пакет работают вне checkout | f7: wheel/sdist/81 raw package matches; Windows/Linux noneditable install, console/UX/TLS receipts |
+| G5 | Reviewer проверил evidence на одном SHA | f7: source03264ffd OK; live d13590c2 540 assertions raw0 + supplemental31bdf4f0 ACCEPT_SCOPED_LIVE_CLI |
 | G6 | Annotated tag указывает на проверенный SHA | Не выполнено |
 | G7 | Личная копия установлена по тегу с проверяемым происхождением | Не выполнено |
 
@@ -235,9 +242,10 @@ Linux/release/live и реальные пользовательские данн
 | E03 | `4a068c51…` | да | `PASSED` (quick/full) | SOL6 `PASS` | trailer `e76d541`; артефакты вне Git |
 | E04 | `e13b5692…` | да | `PASSED` (quick/full/release) | SOL6 `PASS` | вне Git |
 | E05 | `701d2d83…` | да | `PASSED` (quick/full/release) | SOL6 `PASS` | вне Git |
-| E06 | `null` для **всего этапа**; промежуточный C09c2: `2110a5fe5c4547a40f438f9e965ff15632a95e7c` | да для clone C09c2, этап не готов | C09c2: full `PASSED` (1145); release `NOT_RUN`; E06 final `NOT_RUN` | SOL6 `PRECOMMIT OK` для C09c2; финальный E06 review `NOT_RUN` | локально `artifacts/quality/2110a5fe5c4547a40f438f9e965ff15632a95e7c/summary.json`; commit `2110a5f` |
+| E06 | `f7fb04e6768aaf1c04c575166e5b73a5e4e95473` | да, frozen source/clean clones | Windows/Linux quick/full/release raw0; 1667 / 1663+4 disclosed Windows-only skips; live7 completed | SOL6.1 source03264ffd + live540/raw0/supplemental31bdf4f0 ACCEPT | [приёмка](progress/e10-f7fb04e6.acceptance.md), локально `artifacts/quality/<f7-sha>/live-parent/` |
 | E07–E09 | `8a09d186a650248715b6efcade96b81f69370613` | да | Windows release 1366 PASSED; Linux 1362 PASSED / 4 SKIPPED, все 12 raw 0 | `32e31e48` / `c4b4f239` OK | `artifacts/quality/<sha>/{windows,linux,installed-ux-parent}` |
-| E10–E11 | `null` | `null` | live/release acceptance `NOT_RUN` | — | `null` |
+| E10 | `f7fb04e6768aaf1c04c575166e5b73a5e4e95473` | да, runtime source/clean clones | шесть OS gates/package/install/UX/TLS +7 live completed +20 restart argv | Native fresh source/Windows/Linux UX/live reviewers, scoped ACCEPT | [приёмка](progress/e10-f7fb04e6.acceptance.md), локально `artifacts/quality/<f7-sha>/` |
+| E11 | `null` — публикации нет | не применимо | repo/push/tag/release/tag-install `NOT_RUN` | — | Authorization NOT_GRANTED |
 
 Поля заполняются по [`progress/stage-report.template.json`](progress/stage-report.template.json);
 строка R01–R24 в [`verification-matrix.md`](verification-matrix.md) получает реальный
@@ -245,7 +253,8 @@ pytest node ID и статус только после прогона на ко�
 
 ## Границы достоверности 🔬
 
-- E07–E09 приняты offline на `8a09d18`, но это не E06 live или E10/E11.
+- E06/E10 приняты scoped на f7 по [новому отчёту](progress/e10-f7fb04e6.acceptance.md),
+  не по старым C09 receipts. Ни local commit, ни E10 не означают публикацию E11.
   Исторический commit C09c2,
   clean-clone full gate и SOL6 предкоммитный review доказывают только gateway и
   безопасное скачивание по документированному URL, а не интеграцию Job, production
@@ -300,7 +309,7 @@ credential reads = 0; E06 live/E10/E11 остаются открытыми. Publ
 `artifacts/metadata/polza-media-priced-routing-2026-09-30.json`; writer gates:
 `artifacts/quality/priced-media-writer/` (отдельно от source76).
 
-## Текущий e751 baseline и documented async candidate
+## Исторический e751 baseline и documented async candidate
 
 Источник следующих **e751** фактов — задание владельца с same-SHA acceptance и
 live observations; writer этого среза не читал private receipts/keys/userdata и
@@ -411,7 +420,7 @@ cost4/без id. Это диагностические observations, не нов
 или публикацию. Child выполняет только OFFLINE release/freeze; E06/E10 OPEN.
 
 
-## CN-05: GPT single image / all MIE settings / multiple input references
+## Исторический checkpoint CN-05 до f7: single/settings/multiple input references
 
 Прямое решение владельца отложило несколько выходных изображений одного запроса.
 Прежний count2 mandatory/NO WAIVER gate отменён по принятому scope, не как QA waiver.

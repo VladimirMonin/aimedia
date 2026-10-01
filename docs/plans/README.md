@@ -16,23 +16,28 @@
 
 **Документ является планом, а не отчётом о работающей программе.** При его составлении были только спецификации: результаты запуска реализации, отчёт CI и подтверждённый релиз ещё отсутствовали. Поэтому исходные статусы этапов — `NOT_STARTED`, а проверок — `NOT_RUN`; актуальные статусы и evidence вынесены на доску ниже. Названия будущих тестов и служебных скриптов задают работу для разработчиков; их наличие в тексте не означает, что они уже существуют.
 
-**Текущий OFFLINE PRECOMMIT fix-set (CN-05):** исходный source
-`8de7a10009b8198209320aa70c26e49540e7f1ed`. Canonical Media
-`openai/gpt-5.4-image-2` + fixed MIE routing/async/published-max cap11,
-один output (`input.max_images=1`), все документированные MIE настройки и
-несколько входных references. HTTP status/finite safe code/reason сохраняются.
-Кандидат **NOT_COMMITTED / NOT_LIVE_VERIFIED**, fresh review pending.
+**E06/E10 ACCEPTED, 2026-10-01:** frozen runtime source
+`f7fb04e6768aaf1c04c575166e5b73a5e4e95473`. Canonical Media
+`openai/gpt-5.4-image-2`, fixed MIE routing/async/cap11, один output и все
+согласованные controls/multiple input references. [Полная приёмка](progress/e10-f7fb04e6.acceptance.md):
+шесть Windows/Linux quick/full/release raw0, Windows1667 / Linux1663+4 disclosed
+junction SKIPPED, coverage93%; wheel/sdist/81 package matches, noneditable install
+вне checkout, Windows/Linux агентский walkthrough и strict local TLS.
+Native fresh source review OK; новые7 completed CLI Jobs (Qwen1/GPT6) покрыли
+три tiers/шесть ratios/ref0–3, файлы/переданные settings/refs/actual cost/restart.
+Независимый live evidence review540 assertions/raw0 + visual supplemental ACCEPT.
+Generation использует measurement-only observer установленного public CLI main,
+не полностью unmodified console; metadata/history — unmodified console.
 
-[CN-05](release-scope.md) — прямое изменение scope: несколько outputs отложены;
-прежний count=2 mandatory / NO WAIVER отменён, не ослаблен молча. E06/E10 OPEN
-для new-source single-image/settings/multiple-input-reference CLI acceptance;
-E11 не авторизован. Parent direct 2K/16:9 + два local refs (PNG/JPEG) observed
-completed/cost7, known-ref continuation один GET/ноль POST; это не installed CLI
-proof нового SHA. HTTP timeout/default wait не меняются; wait configurable,
-recovery GET-only. Lifetime checkpoint после single/multiref parent probe:
-**14 attempted POST, known40.6 + unknown reserve77 = 117.6/200 RUB**.
-Multi-output probes остановлены по deferral; child POST0, Job2/Job5 и старые
-receipts не изменены. Текущие слоты — в release-board.
+[CN-05](release-scope.md) отложил несколько outputs; count2/NO WAIVER отменён.
+Все15valid pairs/16refs boundary — offline; live scope ограничен таблицей отчёта,
+каталог остаётся experimental, blanket stable activation не заявлена.
+Lifetime **21 attempted POST, known87.6 + прежний unknown reserve77 = 164.6/200 RUB**;
+новые actual47 RUB, automatic paid retry0, старые uncertain Jobs не изменены.
+**E11 NOT_AUTHORIZED:** login VladimirMonin/proposed VladimirMonin/aimedia не
+разрешают repo/push/tag/release. Документарная фиксация отчёта не новый tested
+runtime/tag; tag должен указывать на проверенный SHA, а смена SHA требует E10.
+Исторические checkpoint/NOT_RUN ниже относятся только к своим датам/SHA.
 
 **Исторический baseline (e751):** E07/E08/E09 CLOSED / ACCEPTED offline на
 `8a09d186a650248715b6efcade96b81f69370613`; count/price wire guard принят offline
