@@ -34,9 +34,15 @@ Generation использует measurement-only observer установленн
 каталог остаётся experimental, blanket stable activation не заявлена.
 Lifetime **21 attempted POST, known87.6 + прежний unknown reserve77 = 164.6/200 RUB**;
 новые actual47 RUB, automatic paid retry0, старые uncertain Jobs не изменены.
-**E11 NOT_AUTHORIZED:** login VladimirMonin/proposed VladimirMonin/aimedia не
-разрешают repo/push/tag/release. Документарная фиксация отчёта не новый tested
-runtime/tag; tag должен указывать на проверенный SHA, а смена SHA требует E10.
+**E11 RELEASED, 2026-10-01:** после отдельного явного разрешения владельца
+опубликованы public [VladimirMonin/aimedia](https://github.com/VladimirMonin/aimedia)
+и [v0.1.0](https://github.com/VladimirMonin/aimedia/releases/tag/v0.1.0).
+Annotated tag → проверенный `f7fb04e6`; wheel/sdist/checksums/constraints/verification
+скачаны и проверены, public Git-tag uv tool install подтверждён actual VCS SHA и
+81 package-файлом. Независимый SOL6.1 review: raw0/311 checks; GitHub CI обеих ОС
+SUCCESS на CI-only `76e614f` (runtime/tests/lock не изменены).
+[Отчёт E11, provenance, CI и архив результатов](progress/e11-v0.1.0.publication.md).
+Документарные HEAD не новые tested runtime/tag; опубликованный тег не перемещён.
 Исторические checkpoint/NOT_RUN ниже относятся только к своим датам/SHA.
 
 **Исторический baseline (e751):** E07/E08/E09 CLOSED / ACCEPTED offline на

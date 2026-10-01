@@ -17,7 +17,8 @@
 | Принятый runtime E06/E10 | `f7fb04e6768aaf1c04c575166e5b73a5e4e95473`; canonical GPT/MIE, один output, все согласованные controls/multiple input refs; [приёмка 2026-10-01](progress/e10-f7fb04e6.acceptance.md) |
 | Offline/package/installed | Шесть Windows/Linux quick/full/release raw0; Windows1667 / Linux1663+4 junction SKIPPED; coverage93%; 81 package matches; Windows120 argv, Linux44 console, strict local TLS отдельно |
 | Реальная CLI-приёмка | 7 completed Jobs: Qwen1 + GPT6; три tiers/шесть ratios/ref0–3; 14 output files/6 managed refs; 20 new-process history/FTS/cost argv; SOL6.1 540 assertions raw0 + visual supplemental ACCEPT_SCOPED_LIVE_CLI |
-| Незавершённое | E11 NOT_AUTHORIZED: GitHub owner/target и отдельное разрешение repo/push/tag/release; публикация и tag-install NOT_RUN. Catalog остаётся experimental; all15pairs/16refs live не заявлены; multiple outputs отложены CN-05 |
+| E11 RELEASED | Public [VladimirMonin/aimedia](https://github.com/VladimirMonin/aimedia), [v0.1.0](https://github.com/VladimirMonin/aimedia/releases/tag/v0.1.0), annotated tag→f7, 6 assets, actual public Git-tag uv tool install/81 hashes/25 deps; native SOL6.1 independent311/raw0; GitHub CI Windows/Linux SUCCESS на CI-only76e614f; [отчёт](progress/e11-v0.1.0.publication.md) |
+| Остаточные ограничения | Catalog experimental; all15pairs/16refs live не заявлены; multiple outputs отложены CN-05; прежний unknown reserve77 RUB не освобождён. Новых блокеров принятого scope нет |
 | Lifetime paid accounting | 21 attempted POST; known87.6 RUB + прежний unknown reserve77 RUB = conservative164.6/200 RUB. Новые7 POST: actual47 RUB; автоматических retries0, старые uncertain Jobs не изменялись |
 | Обязательный объём и отложенное | [`release-scope.md`](release-scope.md) + change notes `CN-01`–`CN-05` |
 | Требования R01–R24 | [`verification-matrix.md`](verification-matrix.md) |
@@ -114,7 +115,7 @@ experimental запись по публичным Markdown, paid POST = 0, MCP r
 - Подключение downloader к Job, проверка/сохранение его байтов и recovery — E07–E08,
   не доказаны срезом C09c2. Приёмка wheel/sdist и installed-CLI smoke — слот E10.
 
-## E07–E09: ACCEPTED на `8a09d18`; E10 ACCEPTED на f7; E11 не авторизован ⏳
+## E07–E09: ACCEPTED на `8a09d18`; E10 ACCEPTED на f7; E11 RELEASED ✅
 
 Fresh whole-source review `32e31e48` и correction review `c4b4f239` — OK.
 Evidence baseline: `artifacts/quality/8a09d186a650248715b6efcade96b81f69370613/`
@@ -131,7 +132,7 @@ Schema v2 archive и v3 FTS committed; ownership platform fix входит в ba
 | E08 | Batch с ограниченной конкурентностью, partial failures, `retry`/`sync`, Ctrl+C, recovery и защита от двойного Runner | E07 | Peak active = лимит, partial outcome, submit_count = 1 при неизвестном исходе, restart без нового POST, cross-process guard | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
 | E09 | Полный CLI, JSON/exit codes, история, лексический FTS5, валютные сводки, atomic help | E03, E08 | Реальный argv, JSON/exit для текущей попытки, поиск prompts/ref provenance/managed paths/hashes/result artifacts после restart без чтения файлов, RUB/USD/unknown раздельно, packaged help вне cwd | `ACCEPTED / CLOSED` на `8a09d18`; evidence выше |
 | E10 | Приёмка release candidate: Windows+Linux, offline quick/full/release, wheel+sdist, installed smoke, secret scan, агентский walkthrough, ограниченный live | E09 | Один frozen runtime SHA; [OS/package/UX/TLS/live и независимая приёмка](progress/e10-f7fb04e6.acceptance.md); 4 Windows-only Linux skips раскрыты, не PASS | `ACCEPTED` на `f7fb04e6`; не публикация E11 |
-| E11 | Публикация проверенного релиза | E10 + отдельное разрешение владельца | Annotated tag на проверенном SHA, wheel/sdist + checksums, установка по тегу с проверкой происхождения | `OPEN / BLOCKED`, publication permission absent (login VladimirMonin известен; owner/target и разрешения не подтверждены) |
+| E11 | Публикация проверенного релиза | E10 + отдельное разрешение владельца | Annotated tag на проверенном SHA, wheel/sdist + checksums, установка по тегу с проверкой происхождения | `RELEASED`: public VladimirMonin/aimedia/v0.1.0, tag→f7, 6 assets, actual tag-install/81 hashes; [приёмка](progress/e11-v0.1.0.publication.md) |
 
 **Историческая запись одиночного среза до укрупнения (не текущий статус):**
 E07 содержал частичное одиночное ядро и `tests/integration/test_single_image.py`;
@@ -188,15 +189,16 @@ Linux/release/live и реальные пользовательские данн
 ## Зависимости и блокеры 🚧
 
 Исторические B3/B6 зависимости offline интеграции сняты приёмкой `8a09d18`.
-E06/E10 закрыты scoped приёмкой f7. Открыт только зависимый E11;
-неизвестные исторические расходы77 RUB сохранены, не превращены в actual/zero.
+E06/E10 закрыты scoped приёмкой f7; E11 RELEASED после явного разрешения владельца.
+Незакрытых блокеров принятого scope нет; неизвестные исторические расходы77 RUB
+сохранены, не превращены в actual/zero.
 
 | ID | Блокер | Что блокирует | Что требуется, чтобы снять | Владелец |
 |---|---|---|---|---|
 | B1 | **RESOLVED scoped:** f7 Qwen1 + GPT6 реальных completed CLI Jobs, live settings/refs/cost/restart проверены; старый Gemini uncertain не переписан | — | Границы live vs offline — [приёмка](progress/e10-f7fb04e6.acceptance.md); никаких retries старых uncertain | исполнитель |
 | B2 | **RESOLVED:** C09c1/C09c2 и их интеграция приняты; same-SHA f7 source/offline/installed/live подтверждены | — | E06 scoped ACCEPTED | исполнитель + интегратор |
 | B3 | **RESOLVED:** E07–E09 baseline и f7 async/canonical/single/settings/refs приняты source/offline/live | — | Fresh SOL6.1 source + evidence review; повтор принятого аудита не требуется | интегратор |
-| B4 | Authenticated login `VladimirMonin` известен; proposed target `VladimirMonin/aimedia`, но owner/target и create/push/tag/release authorization не подтверждены | E11 | Подтверждение owner/target и отдельное явное разрешение; login не authorization | владелец |
+| B4 | **RESOLVED:** владелец отдельно разрешил public repo/push/tag/release; опубликован VladimirMonin/aimedia/v0.1.0 с tag→f7 | — | Actual public metadata/tag/assets/install и independent311 подтверждены [E11](progress/e11-v0.1.0.publication.md); login сам по себе по-прежнему не authorization | владелец |
 | B5 | Финитный план выполнен: conservative164.6/200 RUB, включая прежний reserve77; новые actual47 RUB | Новые, ещё не разрешённые платные вызовы | Остаток35.4 RUB не является разрешением расширять план | владелец |
 | B6 | **RESOLVED offline:** CN-01 v2 archive и полная E07/CLI/D03/history/recovery композиция приняты на `8a09d18`; v3 FTS committed | — | Backup CLI отсутствует по scope, live отдельно | исполнитель |
 
@@ -212,22 +214,22 @@ E06/E10 закрыты scoped приёмкой f7. Открыт только з�
 14; committed binding ограничен подтверждённым пересечением (не более 8).
 Непроверенные production bindings не активированы; ключ не читался.
 
-`B4` (GitHub owner и разрешение на публикацию) — единственный блокер, который
-останавливает зависимую работу целиком; остальные ограничивают конкретные этапы и
-не отменяют офлайн-часть E06–E09.
+`B4` снят явным разрешением и выполненной E11-приёмкой. Бюджетный reserve и
+ограниченная live-матрица остаются честно раскрытыми ограничениями, а не поводом
+повторять старые uncertain Jobs или объявлять все модели stable.
 
 ## Критерии релиза (ворота G0–G7) 🚦
 
 | Ворота | Критерий | Текущее состояние |
 |---|---|---|
-| G0 | Нет незакрытого решения, от которого зависит реализация | E00 baseline и CN-01–CN-05 приняты; нерешённая authorization относится к публикации, не реализации |
+| G0 | Нет незакрытого решения, от которого зависит реализация | E00 baseline и CN-01–CN-05 приняты; отдельная publication authorization получена и исполнена |
 | G1 | Функции согласованного scope существуют и интегрированы | ACCEPTED f7: один output/multiple input refs/all agreed controls; catalog experimental раскрыт, multi-output deferred |
 | G2 | Обязательные offline-assertions выполнены на кандидате | f7: Windows1667 PASSED / Linux1663 PASSED + 4 Windows-only SKIPPED; шесть quick/full/release raw0; coverage93% |
 | G3 | Есть live evidence заявленных моделей/режимов | f7: Qwen1 + GPT6 completed; реальные параметры/refs/files/cost/restart; не blanket all-models/all-pairs claim |
 | G4 | Собранные distributions и установленный пакет работают вне checkout | f7: wheel/sdist/81 raw package matches; Windows/Linux noneditable install, console/UX/TLS receipts |
 | G5 | Reviewer проверил evidence на одном SHA | f7: source03264ffd OK; live d13590c2 540 assertions raw0 + supplemental31bdf4f0 ACCEPT_SCOPED_LIVE_CLI |
-| G6 | Annotated tag указывает на проверенный SHA | Не выполнено |
-| G7 | Личная копия установлена по тегу с проверяемым происхождением | Не выполнено |
+| G6 | Annotated tag указывает на проверенный SHA | PASSED: public v0.1.0 peeled→f7, independent tag-object/Git ls-remote checks; tag не перемещён |
+| G7 | Личная копия установлена по тегу с проверяемым происхождением | PASSED: actual uv tool install public v0.1.0, noneditable direct_url commitf7/81 hashes/25 constraints; personal C:\Users\User\.local\bin\aimedia.exe, guarded console smoke0 |
 
 ## Слоты доказательств 📦
 
@@ -245,7 +247,7 @@ E06/E10 закрыты scoped приёмкой f7. Открыт только з�
 | E06 | `f7fb04e6768aaf1c04c575166e5b73a5e4e95473` | да, frozen source/clean clones | Windows/Linux quick/full/release raw0; 1667 / 1663+4 disclosed Windows-only skips; live7 completed | SOL6.1 source03264ffd + live540/raw0/supplemental31bdf4f0 ACCEPT | [приёмка](progress/e10-f7fb04e6.acceptance.md), локально `artifacts/quality/<f7-sha>/live-parent/` |
 | E07–E09 | `8a09d186a650248715b6efcade96b81f69370613` | да | Windows release 1366 PASSED; Linux 1362 PASSED / 4 SKIPPED, все 12 raw 0 | `32e31e48` / `c4b4f239` OK | `artifacts/quality/<sha>/{windows,linux,installed-ux-parent}` |
 | E10 | `f7fb04e6768aaf1c04c575166e5b73a5e4e95473` | да, runtime source/clean clones | шесть OS gates/package/install/UX/TLS +7 live completed +20 restart argv | Native fresh source/Windows/Linux UX/live reviewers, scoped ACCEPT | [приёмка](progress/e10-f7fb04e6.acceptance.md), локально `artifacts/quality/<f7-sha>/` |
-| E11 | `null` — публикации нет | не применимо | repo/push/tag/release/tag-install `NOT_RUN` | — | Authorization NOT_GRANTED |
+| E11 | `f7fb04e6768aaf1c04c575166e5b73a5e4e95473` tag runtime; docs29c/CI-only76e614f не новые release payloads | source/tag clean; runtime unchanged | E10 same-SHA gates сохранены; actual publication/tag-install0; GitHub full Windows/Linux SUCCESS на76e614f | Native fresh SOL6.1 independent311/raw0 + own Linux focused1/0/0; source не переаудирован | [приёмка](progress/e11-v0.1.0.publication.md), `artifacts/quality/<f7-sha>/publication-parent/` и `artifacts/archive/v0.1.0/` |
 
 Поля заполняются по [`progress/stage-report.template.json`](progress/stage-report.template.json);
 строка R01–R24 в [`verification-matrix.md`](verification-matrix.md) получает реальный

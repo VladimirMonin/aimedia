@@ -5,7 +5,24 @@
 автономная Markdown справка. Runtime `f7fb04e6` принят: Windows/Linux offline,
 wheel/sdist и установленный пакет, агентский walkthrough, реальные Qwen/GPT
 сценарии. [Отчёт и границы приёмки](docs/plans/progress/e10-f7fb04e6.acceptance.md).
-Это **не опубликованный релиз**: GitHub repo/tag/release ещё не авторизованы.
+Опубликован [релиз v0.1.0](https://github.com/VladimirMonin/aimedia/releases/tag/v0.1.0):
+annotated tag указывает на проверенный runtime, не на последующий docs-only HEAD.
+[Публикация, установка по тегу и CI](docs/plans/progress/e11-v0.1.0.publication.md).
+
+## Установка релиза
+
+Скачайте `runtime-constraints.txt` из assets релиза в текущий каталог:
+
+```bash
+uv --no-config tool install --python 3.12 --constraints runtime-constraints.txt git+https://github.com/VladimirMonin/aimedia.git@v0.1.0
+aimedia --version
+aimedia --help
+```
+
+Опубликованы wheel/sdist и `SHA256SUMS`. Установка по публичному Git-тегу реально
+проверена: `direct_url.json` → `f7fb04e6`, 81 package-файл и 25 pinned dependencies
+совпали. Локальная установленная копия: `C:\Users\User\.local\bin\aimedia.exe`.
+GitHub CI Windows/Linux зелёный; каталог моделей остаётся experimental.
 
 ## Установка для разработки
 
