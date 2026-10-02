@@ -459,3 +459,15 @@ Permanent workflow — [RELEASE.verified-tool](../../instructions/RELEASE.verifi
 Worker verification и independent evidence-only review завершены. Уточнение reviewer
 о числе файлов отражено в отчёте: 11 outputs (6 final + 5 originals).
 Docs commit/push интегратора — не новый релиз или перемещение v0.1.0.
+
+
+## Docs-only refresh v0.1.0 — решение владельца, 2026-10-02
+
+Явно разрешены commit/push, перенос существующего `v0.1.0` на текущие docs,
+замена шести release assets и scoped reinstall обычного личного uv tool. Версия
+остаётся `0.1.0`, runtime/tests/dependencies не меняются; навыки — standalone
+`docs/skills/` в source/sdist, не wheel/автоустановка. Это именованное исключение
+к immutable policy, не переписывание исторической E10/E11/postrelease приёмки.
+[Объём и порядок завершения](progress/v0.1.0-refresh-2026-10-02.md); actual current
+source commit после публикации — в публичном `release-manifest.json` и tag.
+Разрешение/подготовка не означают, что remote tag/assets/tool уже обновлены.

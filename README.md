@@ -2,12 +2,15 @@
 
 Личная Python 3.12 image-only CLI утилита через Polza: генерация/batch, SQLite
 история, managed reference copies, retry/sync, FTS5 поиск, точные расходы и
-автономная Markdown справка. Runtime `f7fb04e6` принят: Windows/Linux offline,
+автономная Markdown справка. Исходный runtime `f7fb04e6` принят: Windows/Linux offline,
 wheel/sdist и установленный пакет, агентский walkthrough, реальные Qwen/GPT
 сценарии. [Отчёт и границы приёмки](docs/plans/progress/e10-f7fb04e6.acceptance.md).
 Опубликован [релиз v0.1.0](https://github.com/VladimirMonin/aimedia/releases/tag/v0.1.0):
-annotated tag указывает на проверенный runtime, не на последующий docs-only HEAD.
-[Публикация, установка по тегу и CI](docs/plans/progress/e11-v0.1.0.publication.md).
+исходная публикация и её CI зафиксированы в [отчёте E11](docs/plans/progress/e11-v0.1.0.publication.md).
+Владелец явно разрешил docs-only обновление сборки с переносом того же тега и
+заменой assets, без смены версии/runtime. [Решение и границы обновления](docs/plans/progress/v0.1.0-refresh-2026-10-02.md).
+Текущий payload тега сверяйте с `source_commit` публичного `release-manifest.json`,
+а не с историческим SHA приёмки.
 
 ## Установка релиза
 
@@ -19,10 +22,22 @@ aimedia --version
 aimedia --help
 ```
 
-Опубликованы wheel/sdist и `SHA256SUMS`. Установка по публичному Git-тегу реально
-проверена: `direct_url.json` → `f7fb04e6`, 81 package-файл и 25 pinned dependencies
-совпали. Локальная установленная копия: `C:\Users\User\.local\bin\aimedia.exe`.
-GitHub CI Windows/Linux зелёный; каталог моделей остаётся experimental.
+В assets релиза доступны wheel/sdist, `runtime-constraints.txt`, `verification.json`,
+`release-manifest.json` и `SHA256SUMS`. Сверьте constraints/checksums с текущими assets;
+после установки `direct_url.json` должен соответствовать payload тега из manifest.
+Исходная установка → `f7fb04e6` (81 package-файл, 25 pins) и Windows/Linux CI —
+исторические результаты, не новая проверка docs-only сборки. Каталог моделей
+остаётся experimental.
+
+Если `v0.1.0` уже установлен и владелец явно разрешил обновление **того же тега**,
+обычный install может оставить прежнюю копию. После публикации обновлённых assets
+и скачивания их constraints переустановите только `aimedia` с refresh пакета:
+
+```bash
+uv --no-config tool install --reinstall-package aimedia --python 3.12 --constraints runtime-constraints.txt git+https://github.com/VladimirMonin/aimedia.git@v0.1.0
+```
+
+Соседние tools и общий cache не обновляйте/не очищайте.
 [Проверенная установка и повторная проверка](instructions/RELEASE.verified-tool.instructions.md) —
 checksum assets, tag/provenance, offline gates и отдельно разрешённый paid plan.
 [Фактическая postrelease-проверка](docs/plans/progress/postrelease-v0.1.0-verification-2026-10-01.md):
@@ -102,8 +117,9 @@ JSON mode: весь stdout — один document, даже при argv error; д
 аудита и точечного исправления инфографики, с вложенным `screenshot-explainer`
 для пояснения реального UI. Ссылки на все входы и подключение — в каталоге.
 Master раскрывает выбранный сценарий постепенно; один агент выполняет роли
-последовательно. Навыки не поставляются с uv tool v0.1.0 и не устанавливаются
-автоматически; их наличие не добавляет CLI рендерер или разрешение на платный API.
+последовательно. Навыки доступны отдельно в Git source/tag и sdist (`docs/skills/`),
+но не в wheel/установленном uv tool v0.1.0 и не устанавливаются автоматически.
+Их наличие не добавляет CLI рендерер или разрешение на платный API.
 
 ## Offline проверки
 
