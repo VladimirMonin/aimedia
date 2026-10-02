@@ -1,0 +1,1038 @@
+{
+  "schema_version": "1.0",
+  "project_id": "workshop-sign",
+  "episode_id": "welcome",
+  "document_revision": "draft-01",
+  "kind": "preproduction-package",
+  "scope": "full",
+  "mode": "full",
+  "readiness": "ready",
+  "approval": "proposed",
+  "story": "Пик украшает табличку, но гость не находит вход. Сравнив табличку с дверью, робот убирает лишнее и оставляет ясную стрелку.",
+  "brief": {
+    "goal": "Показать, как ясность помогает гостям.",
+    "audience": "Дети и взрослые.",
+    "language": "ru",
+    "prompt_language": "ru",
+    "image_text_language": "ru",
+    "story_profile": "решение проблемы",
+    "volume": {
+      "kind": "hard",
+      "description": "Одна страница из четырёх панелей в двух вариантах."
+    },
+    "voice_mode": "narrator_and_characters",
+    "assumptions": [
+      "Образы заданы текстом; изображений нет."
+    ]
+  },
+  "style": {
+    "id": "style-comedy",
+    "description": "Оригинальная рисованная комедия для мастерской.",
+    "prompt_block": "Двухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур.",
+    "approval": "approved"
+  },
+  "characters": [
+    {
+      "id": "robot-pik",
+      "name": "Пик",
+      "entity_kind": "колёсный робот",
+      "role": "Готовит вход в мастерскую.",
+      "character": "Старательный, склонен увлекаться украшениями.",
+      "speech": "Короткие доброжелательные фразы.",
+      "traits": [
+        {
+          "name": "корпус",
+          "value": "жёлтый квадратный корпус на двух колёсах",
+          "origin": "user",
+          "approval": "approved"
+        },
+        {
+          "name": "экран",
+          "value": "круглый тёмный экран с двумя точками-глазами",
+          "origin": "agent",
+          "approval": "approved"
+        }
+      ],
+      "invariants": [
+        "Два колеса и квадратный силуэт.",
+        "Без человеческих волос и одежды."
+      ],
+      "approval": "approved"
+    },
+    {
+      "id": "visitor-lada",
+      "name": "Лада",
+      "entity_kind": "человек",
+      "role": "Проверяет, понятен ли вход.",
+      "character": "Наблюдательная и спокойная.",
+      "speech": "Прямые короткие вопросы.",
+      "traits": [
+        {
+          "name": "образ",
+          "value": "короткие тёмные волосы, зелёная куртка",
+          "origin": "agent",
+          "approval": "proposed"
+        }
+      ],
+      "invariants": [
+        "Один и тот же силуэт во всех вариантах."
+      ],
+      "approval": "proposed"
+    }
+  ],
+  "references": [
+    {
+      "id": "ref-missing",
+      "role": "character_identity",
+      "entity_id": "robot-pik",
+      "locator": null,
+      "availability": "missing",
+      "inspection": "not_inspected",
+      "approval": "approved"
+    }
+  ],
+  "locations": [
+    {
+      "id": "location-workshop",
+      "description": "Вход справа, стойка с табличкой слева от двери, верстак за дверью.",
+      "states": [
+        "День, ровный мягкий свет."
+      ]
+    }
+  ],
+  "props": [
+    {
+      "id": "prop-sign",
+      "description": "Прямоугольная табличка размером с корпус Пика.",
+      "states": [
+        "Завитки скрывают стрелку.",
+        "Крупная стрелка к двери."
+      ]
+    }
+  ],
+  "source_claims": [],
+  "beats": [
+    {
+      "id": "beat-intent",
+      "order": 1,
+      "purpose": "Показать замысел.",
+      "visible_event": "Пик украшает табличку завитками и ставит её у входа.",
+      "before": "Вход ещё не обозначен.",
+      "after": "Табличка красива, но стрелку не видно.",
+      "source_claim_ids": [],
+      "interpretation": "fiction"
+    },
+    {
+      "id": "beat-problem",
+      "order": 2,
+      "purpose": "Дать зрителю заметить ошибку.",
+      "visible_event": "Лада проходит мимо двери и смотрит на непонятную табличку.",
+      "before": "Пик ждёт гостя.",
+      "after": "Гость не находит вход.",
+      "source_claim_ids": [],
+      "interpretation": "fiction"
+    },
+    {
+      "id": "beat-compare",
+      "order": 3,
+      "purpose": "Показать поиск причины.",
+      "visible_event": "Пик сравнивает направление взгляда Лады, дверь и маленькую стрелку среди завитков.",
+      "before": "Причина неясна.",
+      "after": "Декор закрывает нужный знак.",
+      "source_claim_ids": [],
+      "interpretation": "fiction"
+    },
+    {
+      "id": "beat-solution",
+      "order": 4,
+      "purpose": "Завершить задачу.",
+      "visible_event": "Пик убирает завитки, оставляет крупную стрелку к двери; Лада входит в мастерскую.",
+      "before": "Табличка непонятна.",
+      "after": "Вход понятен без объяснений.",
+      "source_claim_ids": [],
+      "interpretation": "fiction"
+    }
+  ],
+  "lines": [
+    {
+      "id": "line-narration",
+      "kind": "narration",
+      "speaker_id": "narrator",
+      "canonical_text": "Пик готовит мастерскую к приходу гостей.",
+      "on_image_text": null,
+      "spoken_text": "Пик готовит мастерскую к приходу гостей.",
+      "delivery": "Спокойно, с короткой паузой.",
+      "pronunciation_notes": [],
+      "approval": "approved",
+      "text_variants": []
+    },
+    {
+      "id": "line-beauty",
+      "kind": "dialogue",
+      "speaker_id": "robot-pik",
+      "canonical_text": "Пусть будет красиво!",
+      "on_image_text": "Пусть будет красиво!",
+      "spoken_text": "Пусть будет красиво!",
+      "delivery": "Спокойно, с короткой паузой.",
+      "pronunciation_notes": [],
+      "approval": "approved",
+      "text_variants": []
+    },
+    {
+      "id": "line-question",
+      "kind": "dialogue",
+      "speaker_id": "visitor-lada",
+      "canonical_text": "Куда идти?",
+      "on_image_text": "Куда идти?",
+      "spoken_text": "Куда идти?",
+      "delivery": "Спокойно, с короткой паузой.",
+      "pronunciation_notes": [],
+      "approval": "approved",
+      "text_variants": []
+    },
+    {
+      "id": "line-sign",
+      "kind": "label",
+      "speaker_id": "none",
+      "canonical_text": "ВХОД →",
+      "on_image_text": "ВХОД →",
+      "spoken_text": null,
+      "delivery": "",
+      "pronunciation_notes": [],
+      "approval": "approved",
+      "text_variants": []
+    },
+    {
+      "id": "line-end",
+      "kind": "dialogue",
+      "speaker_id": "robot-pik",
+      "canonical_text": "Теперь понятно.",
+      "on_image_text": "Теперь понятно.",
+      "spoken_text": "Теперь понятно.",
+      "delivery": "Спокойно, с короткой паузой.",
+      "pronunciation_notes": [],
+      "approval": "approved",
+      "text_variants": []
+    }
+  ],
+  "variants": [
+    {
+      "id": "portrait",
+      "aspect_ratio": "9:16",
+      "format": "comic_page",
+      "omissions": []
+    },
+    {
+      "id": "landscape",
+      "aspect_ratio": "16:9",
+      "format": "comic_page",
+      "omissions": []
+    }
+  ],
+  "pages": [
+    {
+      "id": "page-portrait",
+      "variant_id": "portrait",
+      "order": 1,
+      "declared_panel_count": 4,
+      "panels": [
+        {
+          "id": "panel-portrait-beat-intent",
+          "order": 1,
+          "rect": [
+            0.04,
+            0.03,
+            0.92,
+            0.27
+          ],
+          "action": "Пик украшает табличку завитками и ставит её у входа.",
+          "camera": "Общий вид двери и стойки.",
+          "focus": "Замысел робота.",
+          "beat_ids": [
+            "beat-intent"
+          ],
+          "character_ids": [
+            "robot-pik"
+          ],
+          "location_id": "location-workshop",
+          "prop_ids": [
+            "prop-sign"
+          ],
+          "text_zones": [
+            {
+              "line_id": "line-beauty",
+              "rect": [
+                0.05,
+                0.04,
+                0.86,
+                0.2
+              ],
+              "kind": "bubble",
+              "tail_to": "robot-pik"
+            }
+          ]
+        },
+        {
+          "id": "panel-portrait-beat-problem",
+          "order": 2,
+          "rect": [
+            0.04,
+            0.33,
+            0.44,
+            0.3
+          ],
+          "action": "Лада проходит мимо двери и смотрит на непонятную табличку.",
+          "camera": "Средний план с видимой дверью справа.",
+          "focus": "Растерянный гость.",
+          "beat_ids": [
+            "beat-problem"
+          ],
+          "character_ids": [
+            "robot-pik",
+            "visitor-lada"
+          ],
+          "location_id": "location-workshop",
+          "prop_ids": [
+            "prop-sign"
+          ],
+          "text_zones": [
+            {
+              "line_id": "line-question",
+              "rect": [
+                0.05,
+                0.04,
+                0.86,
+                0.2
+              ],
+              "kind": "bubble",
+              "tail_to": "visitor-lada"
+            }
+          ]
+        },
+        {
+          "id": "panel-portrait-beat-compare",
+          "order": 3,
+          "rect": [
+            0.52,
+            0.33,
+            0.44,
+            0.3
+          ],
+          "action": "Пик сравнивает направление взгляда Лады, дверь и маленькую стрелку среди завитков.",
+          "camera": "Деталь таблички рядом с направлением взгляда.",
+          "focus": "Скрытая стрелка.",
+          "beat_ids": [
+            "beat-compare"
+          ],
+          "character_ids": [
+            "robot-pik",
+            "visitor-lada"
+          ],
+          "location_id": "location-workshop",
+          "prop_ids": [
+            "prop-sign"
+          ],
+          "text_zones": []
+        },
+        {
+          "id": "panel-portrait-beat-solution",
+          "order": 4,
+          "rect": [
+            0.04,
+            0.66,
+            0.92,
+            0.31
+          ],
+          "action": "Пик убирает завитки, оставляет крупную стрелку к двери; Лада входит в мастерскую.",
+          "camera": "Широкий общий вид с ясным направлением движения.",
+          "focus": "Ясный вход.",
+          "beat_ids": [
+            "beat-solution"
+          ],
+          "character_ids": [
+            "robot-pik",
+            "visitor-lada"
+          ],
+          "location_id": "location-workshop",
+          "prop_ids": [
+            "prop-sign"
+          ],
+          "text_zones": [
+            {
+              "line_id": "line-sign",
+              "rect": [
+                0.05,
+                0.04,
+                0.86,
+                0.2
+              ],
+              "kind": "label"
+            },
+            {
+              "line_id": "line-end",
+              "rect": [
+                0.05,
+                0.7200000000000001,
+                0.86,
+                0.2
+              ],
+              "kind": "bubble",
+              "tail_to": "robot-pik"
+            }
+          ]
+        }
+      ],
+      "allowed_overlaps": []
+    },
+    {
+      "id": "page-landscape",
+      "variant_id": "landscape",
+      "order": 1,
+      "declared_panel_count": 4,
+      "panels": [
+        {
+          "id": "panel-landscape-beat-intent",
+          "order": 1,
+          "rect": [
+            0.03,
+            0.04,
+            0.455,
+            0.44
+          ],
+          "action": "Пик украшает табличку завитками и ставит её у входа.",
+          "camera": "Широкий план: Пик слева, дверь справа.",
+          "focus": "Замысел робота.",
+          "beat_ids": [
+            "beat-intent"
+          ],
+          "character_ids": [
+            "robot-pik"
+          ],
+          "location_id": "location-workshop",
+          "prop_ids": [
+            "prop-sign"
+          ],
+          "text_zones": [
+            {
+              "line_id": "line-beauty",
+              "rect": [
+                0.05,
+                0.04,
+                0.86,
+                0.2
+              ],
+              "kind": "bubble",
+              "tail_to": "robot-pik"
+            }
+          ]
+        },
+        {
+          "id": "panel-landscape-beat-problem",
+          "order": 2,
+          "rect": [
+            0.515,
+            0.04,
+            0.455,
+            0.44
+          ],
+          "action": "Лада проходит мимо двери и смотрит на непонятную табличку.",
+          "camera": "Боковой средний план Лады, видно обход двери.",
+          "focus": "Растерянный гость.",
+          "beat_ids": [
+            "beat-problem"
+          ],
+          "character_ids": [
+            "robot-pik",
+            "visitor-lada"
+          ],
+          "location_id": "location-workshop",
+          "prop_ids": [
+            "prop-sign"
+          ],
+          "text_zones": [
+            {
+              "line_id": "line-question",
+              "rect": [
+                0.05,
+                0.04,
+                0.86,
+                0.2
+              ],
+              "kind": "bubble",
+              "tail_to": "visitor-lada"
+            }
+          ]
+        },
+        {
+          "id": "panel-landscape-beat-compare",
+          "order": 3,
+          "rect": [
+            0.03,
+            0.52,
+            0.455,
+            0.44
+          ],
+          "action": "Пик сравнивает направление взгляда Лады, дверь и маленькую стрелку среди завитков.",
+          "camera": "Крупная деталь таблички и манипулятора Пика.",
+          "focus": "Скрытая стрелка.",
+          "beat_ids": [
+            "beat-compare"
+          ],
+          "character_ids": [
+            "robot-pik",
+            "visitor-lada"
+          ],
+          "location_id": "location-workshop",
+          "prop_ids": [
+            "prop-sign"
+          ],
+          "text_zones": []
+        },
+        {
+          "id": "panel-landscape-beat-solution",
+          "order": 4,
+          "rect": [
+            0.515,
+            0.52,
+            0.455,
+            0.44
+          ],
+          "action": "Пик убирает завитки, оставляет крупную стрелку к двери; Лада входит в мастерскую.",
+          "camera": "Широкий план входящей Лады и Пика у таблички.",
+          "focus": "Ясный вход.",
+          "beat_ids": [
+            "beat-solution"
+          ],
+          "character_ids": [
+            "robot-pik",
+            "visitor-lada"
+          ],
+          "location_id": "location-workshop",
+          "prop_ids": [
+            "prop-sign"
+          ],
+          "text_zones": [
+            {
+              "line_id": "line-sign",
+              "rect": [
+                0.05,
+                0.04,
+                0.86,
+                0.2
+              ],
+              "kind": "label"
+            },
+            {
+              "line_id": "line-end",
+              "rect": [
+                0.05,
+                0.7200000000000001,
+                0.86,
+                0.2
+              ],
+              "kind": "bubble",
+              "tail_to": "robot-pik"
+            }
+          ]
+        }
+      ],
+      "allowed_overlaps": []
+    }
+  ],
+  "image_prompts": [
+    {
+      "id": "prompt-page-portrait",
+      "target_type": "comic_page",
+      "target_id": "page-portrait",
+      "variant_id": "portrait",
+      "aspect_ratio": "9:16",
+      "context_mode": "self_contained",
+      "required_context": [],
+      "reference_ids": [
+        "ref-missing"
+      ],
+      "claims_attached": true,
+      "readiness": "ready",
+      "style_description": "Двухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур.",
+      "lettering_mode": "in_image",
+      "panel_ids": [
+        "panel-portrait-beat-intent",
+        "panel-portrait-beat-problem",
+        "panel-portrait-beat-compare",
+        "panel-portrait-beat-solution"
+      ],
+      "declared_panel_count": 4,
+      "visible_lines": [
+        {
+          "line_id": "line-beauty",
+          "speaker_id": "robot-pik",
+          "text": "Пусть будет красиво!"
+        },
+        {
+          "line_id": "line-question",
+          "speaker_id": "visitor-lada",
+          "text": "Куда идти?"
+        },
+        {
+          "line_id": "line-sign",
+          "speaker_id": "none",
+          "text": "ВХОД →"
+        },
+        {
+          "line_id": "line-end",
+          "speaker_id": "robot-pik",
+          "text": "Теперь понятно."
+        }
+      ],
+      "text": "Создай ОДНУ страницу комикса 9:16 с 4 панелями. Три горизонтальные полосы: один широкий кадр, два рядом, один широкий. Чтение сверху вниз, в средней полосе слева направо.\nДвухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур.\nПик: жёлтый квадратный корпус на двух колёсах, круглый тёмный экран с двумя точками-глазами.\nЛада: короткие тёмные волосы, зелёная куртка.\nПанель 1: Пик украшает табличку завитками и ставит её у входа. Общий вид двери и стойки.\nОблачко с хвостиком к robot-pik: «Пусть будет красиво!».\nПанель 2: Лада проходит мимо двери и смотрит на непонятную табличку. Средний план с видимой дверью справа.\nОблачко с хвостиком к visitor-lada: «Куда идти?».\nПанель 3: Пик сравнивает направление взгляда Лады, дверь и маленькую стрелку среди завитков. Деталь таблички рядом с направлением взгляда.\nПанель 4: Пик убирает завитки, оставляет крупную стрелку к двери; Лада входит в мастерскую. Широкий общий вид с ясным направлением движения.\nНадпись без хвостика: «ВХОД →».\nОблачко с хвостиком к robot-pik: «Теперь понятно.».\nСветлые промежутки, чёткие рамки. Служебные ID и номера панелей не рисовать. Только перечисленные надписи на русском. Изображения-референсы не приложены; использовать описанные образы."
+    },
+    {
+      "id": "prompt-page-landscape",
+      "target_type": "comic_page",
+      "target_id": "page-landscape",
+      "variant_id": "landscape",
+      "aspect_ratio": "16:9",
+      "context_mode": "self_contained",
+      "required_context": [],
+      "reference_ids": [],
+      "claims_attached": false,
+      "readiness": "ready",
+      "style_description": "Двухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур.",
+      "lettering_mode": "in_image",
+      "panel_ids": [
+        "panel-landscape-beat-intent",
+        "panel-landscape-beat-problem",
+        "panel-landscape-beat-compare",
+        "panel-landscape-beat-solution"
+      ],
+      "declared_panel_count": 4,
+      "visible_lines": [
+        {
+          "line_id": "line-beauty",
+          "speaker_id": "robot-pik",
+          "text": "Пусть будет красиво!"
+        },
+        {
+          "line_id": "line-question",
+          "speaker_id": "visitor-lada",
+          "text": "Куда идти?"
+        },
+        {
+          "line_id": "line-sign",
+          "speaker_id": "none",
+          "text": "ВХОД →"
+        },
+        {
+          "line_id": "line-end",
+          "speaker_id": "robot-pik",
+          "text": "Теперь понятно."
+        }
+      ],
+      "text": "Создай ОДНУ страницу комикса 16:9 с 4 панелями. Два ряда по две панели. Читать слева направо верхний ряд, затем нижний. Действие развёрнуто по ширине, дверь остаётся справа.\nДвухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур.\nПик: жёлтый квадратный корпус на двух колёсах, круглый тёмный экран с двумя точками-глазами.\nЛада: короткие тёмные волосы, зелёная куртка.\nПанель 1: Пик украшает табличку завитками и ставит её у входа. Широкий план: Пик слева, дверь справа.\nОблачко с хвостиком к robot-pik: «Пусть будет красиво!».\nПанель 2: Лада проходит мимо двери и смотрит на непонятную табличку. Боковой средний план Лады, видно обход двери.\nОблачко с хвостиком к visitor-lada: «Куда идти?».\nПанель 3: Пик сравнивает направление взгляда Лады, дверь и маленькую стрелку среди завитков. Крупная деталь таблички и манипулятора Пика.\nПанель 4: Пик убирает завитки, оставляет крупную стрелку к двери; Лада входит в мастерскую. Широкий план входящей Лады и Пика у таблички.\nНадпись без хвостика: «ВХОД →».\nОблачко с хвостиком к robot-pik: «Теперь понятно.».\nСветлые промежутки, чёткие рамки. Служебные ID и номера панелей не рисовать. Только перечисленные надписи на русском. Изображения-референсы не приложены; использовать описанные образы."
+    }
+  ],
+  "voices": [
+    {
+      "id": "voice-narrator",
+      "speaker_id": "narrator",
+      "description": "Ровный тёплый тембр, ясная артикуляция, умеренный темп.",
+      "pronunciation_notes": []
+    },
+    {
+      "id": "voice-robot-pik",
+      "speaker_id": "robot-pik",
+      "description": "Лёгкий суховатый тембр, короткие спокойные фразы.",
+      "pronunciation_notes": []
+    },
+    {
+      "id": "voice-visitor-lada",
+      "speaker_id": "visitor-lada",
+      "description": "Мягкий средний тембр, без театральности.",
+      "pronunciation_notes": []
+    }
+  ],
+  "shots": [
+    {
+      "id": "shot-panel-portrait-beat-intent",
+      "order": 1,
+      "variant_id": "portrait",
+      "visual_ids": [
+        "panel-portrait-beat-intent"
+      ],
+      "timing": {
+        "kind": "qualitative",
+        "note": "После текста дать рассмотреть результат."
+      }
+    },
+    {
+      "id": "shot-panel-portrait-beat-problem",
+      "order": 2,
+      "variant_id": "portrait",
+      "visual_ids": [
+        "panel-portrait-beat-problem"
+      ],
+      "timing": {
+        "kind": "qualitative",
+        "note": "После текста дать рассмотреть результат."
+      }
+    },
+    {
+      "id": "shot-panel-portrait-beat-compare",
+      "order": 3,
+      "variant_id": "portrait",
+      "visual_ids": [
+        "panel-portrait-beat-compare"
+      ],
+      "timing": {
+        "kind": "qualitative",
+        "note": "После текста дать рассмотреть результат."
+      }
+    },
+    {
+      "id": "shot-panel-portrait-beat-solution",
+      "order": 4,
+      "variant_id": "portrait",
+      "visual_ids": [
+        "panel-portrait-beat-solution"
+      ],
+      "timing": {
+        "kind": "qualitative",
+        "note": "После текста дать рассмотреть результат."
+      }
+    },
+    {
+      "id": "shot-panel-landscape-beat-intent",
+      "order": 5,
+      "variant_id": "landscape",
+      "visual_ids": [
+        "panel-landscape-beat-intent"
+      ],
+      "timing": {
+        "kind": "qualitative",
+        "note": "После текста дать рассмотреть результат."
+      }
+    },
+    {
+      "id": "shot-panel-landscape-beat-problem",
+      "order": 6,
+      "variant_id": "landscape",
+      "visual_ids": [
+        "panel-landscape-beat-problem"
+      ],
+      "timing": {
+        "kind": "qualitative",
+        "note": "После текста дать рассмотреть результат."
+      }
+    },
+    {
+      "id": "shot-panel-landscape-beat-compare",
+      "order": 7,
+      "variant_id": "landscape",
+      "visual_ids": [
+        "panel-landscape-beat-compare"
+      ],
+      "timing": {
+        "kind": "qualitative",
+        "note": "После текста дать рассмотреть результат."
+      }
+    },
+    {
+      "id": "shot-panel-landscape-beat-solution",
+      "order": 8,
+      "variant_id": "landscape",
+      "visual_ids": [
+        "panel-landscape-beat-solution"
+      ],
+      "timing": {
+        "kind": "qualitative",
+        "note": "После текста дать рассмотреть результат."
+      }
+    }
+  ],
+  "voice_scripts": [
+    {
+      "id": "script-silent",
+      "mode": "silent",
+      "selected_line_ids": [],
+      "events": []
+    },
+    {
+      "id": "script-narrator-only",
+      "mode": "narrator_only",
+      "selected_line_ids": [
+        "line-narration"
+      ],
+      "events": [
+        {
+          "id": "event-narrator-only-line-narration",
+          "order": 1,
+          "type": "speech",
+          "line_id": "line-narration",
+          "voice_profile_id": "voice-narrator",
+          "shot_ids": [
+            "shot-panel-portrait-beat-intent",
+            "shot-panel-portrait-beat-problem"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Произнести, затем дать прочитать изображение."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "pause-narrator-only-line-narration",
+          "order": 2,
+          "type": "pause",
+          "shot_ids": [
+            "shot-panel-portrait-beat-intent",
+            "shot-panel-portrait-beat-problem"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Короткая смысловая пауза."
+          },
+          "allow_overlap": false
+        }
+      ]
+    },
+    {
+      "id": "script-narrator-and-characters",
+      "mode": "narrator_and_characters",
+      "selected_line_ids": [
+        "line-narration",
+        "line-beauty",
+        "line-question",
+        "line-end"
+      ],
+      "events": [
+        {
+          "id": "event-narrator-and-characters-line-narration",
+          "order": 1,
+          "type": "speech",
+          "line_id": "line-narration",
+          "voice_profile_id": "voice-narrator",
+          "shot_ids": [
+            "shot-panel-portrait-beat-intent",
+            "shot-panel-portrait-beat-problem"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Произнести, затем дать прочитать изображение."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "pause-narrator-and-characters-line-narration",
+          "order": 2,
+          "type": "pause",
+          "shot_ids": [
+            "shot-panel-portrait-beat-intent",
+            "shot-panel-portrait-beat-problem"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Короткая смысловая пауза."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "event-narrator-and-characters-line-beauty",
+          "order": 3,
+          "type": "speech",
+          "line_id": "line-beauty",
+          "voice_profile_id": "voice-robot-pik",
+          "shot_ids": [
+            "shot-panel-portrait-beat-intent"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Произнести, затем дать прочитать изображение."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "pause-narrator-and-characters-line-beauty",
+          "order": 4,
+          "type": "pause",
+          "shot_ids": [
+            "shot-panel-portrait-beat-intent"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Короткая смысловая пауза."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "event-narrator-and-characters-line-question",
+          "order": 5,
+          "type": "speech",
+          "line_id": "line-question",
+          "voice_profile_id": "voice-visitor-lada",
+          "shot_ids": [
+            "shot-panel-portrait-beat-problem"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Произнести, затем дать прочитать изображение."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "pause-narrator-and-characters-line-question",
+          "order": 6,
+          "type": "pause",
+          "shot_ids": [
+            "shot-panel-portrait-beat-problem"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Короткая смысловая пауза."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "event-narrator-and-characters-line-end",
+          "order": 7,
+          "type": "speech",
+          "line_id": "line-end",
+          "voice_profile_id": "voice-robot-pik",
+          "shot_ids": [
+            "shot-panel-portrait-beat-solution"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Произнести, затем дать прочитать изображение."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "pause-narrator-and-characters-line-end",
+          "order": 8,
+          "type": "pause",
+          "shot_ids": [
+            "shot-panel-portrait-beat-solution"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Короткая смысловая пауза."
+          },
+          "allow_overlap": false
+        }
+      ]
+    },
+    {
+      "id": "script-characters-only",
+      "mode": "characters_only",
+      "selected_line_ids": [
+        "line-beauty",
+        "line-question",
+        "line-end"
+      ],
+      "events": [
+        {
+          "id": "event-characters-only-line-beauty",
+          "order": 1,
+          "type": "speech",
+          "line_id": "line-beauty",
+          "voice_profile_id": "voice-robot-pik",
+          "shot_ids": [
+            "shot-panel-portrait-beat-intent"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Произнести, затем дать прочитать изображение."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "pause-characters-only-line-beauty",
+          "order": 2,
+          "type": "pause",
+          "shot_ids": [
+            "shot-panel-portrait-beat-intent"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Короткая смысловая пауза."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "event-characters-only-line-question",
+          "order": 3,
+          "type": "speech",
+          "line_id": "line-question",
+          "voice_profile_id": "voice-visitor-lada",
+          "shot_ids": [
+            "shot-panel-portrait-beat-problem"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Произнести, затем дать прочитать изображение."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "pause-characters-only-line-question",
+          "order": 4,
+          "type": "pause",
+          "shot_ids": [
+            "shot-panel-portrait-beat-problem"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Короткая смысловая пауза."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "event-characters-only-line-end",
+          "order": 5,
+          "type": "speech",
+          "line_id": "line-end",
+          "voice_profile_id": "voice-robot-pik",
+          "shot_ids": [
+            "shot-panel-portrait-beat-solution"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Произнести, затем дать прочитать изображение."
+          },
+          "allow_overlap": false
+        },
+        {
+          "id": "pause-characters-only-line-end",
+          "order": 6,
+          "type": "pause",
+          "shot_ids": [
+            "shot-panel-portrait-beat-solution"
+          ],
+          "timing": {
+            "kind": "qualitative",
+            "note": "Короткая смысловая пауза."
+          },
+          "allow_overlap": false
+        }
+      ]
+    }
+  ],
+  "cross_project_permissions": [],
+  "reviews": [
+    {
+      "scope": "Авторский пример: редакторская сверка текста.",
+      "status": "passed",
+      "checks_performed": [
+        "Сверены смысловые шаги, варианты и точные реплики."
+      ],
+      "findings": [],
+      "limitations": [
+        "Не является фактическим прогоном агента; картинки и аудио не создавались."
+      ]
+    }
+  ],
+  "limitations": [
+    "Вымышленный авторский эталон. Медиа не произведено."
+  ],
+  "missing_inputs": []
+}

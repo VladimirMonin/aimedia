@@ -94,6 +94,14 @@ remote cancel. Unknown POST outcome не повторяется автомати
 JSON mode: весь stdout — один document, даже при argv error; диагностика stderr.
 Локальные version/help/models/history/costs/config работают без API key/сети.
 
+## Навыки для агента
+
+[Пакет в docs/skills/](docs/skills/README.md): `aimedia` — генерация изображений
+и референсов, поиск моделей/истории и анализ расходов; `visual-story-director` —
+текстовая подготовка истории, раскадровки и промптов (не image/audio/video генератор).
+Навыки можно читать отдельно или явно подключать в Pi; они не поставляются
+с опубликованным uv tool v0.1.0 и не устанавливаются автоматически.
+
 ## Offline проверки
 
 ```bash

@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "project_id": "track-robot",
+  "episode_id": "reference",
+  "document_revision": "draft-01",
+  "kind": "preproduction-package",
+  "scope": "partial",
+  "mode": "characters",
+  "readiness": "draft",
+  "approval": "proposed",
+  "style": {
+    "id": "style-comedy",
+    "description": "Оригинальная рисованная комедия для мастерской.",
+    "prompt_block": "Двухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур.",
+    "approval": "approved"
+  },
+  "characters": [
+    {
+      "id": "robot-track",
+      "name": "Тик",
+      "entity_kind": "гусеничный робот",
+      "role": "Доставляет посылку.",
+      "character": "Осторожный и любопытный.",
+      "speech": "Короткие вопросы.",
+      "traits": [
+        {
+          "name": "ходовая",
+          "value": "две гусеницы",
+          "origin": "user",
+          "approval": "approved"
+        },
+        {
+          "name": "экран",
+          "value": "круглый экран",
+          "origin": "user",
+          "approval": "approved"
+        },
+        {
+          "name": "корпус",
+          "value": "невысокий зелёный коробчатый корпус",
+          "origin": "agent",
+          "approval": "proposed"
+        }
+      ],
+      "invariants": [
+        "Гусеницы и круглый экран."
+      ],
+      "approval": "proposed"
+    }
+  ],
+  "references": [
+    {
+      "id": "ref-track",
+      "role": "character_identity",
+      "entity_id": "robot-track",
+      "locator": null,
+      "availability": "missing",
+      "inspection": "not_inspected",
+      "approval": "unknown"
+    }
+  ],
+  "story": "Тик доставляет посылку через узкий проход; для постановки нужны основной вид и профиль гусениц.",
+  "limitations": [
+    "Референсов нет; внешность не проверена визуально. Основной образ и профиль будут создавать снаружи."
+  ],
+  "missing_inputs": [],
+  "image_prompts": [
+    {
+      "id": "prompt-reference",
+      "target_type": "character_reference",
+      "target_id": "robot-track",
+      "aspect_ratio": "16:9",
+      "context_mode": "self_contained",
+      "required_context": [],
+      "reference_ids": [],
+      "claims_attached": false,
+      "readiness": "ready",
+      "style_description": "Двухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур.",
+      "lettering_mode": "in_image",
+      "panel_ids": [],
+      "declared_panel_count": 0,
+      "visible_lines": [],
+      "text": "Подготовь эталон одного гусеничного робота Тика: две гусеницы, круглый экран, невысокий зелёный коробчатый корпус как предложенный образ. На одном горизонтальном холсте 16:9 показать основной полный вид и профиль; маленькая деталь экрана только для выражений. Без человеческих волос, одежды и пальцев. Без сюжетной сцены и надписей. Двухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур. Изображений-референсов нет, это задание на их внешнее создание."
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "project_id": "forest-b",
+  "episode_id": "welcome",
+  "document_revision": "draft-01",
+  "kind": "project-context",
+  "context": {
+    "project_id": "forest-b",
+    "context_revision": "context-01",
+    "canon": [
+      "Пик патрулирует лес."
+    ],
+    "characters": [
+      {
+        "id": "robot-pik",
+        "name": "Пик",
+        "entity_kind": "летающий лесной робот",
+        "role": "Готовит вход в мастерскую.",
+        "character": "Старательный, склонен увлекаться украшениями.",
+        "speech": "Короткие доброжелательные фразы.",
+        "traits": [
+          {
+            "name": "корпус",
+            "value": "фиолетовая сфера с крыльями",
+            "origin": "user",
+            "approval": "approved"
+          }
+        ],
+        "invariants": [
+          "Крылья и сферический силуэт."
+        ],
+        "approval": "approved"
+      }
+    ],
+    "style": {
+      "id": "style-comedy",
+      "description": "Оригинальная рисованная комедия для мастерской.",
+      "prompt_block": "Двухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур.",
+      "approval": "approved"
+    },
+    "voices": [],
+    "episode_summaries": [
+      {
+        "id": "forest-intro",
+        "text": "Пик нашёл повреждённый мост."
+      }
+    ],
+    "open_threads": [
+      {
+        "id": "thread-sign",
+        "text": "Табличку нужно закрепить надёжнее."
+      }
+    ]
+  }
+}

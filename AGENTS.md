@@ -29,6 +29,7 @@
 |---|---|
 | [DOCS.instructions_style](instructions/DOCS.instructions_style.instructions.md) | Создание, обновление, переименование, разделение или удаление инструкций и `AGENTS.md` |
 | [DOCS.commit_messages](instructions/DOCS.commit_messages.instructions.md) | Подготовка staging, проверок и локального Git commit |
+| [DOCS.SkillPack](instructions/DOCS.skill-pack.instructions.md) | Добавление, импорт или изменение `docs/skills/` и навигации пакета в `AGENTS.md`/`README.md` |
 | [TEST.offline_quality](instructions/TEST.offline-quality.instructions.md) | Изменение tests/, scripts/quality.py, конфигурации pytest/Ruff/mypy или CI; обязательные offline-гейты, сетевая изоляция и изоляция секретов |
 | [CORE.domain-boundary](instructions/CORE.domain-boundary.instructions.md) | Изменение `src/aimedia/domain/`, provider/storage ports, статусов Job, денежных значений, DTO запросов/результатов, `tests/architecture/`, `tests/support/` или доменных тестов |
 | [REGISTRY.model-catalog](instructions/REGISTRY.model-catalog.instructions.md) | Изменение `src/aimedia/registry/`, `tests/contracts/`, `tests/unit/test_registry_*.py` или `tests/security/test_registry_data_only.py`: загрузка YAML, resolution/override, единый источник значений для validation и help/JSON, происхождение сведений и безопасные события Registry |
@@ -56,6 +57,14 @@
   инцидента. Не дублируй большие фрагменты планов и соседних инструкций.
 - Держи `AGENTS.md` кратким навигатором: подробные команды, матрицы и правила
   подсистем выноси тематическому владельцу в `instructions/`.
+
+## Пакет навыков
+
+Самостоятельные навыки находятся в [docs/skills/](docs/skills/README.md):
+`aimedia` — работа с image CLI, `visual-story-director` — текстовое
+предпроизводство. Читай нужный `SKILL.md` или подключай его явно; пакет не входит
+в uv tool v0.1.0 и не устанавливается автоматически. Сопровождение — по
+[DOCS.SkillPack](instructions/DOCS.skill-pack.instructions.md).
 
 ## Работа с кодом
 

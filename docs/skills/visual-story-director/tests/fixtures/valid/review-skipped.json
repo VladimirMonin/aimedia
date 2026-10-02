@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "project_id": "workshop-sign",
+  "episode_id": "welcome",
+  "document_revision": "draft-01",
+  "kind": "review",
+  "review": {
+    "scope": "Картинка.",
+    "status": "skipped",
+    "checks_performed": [],
+    "findings": [],
+    "limitations": [
+      "Изображение не предоставлено."
+    ]
+  }
+}

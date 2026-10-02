@@ -14,3 +14,6 @@
 *.jpg binary
 *.jpeg binary
 *.webp binary
+
+# Preserve imported skill bytes (including CRLF/mixed EOL) without normalization.
+docs/skills/visual-story-director/** -text whitespace=cr-at-eol

@@ -1,0 +1,1204 @@
+{
+  "format_version": "1.0",
+  "checked_at": "2026-10-02T05:41:36.062093+00:00",
+  "donors": [
+    {
+      "name": "shuohao-skills",
+      "repository": "https://github.com/eternityspring/shuohao-skills",
+      "commit_sha": "ef4ac0c313c7eeb1f918db5f0f0eb319745900bc",
+      "commit_date": "2026-09-26T12:43:31Z",
+      "selection": [
+        "skills/novel-outline/",
+        "skills/novel-script/",
+        "skills/novel-characters/",
+        "skills/character-refs/",
+        "skills/novel-art/",
+        "skills/novel-storyboard/"
+      ],
+      "archive_sha256": "5286995bacf74dc7ea4838c28519950210e0bf2af9d458b75d36443a4e8d09c1",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "b1d2870f1a00e4d7f56576e5f0870cba109e041f8af66866cf5b499478e654e7",
+          "git_blob_sha": "ff9ad4530f5716304e042cbac72cecd7c40f0e0e",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/LICENSE"
+        },
+        {
+          "path": "NOTICE",
+          "sha256": "4a439a29366f485f5ef493a804a4c77a23b41d31eaf97eb66b921e5484bc597d",
+          "git_blob_sha": "6ea06289faafcd2da68abb798d3cb2fc11b8059a",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/NOTICE"
+        },
+        {
+          "path": "README.md",
+          "sha256": "2f7bc319ce325d96d21d4a0711384515ae469e4a821f8072bfd3a794fedc99c5",
+          "git_blob_sha": "080fdf41554285802a0b199294d4eca12dc9590e",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/README.md"
+        },
+        {
+          "path": "skills/character-refs/README.en.md",
+          "sha256": "65355f3ba2699c87f1707cb11ab7f4f00d4b7b048770135fc365a6b8c7dfcc3b",
+          "git_blob_sha": "cb744d5bef7a73553d55704e39821da82af638a4",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/README.en.md"
+        },
+        {
+          "path": "skills/character-refs/README.md",
+          "sha256": "73c4221c3fdcb9b803b722e8692e5262d224389b5596e49af58d29e752b09e26",
+          "git_blob_sha": "b5edfe8a22c54e41e3c326da1f98b0b25ad010e0",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/README.md"
+        },
+        {
+          "path": "skills/character-refs/SKILL.md",
+          "sha256": "9f20a635e81dcf8372c957b04a17cc4e3accfe322bf6a0cf8f9e18225eb12d55",
+          "git_blob_sha": "6721e277f4439a566377eacba8c06d1d297fcaeb",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/SKILL.md"
+        },
+        {
+          "path": "skills/character-refs/examples/阿禾-intake.json",
+          "sha256": "90ff88cb9c2284cfcbd6d74053b0fc43cfea68b5eec5996d54a967a19675a261",
+          "git_blob_sha": "4b670cdf12253616fc083ca0929e84d7199abb7f",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/examples/阿禾-intake.json"
+        },
+        {
+          "path": "skills/character-refs/examples/阿禾-描述.txt",
+          "sha256": "7503845220c47aa33632e972908b62465fc634301c080436867aa89f0a88e24a",
+          "git_blob_sha": "9b9eafafef56b67e2226787e9203a3728134903d",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/examples/阿禾-描述.txt"
+        },
+        {
+          "path": "skills/character-refs/references/intake.md",
+          "sha256": "e7bcc2ed0251cbd065ea2ebe6a166d951d97edc3125360dd9aa8ac4f948b1aff",
+          "git_blob_sha": "1fa4a09a6a7f59386c1e4cbb95b4161682e464e4",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/references/intake.md"
+        },
+        {
+          "path": "skills/character-refs/references/models.md",
+          "sha256": "8f21288b047160b23c109f760017784fb875147fd9fc0bbb32d67b49fd0e47e7",
+          "git_blob_sha": "693f6500c3349281275760c490e01852f3603e67",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/references/models.md"
+        },
+        {
+          "path": "skills/character-refs/references/prompting.md",
+          "sha256": "be4572cb6a23552376eee10fdb1a4e7705d54a8fe5a602855786dfa279f08839",
+          "git_blob_sha": "17c0f6f5654350cb3f91b07a9cf77b78ebe5430c",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/references/prompting.md"
+        },
+        {
+          "path": "skills/character-refs/references/schema.md",
+          "sha256": "a37e8ad68ce5e36468869f95dc06d3c18d2f024da3ada085690e9ee963cadd28",
+          "git_blob_sha": "3a56af64009bc29f1a08c9cf9831498a5fbd81c5",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/references/schema.md"
+        },
+        {
+          "path": "skills/character-refs/scripts/character-refs.mjs",
+          "sha256": "4495edd64ec7aeffda10245006e1452bcb01c689502a39f58ae4d53065b68ef3",
+          "git_blob_sha": "07f5b3ea1f6f7eede9cb64ffeb286b2a97629fad",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/scripts/character-refs.mjs"
+        },
+        {
+          "path": "skills/character-refs/scripts/core.mjs",
+          "sha256": "8b0fdaff2c60c49c3a754349c44269c2b6dbf54f3cfe8ff439168d321e1d7da1",
+          "git_blob_sha": "971a27971fc59ff95b86a37ac7a224d7d0cbaee0",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/scripts/core.mjs"
+        },
+        {
+          "path": "skills/character-refs/scripts/i18n.mjs",
+          "sha256": "d31a8cde66a87c1362786a8d24099747386e255fb85f2de69a516b145bf1214c",
+          "git_blob_sha": "9b813f0b4bd6f599caf2cccf9dd82a856ed4c975",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/scripts/i18n.mjs"
+        },
+        {
+          "path": "skills/character-refs/scripts/looks.mjs",
+          "sha256": "4c41c118515c7556dc6d75bfcafbec56c1af5c19502069278943114d9475e6fa",
+          "git_blob_sha": "476d60654bab5aa44e6f3843217228a0b6d2f7dc",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/scripts/looks.mjs"
+        },
+        {
+          "path": "skills/character-refs/scripts/models.mjs",
+          "sha256": "8df15666e8523aa0b180c8bfcb5a5131e36f6dfd91ff29de33b17d104c9813b8",
+          "git_blob_sha": "371008d7d23a9aff6ba4237ff15b66c371a68aeb",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/scripts/models.mjs"
+        },
+        {
+          "path": "skills/character-refs/scripts/png.mjs",
+          "sha256": "1388144a5194775406533cd7ca23471d0b3b76f590f56494148932beb62d577d",
+          "git_blob_sha": "16d9c65fff394e8419c68d0d5d8c083c95625cae",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/scripts/png.mjs"
+        },
+        {
+          "path": "skills/character-refs/scripts/selftest.mjs",
+          "sha256": "5a7d1d7f108f381fcb4c291483238f49402a34c1db50fff91dd73a1bb3fd178d",
+          "git_blob_sha": "23bd2129499b68c46b2aeab704826b23ed08ed8f",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/character-refs/scripts/selftest.mjs"
+        },
+        {
+          "path": "skills/novel-art/README.en.md",
+          "sha256": "5c7f8c8d12fd0c2eb7aed6e13a65cf807595520d732970bb7cb390292119d9ca",
+          "git_blob_sha": "f09de68ef0c9474dc2085d76280d5c435b6ee23c",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/README.en.md"
+        },
+        {
+          "path": "skills/novel-art/README.md",
+          "sha256": "c6f2def36f42f4379d34c91558ac04a9485696f73940267b9d2caf81e462993a",
+          "git_blob_sha": "27d29a5bbd676c301f5bab60d0b379aa81898461",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/README.md"
+        },
+        {
+          "path": "skills/novel-art/SKILL.md",
+          "sha256": "688116bcb868ad68f0bfbe5d029f1d65b2f1ce2918b98734f653cea0216a1377",
+          "git_blob_sha": "e2ab3fafb98a1237906de552f0ee10888fe7de4e",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/SKILL.md"
+        },
+        {
+          "path": "skills/novel-art/examples/渡口-art.json",
+          "sha256": "5fda31a22043fda47c78a4a04eaa20289b46325a76d502fb36454f849c084500",
+          "git_blob_sha": "36ff8426ce4470591d01b9594afe4b069a72da9f",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/examples/渡口-art.json"
+        },
+        {
+          "path": "skills/novel-art/references/prop-pass.md",
+          "sha256": "20f9e6593be435b1cec84f86c120d5d1bb6505f6b9ab21448c4afeaf1208f18d",
+          "git_blob_sha": "f38e93afd0e9f3b0e4dfb515fc45205a34001a4e",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/references/prop-pass.md"
+        },
+        {
+          "path": "skills/novel-art/references/report-style.md",
+          "sha256": "291c83df686938afe1b9f802ce9bde2ffb2166d7f04e25ae6f099bc8d6bef472",
+          "git_blob_sha": "e45d57778bc663c9f9a9675f76f7509ac6a8d28f",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/references/report-style.md"
+        },
+        {
+          "path": "skills/novel-art/references/scene-pass.md",
+          "sha256": "93de7cfb1c9cc720b3ee5507ac9d30a1fd0dec15a0192424ed9a57a0edd166d7",
+          "git_blob_sha": "2bcce883053656d3a1b38a53aeb7493d36a2ef9a",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/references/scene-pass.md"
+        },
+        {
+          "path": "skills/novel-art/references/schema.md",
+          "sha256": "92573bc6fae465ac82a01a1d7fc2b3e15cce8a8a19c37a76ca0ff82a3222da09",
+          "git_blob_sha": "1a7a67b458ca8866350cac1dc9012954b86b8555",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/references/schema.md"
+        },
+        {
+          "path": "skills/novel-art/references/sheet.md",
+          "sha256": "a3caff5173a15af62ad73d11c08bd479d1f624481793708d880775114a9a1ed4",
+          "git_blob_sha": "8277b707000a357557cd827c978e352b200ab6ca",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/references/sheet.md"
+        },
+        {
+          "path": "skills/novel-art/references/test-fixtures/upstream/README.md",
+          "sha256": "7884fe8ad4c72294e93ba9aa2f809a2a7e0ca7f4707e141257c60969fffcd932",
+          "git_blob_sha": "85238323304e1abedce12aaeb5e85b38f7f92818",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/references/test-fixtures/upstream/README.md"
+        },
+        {
+          "path": "skills/novel-art/references/test-fixtures/upstream/渡口-cast.json",
+          "sha256": "80634f02bee6f20af3923bd897c705ee7056a936d78c4189fdfa7eea070df8a2",
+          "git_blob_sha": "e87892f0cf7241849c4ecd3ffd6dac4164f4789a",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/references/test-fixtures/upstream/渡口-cast.json"
+        },
+        {
+          "path": "skills/novel-art/references/test-fixtures/upstream/渡口-outline.json",
+          "sha256": "cd257e64909c7ceaef7701b826c3801870abd3c0ded37591ef5825e71627e5c0",
+          "git_blob_sha": "3d8b67e46fc98fe84eb0ab935fffc713b1066059",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/references/test-fixtures/upstream/渡口-outline.json"
+        },
+        {
+          "path": "skills/novel-art/scripts/novel-art.mjs",
+          "sha256": "44f59466a6e9bf7b064a91b45a93dab89db70f4e139b2f0f53b9a670365c0c26",
+          "git_blob_sha": "8d16b2b1cc5f535a777d62d0ff81f3332d15e70e",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/scripts/novel-art.mjs"
+        },
+        {
+          "path": "skills/novel-art/scripts/selftest.mjs",
+          "sha256": "53f25e754560ab8f64ab356387cd7ebd392464fcfdab8dc2d86ab6dc4a2d2bda",
+          "git_blob_sha": "20082b6c2cbc1882fe250852f5ac07fde8967468",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-art/scripts/selftest.mjs"
+        },
+        {
+          "path": "skills/novel-characters/README.en.md",
+          "sha256": "04e7a91bebf0de2348b23feadabd93bc64c7473e182323e48adb8d5b89a9c70e",
+          "git_blob_sha": "25d6b06873e3804d7823cd4599428aeeae76968d",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/README.en.md"
+        },
+        {
+          "path": "skills/novel-characters/README.md",
+          "sha256": "c54c07df746d1038dae173689cc37ef16db4a2d3cf7044e174ac177a9c3f8276",
+          "git_blob_sha": "af63a7a41cf6c0f870aacee1bd219425efda7258",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/README.md"
+        },
+        {
+          "path": "skills/novel-characters/SKILL.md",
+          "sha256": "cda2bc652a24548a68f4ae632f47380b7d275134769a9495feb7891b0ed5ab44",
+          "git_blob_sha": "c23fb5fe36e30315fee51ec512e713c68cad219e",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/SKILL.md"
+        },
+        {
+          "path": "skills/novel-characters/examples/渡口-cast.json",
+          "sha256": "80634f02bee6f20af3923bd897c705ee7056a936d78c4189fdfa7eea070df8a2",
+          "git_blob_sha": "e87892f0cf7241849c4ecd3ffd6dac4164f4789a",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/examples/渡口-cast.json"
+        },
+        {
+          "path": "skills/novel-characters/examples/渡口-cast.md",
+          "sha256": "f4c16d4d71b8f760fc904bd4d6ff66ca597aaa510cc4d88e342d6eed9120ce73",
+          "git_blob_sha": "e452ccc324a8cf69a41fed2ef3737cbbda45a98b",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/examples/渡口-cast.md"
+        },
+        {
+          "path": "skills/novel-characters/examples/渡口.txt",
+          "sha256": "faa58b6088c49578005591040b44746cf5348e52cb5237850c4f5f07d5168730",
+          "git_blob_sha": "b84a52cc22ec566c31ce2629f6e72e75c7929ae1",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/examples/渡口.txt"
+        },
+        {
+          "path": "skills/novel-characters/references/profile-pass.md",
+          "sha256": "25350002e6543de3ea565c73a4d2ad650e3c71405ec1bd27cf961f93792bb0ff",
+          "git_blob_sha": "8c4d55e0934c118e3abd9aa7356dbf562d6764e4",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/references/profile-pass.md"
+        },
+        {
+          "path": "skills/novel-characters/references/report-style.md",
+          "sha256": "c550951b591152bc490ecb3af587ce2d3fea9663847b34648316ee437f0ce14e",
+          "git_blob_sha": "b57bb3587102a1d1fe9438f05b508efb3c2b65d8",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/references/report-style.md"
+        },
+        {
+          "path": "skills/novel-characters/references/roster-pass.md",
+          "sha256": "c2f9716f4bcb0b3c39038da9526ed60cda3af48119320561e7fe4944f1dc0bd8",
+          "git_blob_sha": "b99dbd123b3da4c1178058dc12acf66d259d8006",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/references/roster-pass.md"
+        },
+        {
+          "path": "skills/novel-characters/references/schema.md",
+          "sha256": "f6c62bbe5f424f10cc52ca2e9c1d2c162b5bcefd7eebea67f1c1b88a28c1e4de",
+          "git_blob_sha": "76369923850534e48037c60c96b048ae5c83a3ec",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/references/schema.md"
+        },
+        {
+          "path": "skills/novel-characters/references/sheet.md",
+          "sha256": "a9a6175a660f1e3f59f499b792c7b5422cf10d4bcb566985461e5d9d192c7972",
+          "git_blob_sha": "07fd26a1550c7e3a5aa6aafa211b386c977bd0da",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/references/sheet.md"
+        },
+        {
+          "path": "skills/novel-characters/references/test-fixtures/upstream/README.md",
+          "sha256": "48b8752828313c7d40225cde7fdee7fd6f2b30f9686071d05983cc25e9e80fb8",
+          "git_blob_sha": "30bba7e7e185d1fb76d2bf1f1a6cf4e952b96419",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/references/test-fixtures/upstream/README.md"
+        },
+        {
+          "path": "skills/novel-characters/references/test-fixtures/upstream/渡口-outline.json",
+          "sha256": "cd257e64909c7ceaef7701b826c3801870abd3c0ded37591ef5825e71627e5c0",
+          "git_blob_sha": "3d8b67e46fc98fe84eb0ab935fffc713b1066059",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/references/test-fixtures/upstream/渡口-outline.json"
+        },
+        {
+          "path": "skills/novel-characters/scripts/novel-characters.mjs",
+          "sha256": "09906b43b706cd0b48df5e1cbfc61b6ef098fc9c486bdf323b1e31eefb633f22",
+          "git_blob_sha": "176c46e04965194c915495f379928eacc78e53c3",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/scripts/novel-characters.mjs"
+        },
+        {
+          "path": "skills/novel-characters/scripts/selftest.mjs",
+          "sha256": "4c91ff2829efc2d3ebea383a83adea164c29c5fcd185a16dc7566e61bee10f7f",
+          "git_blob_sha": "89e1153ee3b0f32762fcea2bf1fd57a4b70f2068",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-characters/scripts/selftest.mjs"
+        },
+        {
+          "path": "skills/novel-outline/README.en.md",
+          "sha256": "12f46f6dc5e8da43ed218e88b683ab07b5b37301f31f7ff4ae36c047cd780809",
+          "git_blob_sha": "26e4aa758b4b0165dd274fcdb92ef06af7bc0237",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/README.en.md"
+        },
+        {
+          "path": "skills/novel-outline/README.md",
+          "sha256": "0a353c120287be4b3c64c644abdbbcfe02d6fd756ebcc73bb47dc42b7366ac1c",
+          "git_blob_sha": "8867b59278d04b68c850d30cd595e46e4f4176c4",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/README.md"
+        },
+        {
+          "path": "skills/novel-outline/SKILL.md",
+          "sha256": "055e2fb2ad76462635cc82fe78a68ab65f613e68cd8b88a9570c9880ff522427",
+          "git_blob_sha": "263313c8befe829f61f0a1616b5e01b8a708b606",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/SKILL.md"
+        },
+        {
+          "path": "skills/novel-outline/examples/渡口-outline.json",
+          "sha256": "cd257e64909c7ceaef7701b826c3801870abd3c0ded37591ef5825e71627e5c0",
+          "git_blob_sha": "3d8b67e46fc98fe84eb0ab935fffc713b1066059",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/examples/渡口-outline.json"
+        },
+        {
+          "path": "skills/novel-outline/references/episode-pass.md",
+          "sha256": "33b2a3f75e1a0cf1c5ce48d41b7097988c4c65fb5745bd90189a517bcf26936a",
+          "git_blob_sha": "a658671337db3f51109f41ca9fc6d9d17e205723",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/references/episode-pass.md"
+        },
+        {
+          "path": "skills/novel-outline/references/outline-pass.md",
+          "sha256": "9ca4c4a5b98eb2eb6e366549fbd0709387fbb7e679b49da8cef08dba9b8f3a71",
+          "git_blob_sha": "0b4344c38bf719a8483edf6ca8f13b281f95d1a7",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/references/outline-pass.md"
+        },
+        {
+          "path": "skills/novel-outline/references/report-style.md",
+          "sha256": "f491d22ee8ec32441fa5c8af360fee44e331ef5f8c2febcebf4c6fbf8d7e2549",
+          "git_blob_sha": "dc0c8587510623aeb4218369185f0437dbdecb3f",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/references/report-style.md"
+        },
+        {
+          "path": "skills/novel-outline/references/schema.md",
+          "sha256": "3411cab8074f304870f58421ccd11c98237e6b5c84ceb9647d9d43397635ea53",
+          "git_blob_sha": "cbe21f035deecad7235249f367d77b5c8166ef32",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/references/schema.md"
+        },
+        {
+          "path": "skills/novel-outline/references/volume-pass.md",
+          "sha256": "35eb510c39fc9e5c9c83a47114854a4f306cc6dd2ea21e8747570d5e557ddef8",
+          "git_blob_sha": "8bf61cd0f7d1d20020487816a019a0fb0cb644d0",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/references/volume-pass.md"
+        },
+        {
+          "path": "skills/novel-outline/scripts/novel-outline.mjs",
+          "sha256": "33f1469123333b98b5e56f4b81cd64df80b58e1878e0cf7212b585f6e8ac8597",
+          "git_blob_sha": "0fa48e7fe432497f0a3d040d8718d13585ede484",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/scripts/novel-outline.mjs"
+        },
+        {
+          "path": "skills/novel-outline/scripts/selftest.mjs",
+          "sha256": "b900b1d0aff7d3af922f5b59805b3de6f9f01e8c8b6db506e5201b8580fee633",
+          "git_blob_sha": "474ad12d46a0b99516e5e1d36c1afcdfb5e0b048",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-outline/scripts/selftest.mjs"
+        },
+        {
+          "path": "skills/novel-script/README.en.md",
+          "sha256": "c60af84e9c2253a20d7f6cd4d2cf9ac0b22a4ef2f5302916c063f107ecd33b08",
+          "git_blob_sha": "5d454e26d5e0db480d888da9fafaef82f9435692",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/README.en.md"
+        },
+        {
+          "path": "skills/novel-script/README.md",
+          "sha256": "76c1c96a1f0506f6eeddb121d38ab3481cacca6ac9ec56257a1fa94de7f898dd",
+          "git_blob_sha": "d95fc88082f0e4004f1fd495b6e65c442239fab4",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/README.md"
+        },
+        {
+          "path": "skills/novel-script/SKILL.md",
+          "sha256": "689e28a0824dafad65eec3b0948fd9ffa12e369d74a2e07eeeb946ada711da58",
+          "git_blob_sha": "5eebc06e1858c68b59115bc866c2cec926a5a223",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/SKILL.md"
+        },
+        {
+          "path": "skills/novel-script/examples/渡口-script.json",
+          "sha256": "74dd50ba759f86644ca92e150f75b3a4fbddf8708106782f4ff6adcfebc95417",
+          "git_blob_sha": "d12b0239221a8e3b297dd2c2f35a117627580297",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/examples/渡口-script.json"
+        },
+        {
+          "path": "skills/novel-script/references/report-style.md",
+          "sha256": "582818c595f23fca69de4a4224200413cb761828563461961dfefdd2eb6e1a01",
+          "git_blob_sha": "e0b0c81a61ece0d86026d420cb98d231f45f995a",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/references/report-style.md"
+        },
+        {
+          "path": "skills/novel-script/references/schema.md",
+          "sha256": "610e4131dae47fc534ec5b075d68351abe6982890c44fedfb296d39c3fadf4aa",
+          "git_blob_sha": "8a808ed2be6d006130fd9a9161e3c07d4e77c802",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/references/schema.md"
+        },
+        {
+          "path": "skills/novel-script/references/script-pass.md",
+          "sha256": "825aea57b0118dc3ef1b470bf5a7db7f0f94b7dccfa1135549bac5abbe85dfc0",
+          "git_blob_sha": "b754bf4e9bc8a4bd9cc00d1de71779532bb93a80",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/references/script-pass.md"
+        },
+        {
+          "path": "skills/novel-script/references/test-fixtures/upstream/README.md",
+          "sha256": "65cf65af9d9729537609edff54041fa859c04d2d1b05469debfe92c5dda8d3af",
+          "git_blob_sha": "203e1988d56f1f342b58aedd465bf87269d357ab",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/references/test-fixtures/upstream/README.md"
+        },
+        {
+          "path": "skills/novel-script/references/test-fixtures/upstream/渡口-art.json",
+          "sha256": "5fda31a22043fda47c78a4a04eaa20289b46325a76d502fb36454f849c084500",
+          "git_blob_sha": "36ff8426ce4470591d01b9594afe4b069a72da9f",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/references/test-fixtures/upstream/渡口-art.json"
+        },
+        {
+          "path": "skills/novel-script/references/test-fixtures/upstream/渡口-cast.json",
+          "sha256": "80634f02bee6f20af3923bd897c705ee7056a936d78c4189fdfa7eea070df8a2",
+          "git_blob_sha": "e87892f0cf7241849c4ecd3ffd6dac4164f4789a",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/references/test-fixtures/upstream/渡口-cast.json"
+        },
+        {
+          "path": "skills/novel-script/references/test-fixtures/upstream/渡口-outline.json",
+          "sha256": "cd257e64909c7ceaef7701b826c3801870abd3c0ded37591ef5825e71627e5c0",
+          "git_blob_sha": "3d8b67e46fc98fe84eb0ab935fffc713b1066059",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/references/test-fixtures/upstream/渡口-outline.json"
+        },
+        {
+          "path": "skills/novel-script/scripts/novel-script.mjs",
+          "sha256": "833511f3dcc01373687f12065cb8c843e505958fb344d015535ffb4c928bc7bc",
+          "git_blob_sha": "751f30de3c95a1c8bbfbc1f3a71584f40feb0dad",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/scripts/novel-script.mjs"
+        },
+        {
+          "path": "skills/novel-script/scripts/selftest.mjs",
+          "sha256": "736acb4f7ce324820fdcc8d9d2fdf6423de536276905b4bbbd4e1555492adb42",
+          "git_blob_sha": "9c04f2d5c933f06d123f2e69c1a16c31640293e3",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-script/scripts/selftest.mjs"
+        },
+        {
+          "path": "skills/novel-storyboard/README.en.md",
+          "sha256": "7fb663e4b572efaa67cb1eac40900bc4c1a66c224f63366eb5945482db37cfe4",
+          "git_blob_sha": "af846c986c6c8273defed49d3bbf43440fcc1e3c",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/README.en.md"
+        },
+        {
+          "path": "skills/novel-storyboard/README.md",
+          "sha256": "8bf6aa19ecec483dcb0d5b8da92b8c432dfb761c940e42bbdd3ae348204b1c6a",
+          "git_blob_sha": "5ed8caf3e6d38c6392973c3b0e200fdb0decccd7",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/README.md"
+        },
+        {
+          "path": "skills/novel-storyboard/SKILL.md",
+          "sha256": "ea40109af1ebc482116dd23a22d78fb3c3e8c6b44371c8ae82dfe8e464778863",
+          "git_blob_sha": "ef4069fce2956c5c61a69ee554cb7320bce995ba",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/SKILL.md"
+        },
+        {
+          "path": "skills/novel-storyboard/examples/渡口-storyboard.json",
+          "sha256": "2f0a58c71ffb35eccf33b27469e553e331478167936ba9a4234815ebb134f16c",
+          "git_blob_sha": "603f86ffea83a9453f0d2561a35180701067a642",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/examples/渡口-storyboard.json"
+        },
+        {
+          "path": "skills/novel-storyboard/references/frame.md",
+          "sha256": "d135a66d94c534f565912879a7b8f699646a9ab9528dc0fbf608feea6a422702",
+          "git_blob_sha": "6c499da6330b4eee035aae532c4bf7c1286f9985",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/frame.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/h3-prompt.md",
+          "sha256": "a8764ab72b76c13563d053d86f40ace30357e197a5738e4a22811f6a9a30702e",
+          "git_blob_sha": "0b9811729509f2e86c0ef499fe004c105ac100ae",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/h3-prompt.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/report-style.md",
+          "sha256": "3769e62051cded8dfdb0e1449500f173e875648e2915d7ed10fbb232c17a9321",
+          "git_blob_sha": "485bd9d0684cad8d79fb8fa831f4875a01ee211d",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/report-style.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/schema.md",
+          "sha256": "86c42d0e7900bb035d85e9770e3030ae7070c51d0134ba524c9cb404085bb9ba",
+          "git_blob_sha": "8578c4317bd284893ce61368a131ee6afaaee090",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/schema.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/seedance-prompt.md",
+          "sha256": "d5d44809846d8d96ace57c22f83f47681c2206e84076aa4c80aab5ba955a723a",
+          "git_blob_sha": "e3c2262d5e315d9a79110cc583a8c18730d22168",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/seedance-prompt.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/shot-writing.md",
+          "sha256": "501fea6f027b356a0e314b9ef7b0b6ab896287c2b754eeeeac5c59548511fd0c",
+          "git_blob_sha": "49b3808e33dd501539eb0a5afa31bd221c78c4b3",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/shot-writing.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/storyboard-pass.md",
+          "sha256": "909e66aca5b5f1a4a8f96b3bbc45cc162346fddbe16f2892dac85ce155f4e6d8",
+          "git_blob_sha": "424e58a20d4c15ab5961d8b0f9975001b873f02d",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/storyboard-pass.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/test-fixtures/shot-recipes/hands-tell.md",
+          "sha256": "eeb572a1c21e31759e8d0bcdaab40bc05d9c3a7bb01c6d0984e4deff49f8eee6",
+          "git_blob_sha": "05533339372cd845c02bc4d0d899c7284d9ff714",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/test-fixtures/shot-recipes/hands-tell.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/test-fixtures/shot-recipes/insert-beat.md",
+          "sha256": "dc4f79e50568092988858295e4bfdaa1cc763a29857d1dc82604297f3bcbcd53",
+          "git_blob_sha": "069436eed1fc88ce7586d7c584af12a6887c617e",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/test-fixtures/shot-recipes/insert-beat.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/test-fixtures/shot-recipes/ots-shot-reverse.md",
+          "sha256": "090939b70e2c856926f2d417e69a1a0b34bd5c94781783b6355d8ab73f408885",
+          "git_blob_sha": "8b25642d4de31a681f9d05d89fcc40c9ff5ef8ca",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/test-fixtures/shot-recipes/ots-shot-reverse.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/test-fixtures/upstream/README.md",
+          "sha256": "de6ca9a7fcfb9b779bf851602a9584489cf5403a4fa04f623c66ce175fa9f679",
+          "git_blob_sha": "4ba4071f0be7bf30457e4aeb4fa4b806b808509f",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/test-fixtures/upstream/README.md"
+        },
+        {
+          "path": "skills/novel-storyboard/references/test-fixtures/upstream/渡口-art.json",
+          "sha256": "5fda31a22043fda47c78a4a04eaa20289b46325a76d502fb36454f849c084500",
+          "git_blob_sha": "36ff8426ce4470591d01b9594afe4b069a72da9f",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/test-fixtures/upstream/渡口-art.json"
+        },
+        {
+          "path": "skills/novel-storyboard/references/test-fixtures/upstream/渡口-cast.json",
+          "sha256": "80634f02bee6f20af3923bd897c705ee7056a936d78c4189fdfa7eea070df8a2",
+          "git_blob_sha": "e87892f0cf7241849c4ecd3ffd6dac4164f4789a",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/test-fixtures/upstream/渡口-cast.json"
+        },
+        {
+          "path": "skills/novel-storyboard/references/test-fixtures/upstream/渡口-outline.json",
+          "sha256": "cd257e64909c7ceaef7701b826c3801870abd3c0ded37591ef5825e71627e5c0",
+          "git_blob_sha": "3d8b67e46fc98fe84eb0ab935fffc713b1066059",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/test-fixtures/upstream/渡口-outline.json"
+        },
+        {
+          "path": "skills/novel-storyboard/references/test-fixtures/upstream/渡口-script.json",
+          "sha256": "74dd50ba759f86644ca92e150f75b3a4fbddf8708106782f4ff6adcfebc95417",
+          "git_blob_sha": "d12b0239221a8e3b297dd2c2f35a117627580297",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/references/test-fixtures/upstream/渡口-script.json"
+        },
+        {
+          "path": "skills/novel-storyboard/scripts/novel-storyboard.mjs",
+          "sha256": "cf53d10a502429cc54ea05241b19c4b1b717360de920e84a2c4ec1968408faf8",
+          "git_blob_sha": "6f6832172219f9ec2e31dab610f4f54cbda03691",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/scripts/novel-storyboard.mjs"
+        },
+        {
+          "path": "skills/novel-storyboard/scripts/selftest.mjs",
+          "sha256": "ce524a6a55ddf69c67e7a5067b4df9e7de12fc6c2701c87cf2fd0313139a66a2",
+          "git_blob_sha": "42f9f6c3144a80a8a9836c5e91a110415be441ba",
+          "url": "https://github.com/eternityspring/shuohao-skills/blob/ef4ac0c313c7eeb1f918db5f0f0eb319745900bc/skills/novel-storyboard/scripts/selftest.mjs"
+        }
+      ],
+      "license": "Apache-2.0",
+      "use": "Method adaptation only; runtime code and media not copied."
+    },
+    {
+      "name": "baoyu-skills",
+      "repository": "https://github.com/JimLiu/baoyu-skills",
+      "commit_sha": "1567581c26ec29f4216c6e6835415bf30343b0e3",
+      "commit_date": "2026-09-10T15:13:43Z",
+      "selection": [
+        "skills/baoyu-comic/"
+      ],
+      "archive_sha256": "f0b1199a96e0c5c601fb166b29d3e06052807e7324125c7cf6aa2c696491ca4d",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "601839401f6ce68b7a8aec0f7ba247ab8ef0848113378220bec4b2615cc84ee7",
+          "git_blob_sha": "9f2cc0d74570c5841f02b639593d12a70dc7dc65",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/LICENSE"
+        },
+        {
+          "path": "README.md",
+          "sha256": "c9c4eeffe6b3dfe914c3e9fd774d18f42bcfc8ef93e9bd28921816b4e4ffd819",
+          "git_blob_sha": "eb7cdd139af53d040fb3cc047fb1e2ffa586a6b6",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/README.md"
+        },
+        {
+          "path": "skills/baoyu-comic/SKILL.md",
+          "sha256": "98d5de8650a3401c1ee97b3f78ebacef72f3f570ef7fe7290b192ac7d24330bc",
+          "git_blob_sha": "e25f4d514f12a7e1de848a6c0605d156f85daf5e",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/SKILL.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/analysis-framework.md",
+          "sha256": "02cedcd80b3ec283cd929451a4ab1da0f5fd6bad3807f47908b7f286a5bacc23",
+          "git_blob_sha": "7865f96ed687654bec49070ff596b3f5ff834485",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/analysis-framework.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/art-styles/chalk.md",
+          "sha256": "735f5eea5723d1d6c9e136f95d509661dcfdf4aecf376da1a610380561783c06",
+          "git_blob_sha": "3974214cc8623c84ebb3a361dccdb8c84c0e1490",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/art-styles/chalk.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/art-styles/ink-brush.md",
+          "sha256": "cf43c5345bc8c80b4f0f7c2ce4810392a489494af248cd8ff6c21831fb839c9a",
+          "git_blob_sha": "6c744d1422abb93ee2a7710ed483ad3746ac649c",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/art-styles/ink-brush.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/art-styles/ligne-claire.md",
+          "sha256": "8906cb27124d23c3a31953b54b6c30eff4d35608f99b38fe5d05dbcdf7a62cdc",
+          "git_blob_sha": "0ce58b2c0008fec26b758875074fe1678331b461",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/art-styles/ligne-claire.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/art-styles/manga.md",
+          "sha256": "b2ea678169e7caa473205f2c33ce973d9ad7b2a9249efbc156cb946ef6314cf5",
+          "git_blob_sha": "bb2a2663b5b3c7e41bf51814748e9caae2dad31f",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/art-styles/manga.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/art-styles/minimalist.md",
+          "sha256": "d5ff796d5cb517751f58f94af8b58a7fb0485c83acdbea6722d93067932bead6",
+          "git_blob_sha": "f075b2d40078be4ece6c901197f9b6423c02a7b1",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/art-styles/minimalist.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/art-styles/realistic.md",
+          "sha256": "6b12457bc3d30eac36aa47862e387a0ef75899422a2298de4fb361d2fbdeba46",
+          "git_blob_sha": "fcc39ad7f403052ed53c10f90f886d93d618e694",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/art-styles/realistic.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/auto-selection.md",
+          "sha256": "619c8d2ea3d0baedfdd558f5ba1f7383a04a3421b72d21bc9a39ee948857d220",
+          "git_blob_sha": "15a49d1fa67873ae181b8b93b9f18215f47e565f",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/auto-selection.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/base-prompt.md",
+          "sha256": "9cea612602d354d3ebe5e4d0b4619e615e4ca7b94cfe3c4a012c942db2194d37",
+          "git_blob_sha": "7df4e959ba9290ff35d8a3be8c3cf6ffc0403879",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/base-prompt.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/character-template.md",
+          "sha256": "4a1479a239e0c54de327e16fbb2e58aa707652f66152283669aa94382a598210",
+          "git_blob_sha": "5865358ce546f7066996bdbf51411b236a45766e",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/character-template.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/codex-imagegen.md",
+          "sha256": "fee23c94d9845af1196f0fbf9c6d04b1df8098ccf9fc825ce572db4b86d9a2e9",
+          "git_blob_sha": "b9ea439646707834255718df67a8e687ad7e002f",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/codex-imagegen.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/config/first-time-setup.md",
+          "sha256": "0616f0ecb423de8fcd76efd8f6e1682227f3a95756663f2669c5f147d1b67b7b",
+          "git_blob_sha": "3f54b19d8ead1b9a3c3f7304e9e83182cdd68e94",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/config/first-time-setup.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/config/preferences-schema.md",
+          "sha256": "71df60a0ea8866acdd37b48339ef598ae4efd02353b2a32f9f1df2fe345b1073",
+          "git_blob_sha": "8c6ff6710b150f9ac7578add24c3239d93c943e2",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/config/preferences-schema.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/config/watermark-guide.md",
+          "sha256": "555b2115193350005a500b2ce92d209cc9fbfb838bc63798dc634912e994e712",
+          "git_blob_sha": "3952bcd8f9779f06192903bab42774de2ccfad30",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/config/watermark-guide.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/layouts/cinematic.md",
+          "sha256": "5ac2a2aa0fc0776851e8af478b37b9fc831047a3bd9f4a83347b7927865cb7e5",
+          "git_blob_sha": "8061cde9e950011995d74ec29a3128624e159c5d",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/layouts/cinematic.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/layouts/dense.md",
+          "sha256": "0dde755a4f36cca13fd5937cebbb1daebb00769e6480b799773270b6187361e7",
+          "git_blob_sha": "7346466ffee4bfd44c5a018e0921c7c447c0c159",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/layouts/dense.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/layouts/four-panel.md",
+          "sha256": "89819b87e5fe2227003f45e3419a9d5d07430256b1aedad6c6a0bee3e52b68f3",
+          "git_blob_sha": "e9cbdfcdf31289bd9ede87c91f05372907839c11",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/layouts/four-panel.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/layouts/mixed.md",
+          "sha256": "bd69b3bfca5b5d5986d0b9885645ba24a8a6a26efbb2760ac7cbf249b13c831e",
+          "git_blob_sha": "dc33cc1477ae109351199642383547f5e6f86153",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/layouts/mixed.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/layouts/splash.md",
+          "sha256": "eb7c74f8c006ddffbb345737732773b55202be3b3f5f4350f2993323b1e5113e",
+          "git_blob_sha": "15d4258b5d5df2a77f3c125a0a8e8ee5373501ca",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/layouts/splash.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/layouts/standard.md",
+          "sha256": "4b498faee176acbaf6638129bbd91efaab2bbf6dd972facb47b5362884a7a583",
+          "git_blob_sha": "76ee5d824c375d2d2e508de221ec14458a346def",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/layouts/standard.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/layouts/webtoon.md",
+          "sha256": "2de64e32988aaa14779806007dfdbe382f0b423e0a0cea041d1a1c816ed382e0",
+          "git_blob_sha": "efc464aa766c8ad96e437985466003cfcc4ca428",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/layouts/webtoon.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/ohmsha-guide.md",
+          "sha256": "ae764d59a27039ae970423c5f43d692c8adcc7478c48414720a17348abe035c6",
+          "git_blob_sha": "d7308c90c874c1bbe9c77d8273a4775df31151d5",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/ohmsha-guide.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/partial-workflows.md",
+          "sha256": "b4930b48fa45d58b149a1700305bf2dd90e90b9e42f6d9f896659f73a73f98f6",
+          "git_blob_sha": "ae04943f2f0abc8e5add9942506a06dffcf491da",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/partial-workflows.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/presets/concept-story.md",
+          "sha256": "1606d9ec90609e4c4726c674c8e013472e12f3de90759155836e53cd98b8c211",
+          "git_blob_sha": "fb699e8078131eb119093cfc43bfd4ae3b7776f3",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/presets/concept-story.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/presets/four-panel.md",
+          "sha256": "4c556f8a323e11304ebaa740871827863283cdd5177ade34f7a5b99747617446",
+          "git_blob_sha": "b745348526eeb58d7d8a19e1af9e51c5c0a1368b",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/presets/four-panel.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/presets/ohmsha.md",
+          "sha256": "ac6b746438616454df2691b2c8c032d7800786b49b290f60a77abac9022d4e6c",
+          "git_blob_sha": "2ff392c1e9cc7c436dba0482db2e3137a78b25ac",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/presets/ohmsha.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/presets/shoujo.md",
+          "sha256": "f84b0bf495abd98d10468d398100453b969ae41e5d0fe4f2ee4ff6d18146ecaa",
+          "git_blob_sha": "5469dc9612d1b445ae92452c4718f6199e449887",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/presets/shoujo.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/presets/wuxia.md",
+          "sha256": "9d4212233b894d59e84cdc07a995cd91b4731fd33c1f111acf50fb20aece9779",
+          "git_blob_sha": "7cf821d5f030d42a6bc3653d38d53a8c8bdf0f4c",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/presets/wuxia.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/storyboard-template.md",
+          "sha256": "917836d5fa0e2c19e52dc827c994e5773a56a2d15e44f89805e05259e8747b34",
+          "git_blob_sha": "790ceb02979f794911e2810640025c45da35aec0",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/storyboard-template.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/tones/action.md",
+          "sha256": "c62c2f2a64557a20d1d3c29bf60f2cab0f144b5be423fec0d6cddbebf71e7ec4",
+          "git_blob_sha": "f9c6d954af4a7fcbc8aa0210953aec68d40fd81a",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/tones/action.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/tones/dramatic.md",
+          "sha256": "02fe6d7dd1b7c49e9f1b12f39f25b570b625567bd52a7a5b3ddf4a11e4f745d7",
+          "git_blob_sha": "459cc2aecd3452b6e5eb0e2a89cf30af9e87368a",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/tones/dramatic.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/tones/energetic.md",
+          "sha256": "f2ab2580fa60f03ac69155d6af712322841875b2c0bbbb84bc5d8f3185210571",
+          "git_blob_sha": "257e8c6e3310058d2b7d9035a05b95ee7823a346",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/tones/energetic.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/tones/neutral.md",
+          "sha256": "fc0cd10f068cd5adfba703f903867dd08dbbaf6d1f4eee7a98a107e8e5db68a7",
+          "git_blob_sha": "db1f7a3c5088d87898ea7402b240a450427ccdc6",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/tones/neutral.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/tones/romantic.md",
+          "sha256": "7d51adc7c5b2ae681b64d4d7425900afe7ad38f22a0d30d887bc6e7e1d603c94",
+          "git_blob_sha": "396439d9ec39f0688bbcf2f5ea7cc835ec71f6a5",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/tones/romantic.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/tones/vintage.md",
+          "sha256": "6cc33000124283d91c885059e7e7d933b8e7070a6887e412bd8c32c276372564",
+          "git_blob_sha": "32250024bfd533e55204671e28cf580d1702ed3f",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/tones/vintage.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/tones/warm.md",
+          "sha256": "a80705960f18d23f1717c52b51e2a681f300dcce1f827fc1a5890fbb16811d1d",
+          "git_blob_sha": "11b24aeefc62e4bc520f78cb0610372b11b8e62e",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/tones/warm.md"
+        },
+        {
+          "path": "skills/baoyu-comic/references/workflow.md",
+          "sha256": "f11c9887b3794fd4e298c6a9af60b3a01a75106b9bc3fc13777572fbd0e18c5e",
+          "git_blob_sha": "29a41715e149e0d28be8cc77877e26b970b99d36",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/references/workflow.md"
+        },
+        {
+          "path": "skills/baoyu-comic/scripts/merge-to-pdf.ts",
+          "sha256": "1159f97448c04d51a7543d3585a27e9ce8f2cdfd6703c82ba2165ab6d0a5126d",
+          "git_blob_sha": "bdd29c60c8913dda4080694eccc77bbccf1bd7eb",
+          "url": "https://github.com/JimLiu/baoyu-skills/blob/1567581c26ec29f4216c6e6835415bf30343b0e3/skills/baoyu-comic/scripts/merge-to-pdf.ts"
+        }
+      ],
+      "license": "MIT",
+      "use": "Method adaptation only; runtime code and media not copied."
+    },
+    {
+      "name": "storyboard-skill",
+      "repository": "https://github.com/toyme/storyboard-skill",
+      "commit_sha": "a8908aabcf9e9585220dfda4d7656f95f68b3610",
+      "commit_date": "2026-06-05T15:05:09Z",
+      "selection": [
+        "references/",
+        "scripts/",
+        "SKILL.md"
+      ],
+      "archive_sha256": "85544099c2e4b6de609ad55f50df415ac0c59c949ae6ba09aea33ee8291056bd",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "86efe82bcc1f83b1620a82fc9a0e36e5a59f531231cd409fd950b6d176d46c3c",
+          "git_blob_sha": "20497c64314546b7eba89515370a3d5e1dbdd438",
+          "url": "https://github.com/toyme/storyboard-skill/blob/a8908aabcf9e9585220dfda4d7656f95f68b3610/LICENSE"
+        },
+        {
+          "path": "README.md",
+          "sha256": "8957f4da4a593f058047e3f1c465fc8b8bc5d6e7e882a5247a7ac3c45f757021",
+          "git_blob_sha": "0d08a1306ef4e6890735e0e11c872ca2ef07efca",
+          "url": "https://github.com/toyme/storyboard-skill/blob/a8908aabcf9e9585220dfda4d7656f95f68b3610/README.md"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "ea98343ebb678f08f9d68b5d69c46ba75cb66fef23aed3e437f126097dc2c89a",
+          "git_blob_sha": "8b1d5c960124e0bff249a3cb7a1269de4eb6e238",
+          "url": "https://github.com/toyme/storyboard-skill/blob/a8908aabcf9e9585220dfda4d7656f95f68b3610/SKILL.md"
+        },
+        {
+          "path": "references/project-structure.md",
+          "sha256": "44fbe842feb7e4c82d073fa07ca24e3bb8eb0933f8111603db7c2c4cba888139",
+          "git_blob_sha": "a52e6ed9ac7e71c99435ad4b2277d2c6959e81e3",
+          "url": "https://github.com/toyme/storyboard-skill/blob/a8908aabcf9e9585220dfda4d7656f95f68b3610/references/project-structure.md"
+        },
+        {
+          "path": "references/prompt-patterns.md",
+          "sha256": "49e63714baddc20bbc0cc03eb474cfe780d9bac6339416f920670885fc4c3ffc",
+          "git_blob_sha": "b9b1f658ce2e2c07588c2a54885fda473f8c6306",
+          "url": "https://github.com/toyme/storyboard-skill/blob/a8908aabcf9e9585220dfda4d7656f95f68b3610/references/prompt-patterns.md"
+        },
+        {
+          "path": "references/prompt-safety-checklist.md",
+          "sha256": "ab6f819257fc3acec3f4e623f3a24b1f9f3bd8882986ebcc501ff76b76107f4e",
+          "git_blob_sha": "65baf739c3f4c8e31c3b56b23cdccdee1aa013f7",
+          "url": "https://github.com/toyme/storyboard-skill/blob/a8908aabcf9e9585220dfda4d7656f95f68b3610/references/prompt-safety-checklist.md"
+        }
+      ],
+      "license": "MIT",
+      "use": "Method adaptation only; runtime code and media not copied."
+    },
+    {
+      "name": "Storyboard",
+      "repository": "https://github.com/Zhekinmaksim/Storyboard",
+      "commit_sha": "76a78c55922d1b007b1478aafb6faaf672487e53",
+      "commit_date": "2026-04-30T16:16:12Z",
+      "selection": [
+        "references/",
+        "scripts/",
+        "SKILL.md"
+      ],
+      "archive_sha256": "d5ca60ccc41e99315815c32cbf52e08bb0c753b9df48b3b9ca6290bceefba5c2",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "36b2cd1f894cb35d51f47d4af4aa22946690d728b3ffe5116e616f523e36403a",
+          "git_blob_sha": "b10498ca786256a5c271ceb8afc94523335b68fb",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/LICENSE"
+        },
+        {
+          "path": "README.md",
+          "sha256": "38ad6434d8fdb8c25bff000a39598a702d7215b7deac3a03700f957fddcd217b",
+          "git_blob_sha": "2914e335448f668c13ccb33dd5b2f81e3f361937",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/README.md"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "bbfc042c74582c7678b37b82fdcb9f3c6700c862de0ec92249b6ae0c84b2d935",
+          "git_blob_sha": "4bd8536c9e0685b1450795aeb125a9bf4e0da747",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/SKILL.md"
+        },
+        {
+          "path": "references/character-bible-format.md",
+          "sha256": "ca21884d63aabe3d850c84f98842c11c3db7d1f8a6b90a464a48a939c39152fd",
+          "git_blob_sha": "787ae132f2248d446d7e58547e5c93e294a249b1",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/references/character-bible-format.md"
+        },
+        {
+          "path": "references/critique-criteria.md",
+          "sha256": "a4187ba1068ab6dda92d43d24e23b7c1a7bcfa5e9e1ee0fbf8711de8a454aab7",
+          "git_blob_sha": "e0094be05e528820a6e99130e11d655177abe00b",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/references/critique-criteria.md"
+        },
+        {
+          "path": "references/kimi-model-choice.md",
+          "sha256": "4be4a49c3acbf0c0a4763fc9aa9d364b7a84bd4af439ec6f987d8e413d5ebac7",
+          "git_blob_sha": "52ae210ef45f640f1ec998cda65e1cb38c494ae2",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/references/kimi-model-choice.md"
+        },
+        {
+          "path": "references/shot-grammar.md",
+          "sha256": "c5c5a0d77e6eaf7cf973d59b925d60dff08e4107b67854dd48cc0bc6e49ff6f6",
+          "git_blob_sha": "58d945dfc04761134cf9eda7f4c893bb41214534",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/references/shot-grammar.md"
+        },
+        {
+          "path": "references/style-bible.md",
+          "sha256": "c7ed165a3fc7e45b6234eef7fe6f7fd35bd8f5aa2ba1d79fb28eece19be56cb6",
+          "git_blob_sha": "8366ccc1e6fa2439e71fbdf22824457b5c4a4b49",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/references/style-bible.md"
+        },
+        {
+          "path": "scripts/__init__.py",
+          "sha256": "b5a63e1c965ca6e47db0aba144568d3f3b444189a5ca8f2f5f3f3ac2c1db250e",
+          "git_blob_sha": "b6898375f655729d2a4d4e079580842fd2b4644a",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/__init__.py"
+        },
+        {
+          "path": "scripts/character_bible.py",
+          "sha256": "89e622ed7f283894fcc89942b4930f5ee51a0e80e456d35b0634a8cd0d7b732b",
+          "git_blob_sha": "4ea351928c498c86ab796550cb4318ed30cbfb26",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/character_bible.py"
+        },
+        {
+          "path": "scripts/critique.py",
+          "sha256": "4f92207f40b6d12a77c62c41bb9ce7f4daaf6c994a9a9b5b165c808a00264e96",
+          "git_blob_sha": "18a3cd1df1ce995aa23ea904c378f6b97d366378",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/critique.py"
+        },
+        {
+          "path": "scripts/director_memory.py",
+          "sha256": "9b92e4e66830e9a065eca2534d6b889f7cac3a96b39c3aa21569cbce7212dd07",
+          "git_blob_sha": "0884a2357dbab055de04e58e8749f5d857a24478",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/director_memory.py"
+        },
+        {
+          "path": "scripts/director_notes.py",
+          "sha256": "6a0ecbb185c3fc8623409390adf0b2e0a132b16431f4c007a75bec2ccf557f0b",
+          "git_blob_sha": "5f726604bfe33db0456dae7cfd8f73b97c034b98",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/director_notes.py"
+        },
+        {
+          "path": "scripts/enrich.py",
+          "sha256": "a3675bcdafe9bbc6a3d01f0b65f992874a0e2e0d2f2b9afb9188cc76d255d02c",
+          "git_blob_sha": "ec8f19f2e8e3b0bfa491df0bc816000fd4016c6f",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/enrich.py"
+        },
+        {
+          "path": "scripts/gallery_store.py",
+          "sha256": "79fca0cbb48042fb987c2bcd98cf5f14a15db87220bfeda39237833d20db45b7",
+          "git_blob_sha": "a5b14cbeea68d0fae993aa2763239686121a40e3",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/gallery_store.py"
+        },
+        {
+          "path": "scripts/gif_export.py",
+          "sha256": "bf403193c35e40d2f5331afe2dc41fa1a469e3a477e2e42840c329bfb4b092bb",
+          "git_blob_sha": "fbd5f587e9582bdd3c99c80dbb0b0822201ad286",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/gif_export.py"
+        },
+        {
+          "path": "scripts/iterate.py",
+          "sha256": "dc3895d92aca8cef7de6a5873e7ded6233ad3a58784f03dbd8c1c3bf31047114",
+          "git_blob_sha": "3bae3cf63a94702c79d79c711abfc807c4cbdbe4",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/iterate.py"
+        },
+        {
+          "path": "scripts/kimi_client.py",
+          "sha256": "c311fc87dc1c34a14ce92a0fec1f14a6f7f88df49dd49920213309bfa7ba3628",
+          "git_blob_sha": "67ca4d9c7afa223302cf98b52c75f023e5942abc",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/kimi_client.py"
+        },
+        {
+          "path": "scripts/packet.py",
+          "sha256": "0274c6aea21fc1e1b91dfc178bd3ab025602a24441bfe2b19405e65b2a18b98e",
+          "git_blob_sha": "58a235be7a63a0c603070b098ec67111eb814ce4",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/packet.py"
+        },
+        {
+          "path": "scripts/parse.py",
+          "sha256": "52377acdd906b66af905068056c0a70f3d1fe0a4174cbcdc9eb6afdacbbb56c8",
+          "git_blob_sha": "8fcaa0658f83b1f405319101ec55bc92d9b8309a",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/parse.py"
+        },
+        {
+          "path": "scripts/png_export.py",
+          "sha256": "eddac18b5132d2b9f529957d88e581a1b2a21003d6c137a32f4de032090c0155",
+          "git_blob_sha": "532565e6ff72382840db426d64baf125116b3155",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/png_export.py"
+        },
+        {
+          "path": "scripts/render.py",
+          "sha256": "6fa4e52d98d89b37f3e4e87be4b3c46b8b3b0f2578deeca0cc9c616374817050",
+          "git_blob_sha": "d9bc6b65319ba08b9554ff006b409ae26e948de5",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/render.py"
+        },
+        {
+          "path": "scripts/scene.py",
+          "sha256": "0f3982b8b074af455ac983519af989a29748b2d7c1579db02142869a28e64fd9",
+          "git_blob_sha": "2d0d6de97c1ebd2f7541115cf78500bce891f5f5",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/scene.py"
+        },
+        {
+          "path": "scripts/storyboard.py",
+          "sha256": "7c8c8692c0f1372dbd45e8529f5e40c29503c25e8c9544100634090a0b2afe84",
+          "git_blob_sha": "38ebb447629ebab025dba68ba2a517b887046161",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/storyboard.py"
+        },
+        {
+          "path": "scripts/stream_server.py",
+          "sha256": "00e5a0656e0cfd011c3b0a4b96d14bc265dc2606be19540ee41b98573544142e",
+          "git_blob_sha": "c7930a6089774b4a9660056cafac58c47a02d906",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/stream_server.py"
+        },
+        {
+          "path": "scripts/style.py",
+          "sha256": "a8a32a324f28abc8503f3ae0579f703895843f396c599a847310d7f1b9e2c770",
+          "git_blob_sha": "fa035a7815b0c27471b461f6cf1001b9b079bee1",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/style.py"
+        },
+        {
+          "path": "scripts/templates/__init__.py",
+          "sha256": "caabc3b3888395f05037d17e51d5b9f470b74a96a715b2c2dd0de84b7631ef4f",
+          "git_blob_sha": "87f815d8098a0af675e74e1e9768ffa87877c783",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/templates/__init__.py"
+        },
+        {
+          "path": "scripts/templates/annotations.py",
+          "sha256": "12c624cb44130bdd534c7eebe638ba7603725fedec5e4d6c8ce192cad2196184",
+          "git_blob_sha": "b5531711665b0710a5e387f8f3114f07241fd9d6",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/templates/annotations.py"
+        },
+        {
+          "path": "scripts/templates/environments.py",
+          "sha256": "47621cfb035865c9a6e5aec9c3db63c9a51135d72d0b3ae8e3174129c9c280c6",
+          "git_blob_sha": "b466fcf391cbccdf0e67a93840ec7e19b400fbc2",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/templates/environments.py"
+        },
+        {
+          "path": "scripts/templates/figures.py",
+          "sha256": "a5b11c20aff320a80257273f42b82582b731d21fe8dccb5899af051c70de620a",
+          "git_blob_sha": "8dd12af2019638ee3bd20cb4475534214fb850c5",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/templates/figures.py"
+        },
+        {
+          "path": "scripts/templates/svg_primitives.py",
+          "sha256": "7116580a2efd8770e902838c9c0afaabda45f09b44bbb814932dcc1f15dbcc86",
+          "git_blob_sha": "c93147b68303b6f7528e64c4fde8fa7d04dc44a9",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/templates/svg_primitives.py"
+        },
+        {
+          "path": "scripts/templates/timeline.py",
+          "sha256": "c0a22b2d4f69f975e2ad14fe5008e0be5e8bf3f499f6a74f3ea7b4bd1ffb50d1",
+          "git_blob_sha": "8d30583ae93455ee500c4cd53c5138b903e4d47c",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/templates/timeline.py"
+        },
+        {
+          "path": "scripts/viewer.py",
+          "sha256": "6ce4fda91d6241fc26c13b06f00ece0758219de667a354a9835067f669e6a5f2",
+          "git_blob_sha": "449818f716d0cfd5d6fcdef5b3f5343235cda0fd",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/viewer.py"
+        },
+        {
+          "path": "scripts/web_server.py",
+          "sha256": "11c199e98f787e4b34931355412e496c7113a3cfe8fa5fc87dca4be7aa16cb55",
+          "git_blob_sha": "e97c10ccd54b284ecfacdfd2352b19e9d97f751b",
+          "url": "https://github.com/Zhekinmaksim/Storyboard/blob/76a78c55922d1b007b1478aafb6faaf672487e53/scripts/web_server.py"
+        }
+      ],
+      "license": "MIT",
+      "use": "Method adaptation only; runtime code and media not copied."
+    },
+    {
+      "name": "remotion-video-builder-with-qwen-audio",
+      "repository": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio",
+      "commit_sha": "7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4",
+      "commit_date": "2026-05-12T04:19:39Z",
+      "selection": [
+        "references/",
+        "scripts/",
+        "SKILL.md"
+      ],
+      "archive_sha256": "30cde65751e80796b9df2023eccdc48492ecb7417090d5b44eb80f79ec41993d",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "ee9a49b681395171e9af89aef5b18003f057fd4fa8c5c7a23171909b49858ec2",
+          "git_blob_sha": "1e6d75697298a2476810b3c9776fe153c5690d1c",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/LICENSE"
+        },
+        {
+          "path": "README.md",
+          "sha256": "cc9439058c9f49f76b28a8a18f85e2150352f08bedb3b12aa52caacca604e651",
+          "git_blob_sha": "0a201b4a65cb5b9a287fac33c8c4416a7ea7ea28",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/README.md"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "4084de12f23b5c14d027402186f114ca839c2243bb8b52203fdc0098cb466069",
+          "git_blob_sha": "48e602697bc64e797ca5cc2a38c99412080a9201",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/SKILL.md"
+        },
+        {
+          "path": "references/brief-template.md",
+          "sha256": "3d424a9d14aebb19c7e1bd7c1f09f23ce087b35981722c3b2d01821c74f2ba13",
+          "git_blob_sha": "4205cb6bb8c308e8b11339dfb293fde7a9656f0f",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/references/brief-template.md"
+        },
+        {
+          "path": "references/layout-rules.md",
+          "sha256": "23208d1e5565cf6d1f3a3eb954883759d3572807afac086e02da90ba0fcbc725",
+          "git_blob_sha": "0ceaecd5b28a1008faeab3c7a6cb4a23a5931f8d",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/references/layout-rules.md"
+        },
+        {
+          "path": "references/qa-checklist.md",
+          "sha256": "922eb03d5449b6e47022f665d961e904308b47c2f55aa8c36fb3c0967edf069a",
+          "git_blob_sha": "ea4d76287a2d65827507f9215d4e12e56e85a0c6",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/references/qa-checklist.md"
+        },
+        {
+          "path": "references/storyboard-template.md",
+          "sha256": "42d137de00560e7c9508f1f871a3d760e3b50d0e18f2156188d0e5b96e58d233",
+          "git_blob_sha": "109eabbdcf6a2020ee4ad07e26b15839b7906f92",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/references/storyboard-template.md"
+        },
+        {
+          "path": "references/tts-manifest-template.json",
+          "sha256": "421dc15615366397384c4710b71fa78e4cea0a34295122980fe3fd9e79ce5c12",
+          "git_blob_sha": "70511d7ced1032ebf600ac30bdb4b439053ffa44",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/references/tts-manifest-template.json"
+        },
+        {
+          "path": "references/voice-casting.md",
+          "sha256": "5ce216b64478be9a03bc63143251c33349748e31233fac6b17f1884bed5cdd34",
+          "git_blob_sha": "3843add1b69e2a2cd47f86c9f8a2179560341269",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/references/voice-casting.md"
+        },
+        {
+          "path": "scripts/install_to_codex.sh",
+          "sha256": "251f6fe6c44506ca8263b6bd5fb5cba6e4d9122162cfdfb6363d2e2b378690d4",
+          "git_blob_sha": "cd9d6cda70bb39b00e3c7935894ec222e4bcba15",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/scripts/install_to_codex.sh"
+        },
+        {
+          "path": "scripts/scaffold_video_job.py",
+          "sha256": "d50df9677268d721d00d645f0287659942fcfb71f4b16f1144cadf5e12344c0f",
+          "git_blob_sha": "48c3ed1448d0ca84ecb3cb56b1cfa0d04b92c900",
+          "url": "https://github.com/yaochang007/remotion-video-builder-with-qwen-audio/blob/7fd796f00fc5b6b02aaa6c593d3e62547bd0e5a4/scripts/scaffold_video_job.py"
+        }
+      ],
+      "license": "Apache-2.0",
+      "use": "Method adaptation only; runtime code and media not copied."
+    }
+  ],
+  "excluded": [
+    {
+      "repository": "https://github.com/Vincentwei1021/anything2explainer",
+      "status": "excluded",
+      "reason": "Plan section 13.7: no copying or adapting restricted materials."
+    }
+  ]
+}

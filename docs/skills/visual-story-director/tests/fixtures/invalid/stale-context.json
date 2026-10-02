@@ -1,0 +1,183 @@
+{
+  "schema_version": "1.0",
+  "project_id": "workshop-a",
+  "episode_id": "secure-sign",
+  "document_revision": "draft-01",
+  "kind": "preproduction-package",
+  "scope": "partial",
+  "mode": "continue",
+  "readiness": "draft",
+  "approval": "proposed",
+  "story": "Пик замечает, что ясная табличка качается от открывающейся двери. Он переносит стойку от створки и показывает Ладе свободный проход. Никто не добавляет ему крылья.",
+  "characters": [
+    {
+      "id": "robot-pik",
+      "name": "Пик",
+      "entity_kind": "колёсный робот",
+      "role": "Готовит вход в мастерскую.",
+      "character": "Старательный, склонен увлекаться украшениями.",
+      "speech": "Короткие доброжелательные фразы.",
+      "traits": [
+        {
+          "name": "корпус",
+          "value": "жёлтый квадратный корпус на двух колёсах",
+          "origin": "user",
+          "approval": "approved"
+        },
+        {
+          "name": "экран",
+          "value": "круглый тёмный экран с двумя точками-глазами",
+          "origin": "agent",
+          "approval": "approved"
+        }
+      ],
+      "invariants": [
+        "Два колеса и квадратный силуэт.",
+        "Без человеческих волос и одежды."
+      ],
+      "approval": "approved"
+    },
+    {
+      "id": "visitor-lada",
+      "name": "Лада",
+      "entity_kind": "человек",
+      "role": "Проверяет, понятен ли вход.",
+      "character": "Наблюдательная и спокойная.",
+      "speech": "Прямые короткие вопросы.",
+      "traits": [
+        {
+          "name": "образ",
+          "value": "короткие тёмные волосы, зелёная куртка",
+          "origin": "agent",
+          "approval": "proposed"
+        }
+      ],
+      "invariants": [
+        "Один и тот же силуэт во всех вариантах."
+      ],
+      "approval": "proposed"
+    }
+  ],
+  "style": {
+    "id": "style-comedy",
+    "description": "Оригинальная рисованная комедия для мастерской.",
+    "prompt_block": "Двухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур.",
+    "approval": "approved"
+  },
+  "project_context": {
+    "project_id": "workshop-a",
+    "context_revision": "context-01",
+    "canon": [
+      "Пик помогает посетителям мастерской."
+    ],
+    "characters": [
+      {
+        "id": "robot-pik",
+        "name": "Пик",
+        "entity_kind": "колёсный робот",
+        "role": "Готовит вход в мастерскую.",
+        "character": "Старательный, склонен увлекаться украшениями.",
+        "speech": "Короткие доброжелательные фразы.",
+        "traits": [
+          {
+            "name": "корпус",
+            "value": "жёлтый квадратный корпус на двух колёсах",
+            "origin": "user",
+            "approval": "approved"
+          },
+          {
+            "name": "экран",
+            "value": "круглый тёмный экран с двумя точками-глазами",
+            "origin": "agent",
+            "approval": "approved"
+          }
+        ],
+        "invariants": [
+          "Два колеса и квадратный силуэт.",
+          "Без человеческих волос и одежды."
+        ],
+        "approval": "approved"
+      },
+      {
+        "id": "visitor-lada",
+        "name": "Лада",
+        "entity_kind": "человек",
+        "role": "Проверяет, понятен ли вход.",
+        "character": "Наблюдательная и спокойная.",
+        "speech": "Прямые короткие вопросы.",
+        "traits": [
+          {
+            "name": "образ",
+            "value": "короткие тёмные волосы, зелёная куртка",
+            "origin": "agent",
+            "approval": "proposed"
+          }
+        ],
+        "invariants": [
+          "Один и тот же силуэт во всех вариантах."
+        ],
+        "approval": "proposed"
+      }
+    ],
+    "style": {
+      "id": "style-comedy",
+      "description": "Оригинальная рисованная комедия для мастерской.",
+      "prompt_block": "Двухмерная рисованная комедия: чёткий слегка неровный тёмный контур, простые силуэты, плоские приглушённые заливки, один жёлтый акцент, крупные мягкие тени и простой фон без фотографических фактур.",
+      "approval": "approved"
+    },
+    "voices": [
+      {
+        "id": "voice-narrator",
+        "speaker_id": "narrator",
+        "description": "Ровный тёплый тембр, ясная артикуляция, умеренный темп.",
+        "pronunciation_notes": []
+      },
+      {
+        "id": "voice-robot-pik",
+        "speaker_id": "robot-pik",
+        "description": "Лёгкий суховатый тембр, короткие спокойные фразы.",
+        "pronunciation_notes": []
+      },
+      {
+        "id": "voice-visitor-lada",
+        "speaker_id": "visitor-lada",
+        "description": "Мягкий средний тембр, без театральности.",
+        "pronunciation_notes": []
+      }
+    ],
+    "episode_summaries": [
+      {
+        "id": "welcome",
+        "text": "Пик украшает табличку, но гость не находит вход. Сравнив табличку с дверью, робот убирает лишнее и оставляет ясную стрелку."
+      }
+    ],
+    "open_threads": [
+      {
+        "id": "thread-sign",
+        "text": "Табличку нужно закрепить надёжнее."
+      }
+    ]
+  },
+  "context_delta": {
+    "project_id": "workshop-a",
+    "base_revision": "context-old",
+    "approval": "proposed",
+    "changes": [
+      {
+        "entity_type": "episode_summary",
+        "entity_id": "secure-sign",
+        "field": "text",
+        "old_value": null,
+        "new_value": "Пик перенёс стойку от створки; вход свободен.",
+        "reason": "Событие нового выпуска."
+      }
+    ],
+    "affected_ids": [
+      "secure-sign"
+    ]
+  },
+  "limitations": [
+    "Выбран только проект workshop-a. Контекст workshop-b не применялся. Delta не сохранён. Медиа не создавались."
+  ],
+  "missing_inputs": []
+}
