@@ -42,6 +42,7 @@
 | [CLI.public-image](instructions/CLI.public-image.instructions.md) | Изменение публичных команд, argv/global flags, JSON/exit codes, config и subprocess CLI tests |
 | [HELP.atomic-resources](instructions/HELP.atomic-resources.instructions.md) | Изменение packaged atomic Markdown, topics/related, data-only directives и installed help |
 | [WORKFLOW.native-pi-routing](instructions/WORKFLOW.native-pi-routing.instructions.md) | Делегирование реализации/аудита, выбор нативной модели, резерв и scope image-only |
+| [RELEASE.verified-tool](instructions/RELEASE.verified-tool.instructions.md) | Установка или повторная проверка опубликованного uv tool по immutable Git-тегу: constraints/provenance, offline/live evidence, бюджет, изоляция и cleanup |
 
 - **Каждую новую инструкцию обязательно добавляй сюда** рабочей Markdown-ссылкой
   и точным условием чтения. При переименовании, разделении или удалении обновляй

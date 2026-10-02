@@ -442,3 +442,20 @@ Lifetime checkpoint14POST,known40.6+unknown77=117.6/200. Multiple-output probes
 stopped; authorized single/settings live остаётся у parent. NOT_COMMITTED /
 NOT_LIVE_VERIFIED,E06/E10 OPEN для CN-05 scenarios,E11 not authorized;fresh review
 и frozen gate required. Прежние датированные evidence/отчёты не переписаны.
+
+
+## Postrelease verification — выполнено 2026-10-02 UTC
+
+[Sanitized actual report](progress/postrelease-v0.1.0-verification-2026-10-01.md)
+(дата имени — идентификатор поручения). Исторические значения таблиц выше сохранены.
+Обычный uv tool v0.1.0→f7: 81 raw package/Git matches, 25 dependency pins,
+idempotent install raw0. Один consolidated release на Windows/WSL: raw0/raw0,
+1667 PASSED / 1663 PASSED + 4 Windows-only SKIPPED, coverage93%.
+Plain installed CLI: три primary models, actual batch2/concurrency2 и deliberate
+managed-ref retry — 6 completed Jobs, 5 paid CLI invocations, actual27.8 RUB.
+Текущий lifetime known115.4 + historical UNKNOWN77 = conservative192.4/200 RUB;
+новые wire POST counts не измерялись и не заявлены. Старые uncertain Jobs не тронуты.
+Permanent workflow — [RELEASE.verified-tool](../../instructions/RELEASE.verified-tool.instructions.md).
+Worker verification и independent evidence-only review завершены. Уточнение reviewer
+о числе файлов отражено в отчёте: 11 outputs (6 final + 5 originals).
+Docs commit/push интегратора — не новый релиз или перемещение v0.1.0.

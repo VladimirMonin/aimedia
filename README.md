@@ -23,6 +23,10 @@ aimedia --help
 проверена: `direct_url.json` → `f7fb04e6`, 81 package-файл и 25 pinned dependencies
 совпали. Локальная установленная копия: `C:\Users\User\.local\bin\aimedia.exe`.
 GitHub CI Windows/Linux зелёный; каталог моделей остаётся experimental.
+[Проверенная установка и повторная проверка](instructions/RELEASE.verified-tool.instructions.md) —
+checksum assets, tag/provenance, offline gates и отдельно разрешённый paid plan.
+[Фактическая postrelease-проверка](docs/plans/progress/postrelease-v0.1.0-verification-2026-10-01.md):
+три модели, batch/retry, actual27.8 RUB; прежний UNKNOWN77 RUB сохранён.
 
 ## Установка для разработки
 

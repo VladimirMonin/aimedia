@@ -1327,3 +1327,11 @@ Polza bindings. Windows/Linux offline и installed evidence приняты дл�
 новый MIE count slice требует fresh review/frozen SHA. Непроверенные E06/E10 live/E11
 слоты — [release-board](release-board.md), [verification-matrix](verification-matrix.md).
 Наличие кода не является release acceptance.
+
+
+## Проверка уже опубликованного инструмента
+
+Действующая процедура установки/проверки по immutable Git-тегу и release constraints —
+[RELEASE.verified-tool](../../instructions/RELEASE.verified-tool.instructions.md).
+[Postrelease actual report](progress/postrelease-v0.1.0-verification-2026-10-01.md)
+дополняет исторический E10/E11 evidence; не меняет исходные планы или релизный тег.
