@@ -1,7 +1,7 @@
 ---
 applyTo: "docs/skills/**,AGENTS.md,README.md"
 name: "DOCS.SkillPack"
-description: "Читай при добавлении, импорте или изменении docs/skills/ и его навигации в AGENTS.md/README.md: самостоятельные SKILL.md, точная копия доноров, лицензии, границы image-only CLI и безопасная проверка примеров."
+description: "Читай при добавлении, импорте или изменении docs/skills/ и навигации в AGENTS.md/README.md: корневые master и вложенные SKILL.md, progressive disclosure, полный или объявленный runtime export донора, лицензии и границы image-only CLI."
 ---
 
 # DOCS — Пакет навыков
@@ -15,32 +15,58 @@ settings или установку зависимостей.
 
 ## Структура и навигация
 
-- Новый навык — сосед `<name>/SKILL.md`: YAML `name` (lowercase kebab-case,
-  до 64 символов) и точное непустое `description` (до 1024 символов).
-- Навык переносится одной своей папкой; дополнительные ресурсы и ссылки на них
-  относительны и остаются внутри неё. Для `aimedia` нужен установленный CLI,
-  а не checkout/dev tests или соседний навык.
-- Краткий индекс и роли — в `docs/skills/README.md`; маршруты к пакету — в
-  корневых `AGENTS.md` и `README.md`. Обновляй их в том же логическом изменении.
+- Новый корневой пакет — сосед `<name>/SKILL.md`: YAML `name` (lowercase
+  kebab-case, до 64 символов) и непустое точное `description` (до 1024 символов).
+  Имена всех навыков уникальны. Дополнительные поля donor front matter,
+  допускаемые Pi, не являются поводом переписывать импорт.
+- Иерархический пакет имеет корневой управляющий master и вложенные модули
+  с собственными `SKILL.md`. Сохраняй фактическую структуру; не превращай модуль
+  в соседний root или второго orchestrator. Ресурсы и ссылки относительны внутри
+  пакета. Для `aimedia` нужен установленный CLI, не checkout или соседний навык.
+- В `docs/skills/README.md` регистрируй **все** обнаруженные рекурсивно `SKILL.md`
+  с точными путями и ролями master/module; различай число root-пакетов и навыков.
+  Корневые `AGENTS.md` и `README.md` ведут к каталогу. Обновляй навигацию вместе.
+- Обычный вход и явный `pi --skill` для иерархического пакета — корневой master.
+  Он выбирает route/playbook/module и раскрывает только применимые resources
+  постепенно (progressive disclosure); выбранный документ читается целиком,
+  весь пакет заранее не нужен. Регистрация модуля не требует второй установки.
+- Роли обычно выполняет один агент последовательно, не автоматический fanout.
+  Self-review не независимый review: если strict-контракт требует отдельного
+  reviewer, отсутствие отмечается `not_run` и блокирует strict release PASS,
+  а не подготовку кандидата. Отдельный review требует доступности и разрешения.
 - Источник актуальных параметров — установленный executable version/`--help`,
   resolved `help --raw` и `models show --json`, не переписанный каталог в навыке.
 
 ## Импорт и лицензии
 
 Перед первой записью проверь исходник и destination на symlink/junction/reparse
-в дереве и существующих компонентах пути, неожиданные private данные и лицензии.
-Внешний donor — read-only. Копируй **всю** папку, включая LICENSE, notices,
-licenses, provenance, scripts/tests/examples, без исправления донорских текстов
-или EOL. Surrounding index объясняет ограничения, а не редактирует donor.
+в дереве и существующих компонентах пути, private данные и условия использования.
+Внешний donor — read-only. Если профиль поставки не объявлен, копируй **всю**
+папку, включая LICENSE, notices, licenses, provenance, scripts/tests/examples,
+без исправления текстов или EOL. Если donor явно определяет runtime export,
+используй согласованный literal allowlist его manifest, не придуманный фильтр.
+Зафиксируй полный исходный inventory и одобренный manifest, проверь наличие всех
+allowlisted файлов, дубликаты (включая case collisions), безопасные относительные
+пути и отсутствие выхода за root. Не экспортируй private development/cache
+материалы, исключённые объявленным профилем. Не меняй уже принятый полный импорт
+соседнего пакета ради нового профиля.
+
+Разрешены только документированные и согласованные преобразования export;
+зафиксируй точный byte diff и semantic diff manifest, сохрани literal allowlist.
+Остальные файлы должны совпасть побайтно. Surrounding index объясняет
+ограничения, а не переписывает donor. Лицензии и уведомления сохраняй; если профиль
+исключает применимое уведомление, остановись и согласуй, не выбрасывай его молча.
+Отсутствие LICENSE/NOTICE фиксируется как факт, не право назначить лицензию;
+пользовательский пакет с явным разрешением публикации не перелицензируется.
+Неясные ограничения третьих лиц или private content — STOP до решения владельца.
 
 Зафиксируй полный file/directory inventory, размеры и SHA-256 **raw bytes**
-до/после копирования у источника и destination. Изменение источника во время
-операции, расхождение копии, непонятная лицензия или private data — STOP.
+источника до/после операции и destination, expected transformations и exclusions.
+Изменение источника, расхождение копии или несогласованная трансформация — STOP.
 Git text normalization не должна менять imported bytes: допустим только узкий
 `.gitattributes` override для конкретного donor subtree; проверь clean-filter
-представление против raw bytes до staging, затем точные staged blobs проверяет
-интегратор. Уведомления и лицензии нельзя выбрасывать ради уменьшения diff.
-Не запускай imported scripts без отдельной проверки безопасности; структурная
+представление против raw bytes до staging, затем staged blobs проверяет интегратор.
+Не запускай imported scripts без отдельного аудита и разрешения; структурная
 валидация и hash identity не означают creative eval или script PASS.
 
 ## Границы использования
@@ -48,6 +74,11 @@ Git text normalization не должна менять imported bytes: допус
 - `visual-story-director` готовит только текст предпроизводства, включая
   voice-script; это не audio/TTS/video/render capability aimedia. Handoff prompt
   или reference brief не даёт разрешения на paid generation.
+- Master/module могут ссылаться на внешние навыки и renderer capabilities:
+  проверяй их реальную доступность, не объявляй установленными из-за упоминания.
+  aimedia может быть согласованным image generation stage, но не автоматически
+  bitmap editor, SVG/chart renderer или система editable layers. Точные UI edits,
+  сохранность пикселей/слоёв и visual QA требуют реального инструмента/evidence.
 - aimedia остаётся image-only. Реальные референсы создаются обычным paid
   `image generate`, проверяются просмотром final и решением пользователя,
   затем actual path передаётся через `--image`. Нельзя выдумывать approval/файл.
@@ -65,9 +96,12 @@ Git text normalization не должна менять imported bytes: допус
 ## Проверка документационного среза
 
 Проверь YAML/front matter, относительные ресурсы и новые Markdown-ссылки,
-JSON/schema syntax, команды/flags по actual help/metadata, точность imported
-inventory/hashes и Git diff scope. Сохраняй argv/cwd/raw exit codes и manifest
-кандидата в ignored evidence; без секретов и private prompts.
+JSON/schema syntax, AST импортированного Python без исполнения, route/module
+entrypoints и manifest parity, команды/flags по actual help/metadata, точность
+inventory/hashes, frozen соседние пакеты и Git diff scope. Full schema semantic
+validation выполняй при доступном проверенном validator без установки;
+недоступность — NOT_RUN, не PASS синтаксиса. Сохраняй argv/cwd/raw exit codes,
+manifest, patch и ограничения в ignored evidence; без секретов/private prompts.
 Installed local smoke выполняй вне checkout с собственными fresh config/data,
 secret-name scrub (включая alias) и socket child guard по
 [TEST.OfflineQuality](TEST.offline-quality.instructions.md).

@@ -1,0 +1,61 @@
+schema_version: '1.0'
+relation_types:
+  part_whole:
+    question: Из каких частей состоит?
+    preferred_skeletons:
+    - hero-callouts
+    - exploded-axis
+    - layered-stack
+    risks:
+    - exploded-view mistaken for process
+  containment:
+    question: Что находится внутри чего?
+    preferred_skeletons:
+    - nested-containers
+    - layered-stack
+    risks:
+    - false containment
+  sequence:
+    question: Что происходит после чего?
+    preferred_skeletons:
+    - linear-sequence
+    - timeline
+    risks:
+    - unlabeled arrows
+    - bento without order
+  interaction:
+    question: Кто с кем взаимодействует?
+    preferred_skeletons:
+    - node-link
+    - timeline
+    risks:
+    - spaghetti graph
+    - mixed edge semantics
+  hierarchy:
+    question: Что выше, ниже или важнее?
+    preferred_skeletons:
+    - layered-stack
+    - nested-containers
+    risks:
+    - size implies quantity
+  comparison:
+    question: Чем варианты отличаются?
+    preferred_skeletons:
+    - small-multiples
+    risks:
+    - different scales
+    - unequal panels
+  state_change:
+    question: Что изменяется между состояниями?
+    preferred_skeletons:
+    - timeline
+    - small-multiples
+    risks:
+    - unstable object identity
+  overview:
+    question: Что это такое и что важно?
+    preferred_skeletons:
+    - hero-callouts
+    - small-multiples
+    risks:
+    - catalog without thesis

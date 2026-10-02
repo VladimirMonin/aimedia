@@ -1,0 +1,409 @@
+schema_version: '1.0'
+rule_prefixes:
+  SEM: semantic truth
+  STR: structure and topology
+  COG: comprehension
+  VIS: visual organization
+  DAT: data integrity
+  ACC: accessibility
+  OPS: operational output
+  REG: change preservation
+rules:
+  SEM-001:
+    title: Unsupported required claim
+    severity: blocker
+    gates:
+    - G1_SEMANTIC
+    - G4_RELEASE
+    applies_to:
+    - all
+    evidence_required:
+    - claim_id
+    - source_refs
+    repair: source_or_remove_claim
+  SEM-002:
+    title: Missing required entity
+    severity: blocker
+    gates:
+    - G1_SEMANTIC
+    - G2_STRUCTURAL
+    applies_to:
+    - all
+    evidence_required:
+    - required_entity_id
+    - observed_ids
+    repair: restore_required_entity
+  SEM-003:
+    title: Invented entity or relationship
+    severity: blocker
+    gates:
+    - G1_SEMANTIC
+    - G2_STRUCTURAL
+    - G3_RENDER_FIDELITY
+    applies_to:
+    - all
+    evidence_required:
+    - observed_id
+    - approved_spec
+    repair: remove_or_source_element
+  SEM-004:
+    title: Multiple equal primary questions
+    severity: major
+    gates:
+    - G1_SEMANTIC
+    applies_to:
+    - create
+    evidence_required:
+    - primary_questions
+    - semantic_budget
+    repair: decompose_visual
+  SEM-005:
+    title: Mixed abstraction levels
+    severity: major
+    gates:
+    - G1_SEMANTIC
+    applies_to:
+    - all
+    evidence_required:
+    - entity_levels
+    repair: select_one_level_or_split
+  STR-001:
+    title: Wrong edge direction or type
+    severity: blocker
+    gates:
+    - G2_STRUCTURAL
+    - G3_RENDER_FIDELITY
+    applies_to:
+    - sequence
+    - node-link
+    - timeline
+    evidence_required:
+    - edge_id
+    - expected
+    - observed
+    repair: correct_edge_preserve_ids
+  STR-002:
+    title: False containment
+    severity: blocker
+    gates:
+    - G2_STRUCTURAL
+    - G3_RENDER_FIDELITY
+    applies_to:
+    - nested-containers
+    - layered-stack
+    - all
+    evidence_required:
+    - node_id
+    - expected_parent
+    - observed_parent
+    repair: move_outside_false_container
+  STR-003:
+    title: Missing node or dangling edge
+    severity: blocker
+    gates:
+    - G2_STRUCTURAL
+    - G3_RENDER_FIDELITY
+    applies_to:
+    - all
+    evidence_required:
+    - required_ids
+    - observed_ids
+    repair: restore_node_or_reconnect_edge
+  STR-004:
+    title: Unlabeled critical connector
+    severity: major
+    gates:
+    - G2_STRUCTURAL
+    applies_to:
+    - node-link
+    - linear-sequence
+    - timeline
+    evidence_required:
+    - edge_id
+    - visible_label
+    repair: add_direct_verb_label
+  STR-005:
+    title: Skeleton does not expose primary relation
+    severity: major
+    gates:
+    - G2_STRUCTURAL
+    applies_to:
+    - all
+    evidence_required:
+    - primary_relation
+    - selected_skeleton
+    repair: rebuild_with_matching_skeleton
+  STR-006:
+    title: Duplicate or unstable IDs
+    severity: blocker
+    gates:
+    - G1_SEMANTIC
+    - G2_STRUCTURAL
+    applies_to:
+    - all
+    evidence_required:
+    - duplicate_ids
+    repair: assign_stable_unique_ids
+  COG-001:
+    title: No obvious entry point
+    severity: major
+    gates:
+    - G2_STRUCTURAL
+    - G4_RELEASE
+    applies_to:
+    - all
+    evidence_required:
+    - five_second_observation
+    repair: strengthen_entry_point
+  COG-002:
+    title: Reading path is ambiguous
+    severity: major
+    gates:
+    - G2_STRUCTURAL
+    - G4_RELEASE
+    applies_to:
+    - all
+    evidence_required:
+    - path_trace
+    repair: clarify_order_grouping_or_direction
+  COG-003:
+    title: Semantic budget overload
+    severity: major
+    gates:
+    - G1_SEMANTIC
+    - G2_STRUCTURAL
+    applies_to:
+    - all
+    evidence_required:
+    - entity_count
+    - relation_count
+    - container_depth
+    repair: remove_secondary_content_or_split
+  COG-004:
+    title: Required comprehension question is unanswerable
+    severity: blocker
+    gates:
+    - G4_RELEASE
+    applies_to:
+    - all
+    evidence_required:
+    - question
+    - visual_evidence
+    - answer_confidence
+    repair: make_required_claim_visible
+  VIS-001:
+    title: Style selected before approved wireframe
+    severity: major
+    gates:
+    - G2_STRUCTURAL
+    applies_to:
+    - create
+    evidence_required:
+    - workflow_state
+    repair: return_to_monochrome_wireframe
+  VIS-002:
+    title: Decorative element looks semantic
+    severity: major
+    gates:
+    - G3_RENDER_FIDELITY
+    applies_to:
+    - all
+    evidence_required:
+    - region
+    - confusable_role
+    repair: remove_or_visually_demote
+  VIS-003:
+    title: Style soup or competing visual roles
+    severity: major
+    gates:
+    - G3_RENDER_FIDELITY
+    applies_to:
+    - hybrid
+    evidence_required:
+    - style_roles
+    - observed_roles
+    repair: reduce_to_one_base_one_organizer_one_accent
+  VIS-004:
+    title: Encoding meaning changes across canvas
+    severity: major
+    gates:
+    - G2_STRUCTURAL
+    - G3_RENDER_FIDELITY
+    applies_to:
+    - all
+    evidence_required:
+    - encoding
+    - conflicting_meanings
+    repair: restore_one_meaning_per_encoding
+  DAT-001:
+    title: Misleading scale or incomparable values
+    severity: blocker
+    gates:
+    - G3_RENDER_FIDELITY
+    - G4_RELEASE
+    applies_to:
+    - data
+    - small-multiples
+    evidence_required:
+    - scale
+    - units
+    - values
+    repair: use_shared_honest_scale_or_disclose_difference
+  DAT-002:
+    title: Changed exact text or numeric value
+    severity: blocker
+    gates:
+    - G1_SEMANTIC
+    - G3_RENDER_FIDELITY
+    applies_to:
+    - all
+    evidence_required:
+    - expected
+    - observed
+    - source_ref
+    repair: restore_exact_value
+  DAT-003:
+    title: Missing unit, source, or as-of context
+    severity: major
+    gates:
+    - G1_SEMANTIC
+    - G4_RELEASE
+    applies_to:
+    - data
+    evidence_required:
+    - value_id
+    - missing_field
+    repair: add_required_context_or_remove_value
+  ACC-001:
+    title: Color is the only semantic channel
+    severity: blocker
+    gates:
+    - G2_STRUCTURAL
+    - G3_RENDER_FIDELITY
+    - G4_RELEASE
+    applies_to:
+    - all
+    evidence_required:
+    - grayscale_test
+    - affected_meaning
+    repair: add_shape_label_pattern_or_position
+  ACC-002:
+    title: Required text unreadable at target size
+    severity: major
+    gates:
+    - G3_RENDER_FIDELITY
+    - G4_RELEASE
+    applies_to:
+    - all
+    evidence_required:
+    - target_size
+    - font_size
+    - region
+    repair: increase_text_or_reduce_density
+  ACC-003:
+    title: Missing alternative or long description
+    severity: major
+    gates:
+    - G4_RELEASE
+    applies_to:
+    - all
+    evidence_required:
+    - deliverable_profile
+    repair: add_semantic_alt_or_long_description
+  OPS-001:
+    title: Wrong dimensions or aspect ratio
+    severity: major
+    gates:
+    - G3_RENDER_FIDELITY
+    - G4_RELEASE
+    applies_to:
+    - all
+    evidence_required:
+    - expected_dimensions
+    - observed_dimensions
+    repair: export_correct_dimensions
+  OPS-002:
+    title: Clipping or out-of-bounds content
+    severity: major
+    gates:
+    - G3_RENDER_FIDELITY
+    applies_to:
+    - all
+    evidence_required:
+    - canvas_bounds
+    - element_bounds
+    repair: reflow_or_expand_safe_area
+  OPS-003:
+    title: Blurred or lossy final export
+    severity: major
+    gates:
+    - G4_RELEASE
+    applies_to:
+    - raster
+    evidence_required:
+    - target_use
+    - observed_resolution
+    repair: reexport_vector_or_higher_resolution
+  REG-001:
+    title: Preserved property changed
+    severity: blocker
+    gates:
+    - G3_RENDER_FIDELITY
+    - G4_RELEASE
+    applies_to:
+    - repair
+    evidence_required:
+    - preserve_path
+    - before
+    - after
+    repair: revert_out_of_scope_change
+  REG-002:
+    title: Missing regression evidence
+    severity: major
+    gates:
+    - G4_RELEASE
+    applies_to:
+    - repair
+    evidence_required:
+    - failed_gate
+    - rerun_result
+    repair: rerun_failed_and_release_gates
+  REG-003:
+    title: Out-of-scope modification
+    severity: blocker
+    gates:
+    - G3_RENDER_FIDELITY
+    - G4_RELEASE
+    applies_to:
+    - repair
+    evidence_required:
+    - changed_path
+    - modify_allowlist
+    repair: revert_unlisted_change
+  REG-004:
+    title: Persistent temporal object loses visual identity
+    severity: blocker
+    gates:
+    - G2_STRUCTURAL
+    - G3_RENDER_FIDELITY
+    - G4_RELEASE
+    applies_to:
+    - timeline
+    - sequential-state
+    evidence_required:
+    - object_id
+    - before_identity
+    - after_identity
+    - semantic_reason_if_changed
+    repair: restore_stable_identity_or_explain_semantic_change
+  REG-005:
+    title: Required editable deliverable was flattened
+    severity: blocker
+    gates:
+    - G4_RELEASE
+    applies_to:
+    - all
+    evidence_required:
+    - production_contract
+    - delivered_format
+    repair: provide_required_editable_source

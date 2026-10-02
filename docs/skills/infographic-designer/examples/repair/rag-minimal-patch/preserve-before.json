@@ -1,0 +1,62 @@
+{
+  "nodes": {
+    "documents": {
+      "id": "documents",
+      "label": "Documents"
+    },
+    "chunker": {
+      "id": "chunker",
+      "label": "Chunker"
+    },
+    "vector_db": {
+      "id": "vector_db",
+      "label": "Vector DB"
+    },
+    "retriever": {
+      "id": "retriever",
+      "label": "Retriever"
+    },
+    "llm": {
+      "id": "llm",
+      "label": "LLM"
+    },
+    "answer_cache": {
+      "id": "answer_cache",
+      "label": "Answer Cache"
+    }
+  },
+  "edges": {
+    "e1": {
+      "id": "e1",
+      "from": "chunker",
+      "to": "documents",
+      "type": "transforms",
+      "label": "split",
+      "critical": true
+    },
+    "e2": {
+      "id": "e2",
+      "from": "chunker",
+      "to": "vector_db",
+      "type": "writes",
+      "label": "store",
+      "critical": true
+    },
+    "e3": {
+      "id": "e3",
+      "from": "vector_db",
+      "to": "retriever",
+      "type": "returns",
+      "label": "relevant chunks",
+      "critical": true
+    },
+    "e4": {
+      "id": "e4",
+      "from": "retriever",
+      "to": "llm",
+      "type": "augments",
+      "label": "context",
+      "critical": true
+    }
+  }
+}

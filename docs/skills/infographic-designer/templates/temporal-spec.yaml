@@ -1,0 +1,19 @@
+schema_version: "1.0"
+id: example-temporal-v1
+narrative_mode: timeline-swimlanes
+canonical_scene:
+  reading_direction: left-to-right
+  time_direction: past-to-future
+  lanes: []
+  persistent_elements: []
+  context_elements: []
+states:
+  - id: state-1
+    message: "Исходное состояние"
+    visible_elements: [primary-entity]
+    active_elements: [primary-entity]
+    exact_labels: ["Исходное состояние"]
+    annotation: "Замените пример подтверждённым состоянием"
+transitions: []
+continuity: [stable-ids, stable-roles, visible-deltas]
+fallback: static-timeline

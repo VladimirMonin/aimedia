@@ -1,0 +1,17 @@
+schema_version: "1.0"
+artifact_id: example-id
+route: create
+rigor: standard
+objective:
+  primary_question: "Что должен понять читатель?"
+  primary_takeaway: "Один проверяемый вывод"
+audience:
+  level: beginner
+  context: educational article
+  prior_knowledge: []
+source_truth:
+  - {id: src-1, kind: file, locator: source.md, authority: primary}
+output: {medium: svg, aspect_ratio: "16:9", width: 1920, height: 1080, editable: true}
+stop_at: release_package
+constraints: []
+language: ru

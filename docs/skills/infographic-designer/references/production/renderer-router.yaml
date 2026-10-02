@@ -1,0 +1,30 @@
+schema_version: "1.0"
+interpretation:
+  reliability: qualitative_routing_expectations_not_measured_guarantees
+  count_thresholds: configurable_heuristics_not_correctness_limits
+  acceptance: inspect_actual_render_and_verify_required_text_data_topology
+routes:
+  diagram-first:
+    choose_when: [topology_is_critical, many_exact_labels, architecture_or_process]
+    backends: [svg, html, mermaid, graphviz]
+    reliability: {topology: high, exact_text: high, editability: high}
+  chart-first:
+    choose_when: [numbers_are_primary, shared_scale_required, benchmark_or_trend]
+    backends: [chart_library, svg, html]
+    reliability: {topology: high, exact_text: high, editability: high}
+  guided-generation:
+    choose_when: [illustration_is_primary, low_topology_risk, atmosphere_or_metaphor]
+    backends: [image_model]
+    reliability: {topology: low, exact_text: low, editability: low}
+    required_fallbacks: [external_text_overlay, deterministic_labels]
+  hybrid-structured:
+    choose_when: [educational_editorial_infographic, object_illustration_plus_exact_annotations]
+    backends: [svg_skeleton, image_model_for_nonsemantic_layers, deterministic_text_overlay]
+    reliability: {topology: high, exact_text: high, editability: medium}
+priority_rules:
+  - heuristic - more than 8 critical edges suggests diagram-first; critical topology at any count may require it
+  - heuristic - more than 6 exact text items suggests deterministic text overlay; verify every required label at any count
+  - object-level editability defaults to SVG, HTML, or PPTX source
+  - topology and data truth outrank style
+  - exact text is not delegated to an unreliable image backend
+  - if uncertain choose deterministic skeleton first

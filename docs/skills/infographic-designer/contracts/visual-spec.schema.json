@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "infographic-designer/visual-spec.schema.json",
+  "title": "Visual specification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "semantic_spec_id",
+    "primary_skeleton",
+    "composition",
+    "entity_encoding",
+    "relationship_encoding",
+    "reading_order",
+    "wireframe_constraints",
+    "validation"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string"
+    },
+    "semantic_spec_id": {
+      "type": "string"
+    },
+    "primary_skeleton": {
+      "enum": [
+        "hero-callouts",
+        "exploded-axis",
+        "layered-stack",
+        "linear-sequence",
+        "timeline",
+        "node-link",
+        "nested-containers",
+        "small-multiples"
+      ]
+    },
+    "secondary_skeleton": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "composition": {
+      "type": "object",
+      "required": [
+        "direction",
+        "entry_point",
+        "endpoint",
+        "focus"
+      ],
+      "properties": {
+        "direction": {
+          "enum": [
+            "left-to-right",
+            "top-to-bottom",
+            "radial",
+            "center-out",
+            "grid",
+            "spatial"
+          ]
+        },
+        "entry_point": {
+          "type": "string"
+        },
+        "endpoint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "focus": {
+          "type": "string"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "entity_encoding": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_-]*$"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {"type": ["string", "number", "boolean"]},
+          {"$ref": "#/$defs/encodingRecord"}
+        ]
+      }
+    },
+    "relationship_encoding": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_-]*$"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {"type": ["string", "number", "boolean"]},
+          {"$ref": "#/$defs/encodingRecord"}
+        ]
+      }
+    },
+    "reading_order": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "wireframe_constraints": {
+      "type": "object",
+      "required": [
+        "monochrome",
+        "no_extra_entities",
+        "no_unlabeled_critical_edges",
+        "color_not_only_signal",
+        "target_size_checked"
+      ],
+      "properties": {
+        "monochrome": {
+          "const": true
+        },
+        "no_extra_entities": {
+          "const": true
+        },
+        "no_unlabeled_critical_edges": {
+          "const": true
+        },
+        "color_not_only_signal": {
+          "const": true
+        },
+        "target_size_checked": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "style_profile": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "renderer_route": {
+      "enum": [
+        "diagram-first",
+        "chart-first",
+        "guided-generation",
+        "hybrid-structured"
+      ]
+    },
+    "validation": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "encodingRecord": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "atom": {"type": "string"},
+        "shape": {"type": "string"},
+        "label": {"type": "string"},
+        "grayscale_fill": {"type": "string"},
+        "connector": {"type": "string"},
+        "direction": {"type": "string"},
+        "line_weight": {"type": ["string", "number"]},
+        "position": {"type": "string"},
+        "size": {"type": ["string", "number"]},
+        "color": {"type": "string"},
+        "pattern": {"type": "string"},
+        "texture": {"type": "string"},
+        "opacity": {"type": ["string", "number"]},
+        "role": {"type": "string"}
+      }
+    }
+  }
+}

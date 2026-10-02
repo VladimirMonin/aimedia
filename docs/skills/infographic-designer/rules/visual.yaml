@@ -1,0 +1,7 @@
+schema_version: '1.0'
+owner: rules/registry.yaml
+rule_ids:
+- VIS-001
+- VIS-002
+- VIS-003
+- VIS-004

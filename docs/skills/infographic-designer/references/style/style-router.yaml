@@ -1,0 +1,14 @@
+schema_version: "1.0"
+defaults:
+  topology_critical: technical-line-art
+  article_or_course: editorial
+  numbered_engineering_course_visual: editorial-engineering-spread
+  dense_object_reference: scientific-atlas
+  beginner_instruction: clean-sketchnote
+selection_factors: [audience, medium, density, editability, exact_text_risk, topology_risk]
+rules:
+  - if exact_text_risk is high, keep text in deterministic overlay
+  - if topology_risk is high, style cannot redraw connectors
+  - if the visual is a numbered educational process with a premium print-like tone, prefer editorial-engineering-spread
+  - choose style only after G2 structural pass
+  - one base style plus at most one subordinate accent

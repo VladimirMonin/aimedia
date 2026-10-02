@@ -1,0 +1,11 @@
+schema_version: "1.0"
+topic: Example
+claims: []
+entities: []
+relationships: []
+exact_text: []
+data_values: []
+assumptions: []
+unknowns: []
+source_map:
+  sources: []

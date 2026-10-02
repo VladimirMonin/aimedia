@@ -1,0 +1,37 @@
+schema_version: '1.0'
+id: rag-vis-v1
+semantic_spec_id: rag-sem-v1
+primary_skeleton: node-link
+secondary_skeleton: null
+composition:
+  direction: left-to-right
+  entry_point: documents
+  endpoint: llm
+  focus: main path
+  groups:
+  - indexing
+  - retrieval
+entity_encoding:
+  source: document
+  processor: rounded rectangle
+  storage: cylinder
+  model: hexagon
+relationship_encoding:
+  directed: arrow with verb label
+reading_order:
+- documents
+- chunker
+- vector_db
+- retriever
+- llm
+wireframe_constraints:
+  monochrome: true
+  no_extra_entities: true
+  no_unlabeled_critical_edges: true
+  color_not_only_signal: true
+  target_size_checked: true
+style_profile: null
+validation:
+- all_required_entities_present
+- all_directions_correct
+- comprehension_questions_answerable

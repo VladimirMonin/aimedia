@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "infographic-designer/style-profile.schema.json",
+  "title": "Style profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "purpose",
+    "tokens",
+    "compatible_skeletons",
+    "density",
+    "renderer_hints",
+    "reliability",
+    "semantic_invariants",
+    "style_mutable",
+    "forbidden"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string"
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "tokens": {
+      "type": "object"
+    },
+    "compatible_skeletons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "density": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "renderer_hints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reliability": {
+      "type": "object",
+      "required": [
+        "exact_text",
+        "topology",
+        "editability"
+      ],
+      "properties": {
+        "exact_text": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "topology": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "editability": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "semantic_invariants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "style_mutable": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "forbidden": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+schema_version: '1.0'
+id: hero-callouts
+answers:
+- Что это за объект?
+- Какие части особенно важны?
+best_for:
+- object overview
+- anatomy with few labels
+avoid_when:
+- order is primary
+- more than 7-9 callouts
+required_atoms:
+- hero
+- callout
+- leader_line
+- direct_label
+budget:
+  primary_objects: '1'
+  callouts: 3-7
+risks:
+- COG-003
+- VIS-002
+compatible_secondary:
+- zoom-inset
+wireframe_checks:
+- all_required_entities_present
+- reading_path_exists
+- encoding_is_consistent
+- works_without_color
+- target_size_is_readable

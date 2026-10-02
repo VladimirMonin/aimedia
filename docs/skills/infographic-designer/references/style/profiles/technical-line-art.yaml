@@ -1,0 +1,46 @@
+schema_version: '1.0'
+id: technical-line-art
+purpose: Exact technical diagrams and annotated objects
+tokens:
+  line: clean uniform strokes
+  palette: neutral with one accent
+  depth: flat or restrained axonometric
+  typography: sans serif direct labels
+  material: none
+compatible_skeletons:
+- hero-callouts
+- exploded-axis
+- layered-stack
+- linear-sequence
+- timeline
+- node-link
+- nested-containers
+- small-multiples
+density: medium
+renderer_hints:
+- svg
+- html
+- graphviz
+- hybrid-structured
+reliability:
+  exact_text: high
+  topology: high
+  editability: high
+forbidden:
+- decorative circuits that resemble edges
+- unnecessary perspective
+semantic_invariants:
+- entity_count
+- relationship_direction
+- containment
+- sequence
+- exact_text
+- numeric_values
+- reading_order
+style_mutable:
+- palette
+- stroke_character
+- texture
+- decorative_depth
+- illustration_detail
+- accent_shape

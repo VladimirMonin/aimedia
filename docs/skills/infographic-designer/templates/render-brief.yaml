@@ -1,0 +1,12 @@
+schema_version: "1.0"
+artifact_id: example-id
+route: diagram-first
+dimensions: {width: 1920, height: 1080}
+immutable_ids: []
+exact_text: []
+critical_relationships: []
+composition: {}
+style_roles: {semantic_base: technical-line-art}
+reference_roles: []
+negative_constraints: []
+fallback: deterministic-svg-skeleton

@@ -17,3 +17,4 @@
 
 # Preserve imported skill bytes (including CRLF/mixed EOL) without normalization.
 docs/skills/visual-story-director/** -text whitespace=cr-at-eol
+docs/skills/infographic-designer/** -text whitespace=cr-at-eol

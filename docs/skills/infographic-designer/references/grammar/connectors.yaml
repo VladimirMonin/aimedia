@@ -1,0 +1,15 @@
+schema_version: "1.0"
+rules:
+  - every connector has one semantic type
+  - directed relationships use visible direction
+  - arrowheads and connector entry points must remain distinguishable at target viewing size, not only on the original canvas
+  - critical edges use a verb or explicit assertion
+  - leader lines must not resemble data flow
+  - crossings are minimized and never hide direction
+  - containment is not represented as sequence
+styles:
+  solid_arrow: directed_flow_or_action
+  plain_line: undirected_association
+  dashed_arrow: optional_or_async_when_legend_defines_it
+  leader_line: annotation_only
+blocked: [same_arrow_for_flow_dependency_causality_and_membership, decorative_lines_near_nodes]

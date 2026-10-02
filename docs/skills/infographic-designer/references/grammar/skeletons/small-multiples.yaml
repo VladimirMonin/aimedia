@@ -1,0 +1,28 @@
+schema_version: '1.0'
+id: small-multiples
+answers:
+- Чем варианты или состояния отличаются?
+best_for:
+- comparison
+- before-after
+- data panels
+avoid_when:
+- panels require different scales
+- items are not comparable
+required_atoms:
+- panel
+- shared_scale_or_frame
+- shared_legend
+budget:
+  panels: 2-6
+risks:
+- DAT-001
+- VIS-004
+compatible_secondary:
+- timeline
+wireframe_checks:
+- all_required_entities_present
+- reading_path_exists
+- encoding_is_consistent
+- works_without_color
+- target_size_is_readable

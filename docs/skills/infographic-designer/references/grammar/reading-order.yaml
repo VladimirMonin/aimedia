@@ -1,0 +1,11 @@
+schema_version: "1.0"
+signals: [position, numbering, direction, alignment, grouping, contrast, connector_flow]
+tests:
+  three_second: locate_topic_entry_and_primary_object
+  path_trace: follow_required_relationships_without_author_explanation
+  grayscale: preserve_order_and_state_without_color
+  thumbnail: retain_primary_hierarchy_at_small_size
+blocked:
+  - all_items_have_equal_weight_when_order_matters
+  - route_depends_only_on_color
+  - decorative_focal_point_competes_with_takeaway

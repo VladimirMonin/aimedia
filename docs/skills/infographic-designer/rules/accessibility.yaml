@@ -1,0 +1,6 @@
+schema_version: '1.0'
+owner: rules/registry.yaml
+rule_ids:
+- ACC-001
+- ACC-002
+- ACC-003

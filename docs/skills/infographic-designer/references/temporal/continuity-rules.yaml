@@ -1,0 +1,11 @@
+schema_version: "1.0"
+rules:
+  - persistent objects keep stable IDs, labels, roles, lanes, shape family, and relative position unless the semantic model requires a change
+  - unchanged context remains visually stable across panels
+  - each state has one primary message and one visible delta
+  - forward order and any reverse reading restore the same state model
+  - color roles do not change between states
+  - transitions expose what changed, not only that time passed
+  - static fallback preserves state order, labels, and comprehension questions
+hard_fails: [REG-004, STR-001, COG-004, ACC-001]
+checks: [identity_trace, state_diff, transition_labels, shared_frame, grayscale, target_size]

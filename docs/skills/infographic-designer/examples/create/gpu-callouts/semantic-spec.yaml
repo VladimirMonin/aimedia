@@ -1,0 +1,61 @@
+schema_version: '1.0'
+id: gpu-sem-v1
+primary_question: Из каких ключевых частей состоит GPU?
+primary_takeaway: GPU объединяет вычисление, память и обмен данными.
+abstraction_level: overview
+include:
+- three key parts
+exclude:
+- transistor-level implementation
+entities:
+- id: gpu
+  label: GPU
+  type: hero
+  required: true
+- id: compute
+  label: Compute units
+  type: part
+  required: true
+- id: memory
+  label: Memory
+  type: part
+  required: true
+- id: interconnect
+  label: Interconnect
+  type: part
+  required: true
+relationships:
+- id: r1
+  from: gpu
+  to: compute
+  type: has_part
+  directed: false
+  label: contains
+- id: r2
+  from: gpu
+  to: memory
+  type: has_part
+  directed: false
+  label: contains
+- id: r3
+  from: gpu
+  to: interconnect
+  type: has_part
+  directed: false
+  label: contains
+exact_text: []
+data_values: []
+semantic_budget:
+  primary_entities: 4
+  relationship_types: 1
+  container_depth: 1
+  within_budget: true
+  overflow_reason: null
+decomposition:
+  recommendation: one_visual
+  reason: Four primary entities fit one hero view
+comprehension_questions:
+- Какие три части выделены?
+- Как они относятся к GPU?
+assumptions: []
+unknowns: []

@@ -1,0 +1,31 @@
+schema_version: '1.0'
+id: bench-vis-v1
+semantic_spec_id: bench-sem-v1
+primary_skeleton: small-multiples
+secondary_skeleton: null
+composition:
+  direction: grid
+  entry_point: model_a
+  endpoint: model_c
+  focus: shared scale
+  groups:
+  - models
+entity_encoding:
+  candidate: equal panel
+relationship_encoding: {}
+reading_order:
+- model_a
+- model_b
+- model_c
+wireframe_constraints:
+  monochrome: true
+  no_extra_entities: true
+  no_unlabeled_critical_edges: true
+  color_not_only_signal: true
+  target_size_checked: true
+style_profile: null
+validation:
+- shared_scale
+- units_visible
+- source_visible
+- category_order_preserved

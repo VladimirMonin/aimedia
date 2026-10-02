@@ -1,0 +1,79 @@
+schema_version: '1.0'
+topic: RAG context path
+claims:
+- id: claim-1
+  text: Documents are transformed, stored, retrieved, and supplied to the model
+  source_refs:
+  - &id001
+    source_id: fixture-source
+    locator: fixture input
+  status: confirmed
+entities:
+- id: documents
+  label: Documents
+  type: source
+  source_refs:
+  - *id001
+- id: chunker
+  label: Chunker
+  type: processor
+  source_refs:
+  - *id001
+- id: vector_db
+  label: Vector DB
+  type: storage
+  source_refs:
+  - *id001
+- id: retriever
+  label: Retriever
+  type: processor
+  source_refs:
+  - *id001
+- id: llm
+  label: LLM
+  type: model
+  source_refs:
+  - *id001
+relationships:
+- id: e1
+  from: documents
+  to: chunker
+  type: transforms
+  directed: true
+  label: split
+  source_refs:
+  - *id001
+- id: e2
+  from: chunker
+  to: vector_db
+  type: writes
+  directed: true
+  label: store
+  source_refs:
+  - *id001
+- id: e3
+  from: vector_db
+  to: retriever
+  type: returns
+  directed: true
+  label: relevant chunks
+  source_refs:
+  - *id001
+- id: e4
+  from: retriever
+  to: llm
+  type: augments
+  directed: true
+  label: context
+  source_refs:
+  - *id001
+exact_text: []
+data_values: []
+assumptions: []
+unknowns: []
+source_map:
+  sources:
+  - id: fixture-source
+    locator: fixture input
+    sha256: null
+    verified_at: null

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "infographic-designer/edit-contract.schema.json",
+  "title": "Edit and preserve contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "preserve",
+    "modify",
+    "forbidden",
+    "regression_checks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "artifact_id": {
+      "type": "string"
+    },
+    "preserve": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "modify": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "target_id",
+          "property",
+          "operation",
+          "expected_result"
+        ],
+        "properties": {
+          "target_id": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "expected_result": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "forbidden": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "regression_checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

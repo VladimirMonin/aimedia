@@ -1,0 +1,17 @@
+schema_version: "1.0"
+id: example-semantic-v1
+primary_question: "Как части связаны?"
+primary_takeaway: "Один проверяемый вывод"
+abstraction_level: system
+include: [primary-entity]
+exclude: []
+entities:
+  - {id: primary-entity, label: "Главная сущность", type: concept, required: true}
+relationships: []
+exact_text: []
+data_values: []
+semantic_budget: {primary_entities: 1, relationship_types: 0, container_depth: 0, within_budget: true, overflow_reason: null}
+decomposition: {recommendation: one_visual, reason: "Один главный вопрос"}
+comprehension_questions: ["Какой главный вывод?"]
+assumptions: []
+unknowns: []

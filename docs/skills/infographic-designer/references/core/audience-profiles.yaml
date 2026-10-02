@@ -1,0 +1,22 @@
+schema_version: "1.0"
+profiles:
+  beginner:
+    assumptions: []
+    preferred_forms: [hero-callouts, linear-sequence, clean-sketchnote]
+    density: low
+    risks: [unexplained jargon, implementation detail]
+  intermediate:
+    assumptions: [domain vocabulary]
+    preferred_forms: [node-link, layered-stack, timeline]
+    density: medium
+    risks: [mixing overview and implementation]
+  expert:
+    assumptions: [domain and notation fluency]
+    preferred_forms: [node-link, nested-containers, small-multiples]
+    density: high
+    risks: [omitted provenance, ambiguous edge types]
+  mixed:
+    assumptions: []
+    preferred_forms: [overview first, progressive disclosure]
+    density: medium
+    risks: [serving no audience well]

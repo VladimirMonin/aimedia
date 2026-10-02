@@ -1,0 +1,6 @@
+schema_version: '1.0'
+owner: rules/registry.yaml
+rule_ids:
+- OPS-001
+- OPS-002
+- OPS-003

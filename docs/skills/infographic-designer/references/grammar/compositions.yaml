@@ -1,0 +1,12 @@
+schema_version: "1.0"
+compositions:
+  center_out: {best_for: [hero-callouts], reading: hero_then_callouts}
+  aligned_axis: {best_for: [exploded-axis, linear-sequence, timeline], reading: along_axis}
+  stacked_vertical: {best_for: [layered-stack], reading: declared_top_down_or_bottom_up}
+  grouped_network: {best_for: [node-link, nested-containers], reading: entry_path_then_groups}
+  equal_grid: {best_for: [small-multiples], reading: shared_order_across_panels}
+rules:
+  - entry point and endpoint are explicit
+  - visual weight follows semantic priority
+  - whitespace groups but never invents relationships
+  - safe areas and target size are checked before styling

@@ -1,0 +1,28 @@
+schema_version: '1.0'
+id: exploded-axis
+answers:
+- Из каких частей собран объект?
+- Как части ориентированы?
+best_for:
+- assembly
+- component breakdown
+avoid_when:
+- runtime order is primary
+- orientation is unknown
+required_atoms:
+- part
+- aligned_axis
+- direct_label
+budget:
+  parts: 3-8
+risks:
+- STR-005
+- COG-002
+compatible_secondary:
+- hero-callouts
+wireframe_checks:
+- all_required_entities_present
+- reading_path_exists
+- encoding_is_consistent
+- works_without_color
+- target_size_is_readable

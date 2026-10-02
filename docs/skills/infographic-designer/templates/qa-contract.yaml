@@ -1,0 +1,13 @@
+schema_version: "1.0"
+artifact_id: example-id
+artifact_type: infographic
+purpose: "Проверить объяснительную точность"
+audience: beginner
+primary_question: "Что должен понять читатель?"
+primary_takeaway: "Один проверяемый вывод"
+out_of_scope: []
+ground_truth: [content-packet.yaml]
+gates: [G1_SEMANTIC, G2_STRUCTURAL, G3_RENDER_FIDELITY, G4_RELEASE]
+required_rules: [SEM-001, STR-001, COG-004, ACC-001]
+comprehension_questions: ["Какой главный вывод?"]
+target: {medium: png, width: 1920, height: 1080}

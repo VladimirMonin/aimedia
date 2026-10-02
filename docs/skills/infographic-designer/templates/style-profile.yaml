@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: technical-line-art
+purpose: "Exact technical diagram"
+tokens: {}
+compatible_skeletons: [node-link, linear-sequence]
+density: medium
+renderer_hints: [svg, hybrid-structured]
+reliability: {exact_text: high, topology: high, editability: high}
+semantic_invariants: [entity_count, relationship_direction, exact_text, numeric_values]
+style_mutable: [palette, stroke_character, texture, decorative_depth]
+forbidden: [decorative_lines_that_resemble_edges]

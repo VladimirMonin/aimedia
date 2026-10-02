@@ -1,0 +1,174 @@
+schema_version: "1.0"
+version: "0.2.1"
+distribution: runtime
+distributions:
+  runtime:
+    # Optional service evidence; normal build/validation does not require it.
+    receipt: runtime-hashes.json
+    files:
+      - SKILL.md
+      - contracts/content-packet.schema.json
+      - contracts/edit-contract.schema.json
+      - contracts/production-contract.schema.json
+      - contracts/qa-contract.schema.json
+      - contracts/qa-report.schema.json
+      - contracts/render-brief.schema.json
+      - contracts/semantic-spec.schema.json
+      - contracts/style-profile.schema.json
+      - contracts/temporal-spec.schema.json
+      - contracts/visual-spec.schema.json
+      - docs/runtime-package.md
+      - docs/working-modes.md
+      - examples/audit/reversed-edge-invented-node/qa-report.yaml
+      - examples/audit/reversed-edge-invented-node/semantic-spec.yaml
+      - examples/audit/reversed-edge-invented-node/wireframe.yaml
+      - examples/create/benchmark-story/content-packet.yaml
+      - examples/create/benchmark-story/production-contract.yaml
+      - examples/create/benchmark-story/qa-report.yaml
+      - examples/create/benchmark-story/semantic-spec.yaml
+      - examples/create/benchmark-story/visual-spec.yaml
+      - examples/create/benchmark-story/wireframe.yaml
+      - examples/create/gpu-callouts/content-packet.yaml
+      - examples/create/gpu-callouts/production-contract.yaml
+      - examples/create/gpu-callouts/qa-report.yaml
+      - examples/create/gpu-callouts/semantic-spec.yaml
+      - examples/create/gpu-callouts/visual-spec.yaml
+      - examples/create/gpu-callouts/wireframe.yaml
+      - examples/create/rag-architecture/content-packet.yaml
+      - examples/create/rag-architecture/production-contract.yaml
+      - examples/create/rag-architecture/qa-report.yaml
+      - examples/create/rag-architecture/semantic-spec.yaml
+      - examples/create/rag-architecture/visual-spec.yaml
+      - examples/create/rag-architecture/wireframe.yaml
+      - examples/repair/rag-minimal-patch/edit-contract.yaml
+      - examples/repair/rag-minimal-patch/preserve-after.json
+      - examples/repair/rag-minimal-patch/preserve-before.json
+      - examples/repair/rag-minimal-patch/qa-report.yaml
+      - examples/repair/rag-minimal-patch/semantic-spec.yaml
+      - examples/repair/rag-minimal-patch/wireframe-after.yaml
+      - examples/repair/rag-minimal-patch/wireframe-before.yaml
+      - manifest.yaml
+      - modules/screenshot-explainer/SKILL.md
+      - modules/screenshot-explainer/docs/procedure.md
+      - playbooks/audit.md
+      - playbooks/create.md
+      - playbooks/repair.md
+      - prompts/comprehension-critic.md
+      - prompts/independent-critic.md
+      - prompts/render-brief-compiler.md
+      - prompts/repair-planner.md
+      - prompts/semantic-designer.md
+      - prompts/visual-architect.md
+      - references/core/audience-profiles.yaml
+      - references/core/relation-types.yaml
+      - references/core/semantic-budget.yaml
+      - references/grammar/annotations.yaml
+      - references/grammar/atoms.yaml
+      - references/grammar/compositions.yaml
+      - references/grammar/connectors.yaml
+      - references/grammar/encodings.yaml
+      - references/grammar/reading-order.yaml
+      - references/grammar/skeleton-router.yaml
+      - references/grammar/skeletons/exploded-axis.yaml
+      - references/grammar/skeletons/hero-callouts.yaml
+      - references/grammar/skeletons/layered-stack.yaml
+      - references/grammar/skeletons/linear-sequence.yaml
+      - references/grammar/skeletons/nested-containers.yaml
+      - references/grammar/skeletons/node-link.yaml
+      - references/grammar/skeletons/small-multiples.yaml
+      - references/grammar/skeletons/timeline.yaml
+      - references/production/renderer-router.yaml
+      - references/qa/gates.yaml
+      - references/style/hybrid-compatibility.yaml
+      - references/style/profiles/clean-sketchnote.yaml
+      - references/style/profiles/editorial-engineering-spread.yaml
+      - references/style/profiles/editorial.yaml
+      - references/style/profiles/scientific-atlas.yaml
+      - references/style/profiles/technical-line-art.yaml
+      - references/style/style-router.yaml
+      - references/temporal/continuity-rules.yaml
+      - requirements.txt
+      - routes.yaml
+      - rules/accessibility.yaml
+      - rules/cognitive.yaml
+      - rules/data.yaml
+      - rules/operational.yaml
+      - rules/registry.yaml
+      - rules/regression.yaml
+      - rules/semantic.yaml
+      - rules/structural.yaml
+      - rules/temporal.yaml
+      - rules/visual.yaml
+      - scripts/build_runtime.py
+      - scripts/run_smoke_tests.py
+      - scripts/test_contract_regressions.py
+      - scripts/validate_contract.py
+      - scripts/validate_graph.py
+      - scripts/validate_package.py
+      - scripts/validate_preserve_contract.py
+      - templates/content-packet.yaml
+      - templates/edit-contract.yaml
+      - templates/job-brief.md
+      - templates/production-contract.yaml
+      - templates/qa-contract.yaml
+      - templates/qa-report.yaml
+      - templates/render-brief.yaml
+      - templates/semantic-spec.yaml
+      - templates/style-profile.yaml
+      - templates/temporal-spec.yaml
+      - templates/visual-spec.yaml
+      - tests/regression-cases.yaml
+      - tests/routing-cases.yaml
+      - tests/test_runtime_package.py
+      - workflow.yaml
+  development:
+    required_files:
+      - scripts/extract_sections.py
+      - source-map/extract-map.yaml
+      - source-map/section-ownership.yaml
+      - source-map/release-scope-v0.1.yaml
+      - source-map/atlas-snapshot.json
+    extraction_scope: source-map/release-scope-v0.1.yaml
+    provenance_root: inbox-provenance-2026-08-31/СТАТЬИ
+    historical_non_runtime_roots: [evals, inbox-provenance-2026-08-31]
+skill: infographic-designer
+modules:
+  screenshot-explainer:
+    entrypoint: modules/screenshot-explainer/SKILL.md
+    purpose: plan_decompose_and_annotate_real_ui_screenshots
+public_routes: [create, audit, repair]
+skeletons: [hero-callouts, exploded-axis, layered-stack, linear-sequence, timeline, node-link, nested-containers, small-multiples]
+style_profiles: [technical-line-art, editorial, editorial-engineering-spread, scientific-atlas, clean-sketchnote]
+renderer_routes: [diagram-first, chart-first, guided-generation, hybrid-structured]
+contracts:
+  - production-contract
+  - content-packet
+  - semantic-spec
+  - visual-spec
+  - style-profile
+  - render-brief
+  - edit-contract
+  - temporal-spec
+  - qa-contract
+  - qa-report
+playbooks: [create, audit, repair]
+curated_prompts: [semantic-designer, visual-architect, render-brief-compiler, independent-critic, comprehension-critic, repair-planner]
+examples:
+  create: [gpu-callouts, rag-architecture, benchmark-story]
+  audit: [reversed-edge-invented-node]
+  repair: [rag-minimal-patch]
+tests:
+  minimum_routing_cases: 30
+  require_positive_negative_boundary_routes: true
+  require_each_blocker_fixture: true
+  minimum_assertions_per_regression: 3
+source_map:
+  expected_sections: 187
+  expected_sources: 10
+  generated_targets_must_match: true
+policy:
+  one_owner_per_target: true
+  gate_membership_owned_by: rules/registry.yaml
+  score_only_after_blocker_gate: true
+  style_after_g2: true
+  publishable_absolute_paths_forbidden: true

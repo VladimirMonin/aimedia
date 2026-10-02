@@ -1,0 +1,28 @@
+schema_version: '1.0'
+id: layered-stack
+answers:
+- Какие уровни образуют систему?
+- Каков порядок слоёв?
+best_for:
+- software layers
+- strata
+- priority levels
+avoid_when:
+- membership is primary
+- runtime sequence is primary
+required_atoms:
+- layer
+- direct_label
+budget:
+  layers: 3-7
+risks:
+- STR-002
+- VIS-004
+compatible_secondary:
+- nested-containers
+wireframe_checks:
+- all_required_entities_present
+- reading_path_exists
+- encoding_is_consistent
+- works_without_color
+- target_size_is_readable

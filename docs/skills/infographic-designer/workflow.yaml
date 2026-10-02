@@ -1,0 +1,70 @@
+schema_version: "1.0"
+orchestrator:
+  operations: [create, audit, repair]
+  roles: sequential_by_default
+  user_approval: only_explicit_checkpoint_not_every_internal_gate
+configuration:
+  rigor:
+    default: standard
+    values: [standard, strict]
+    selection: explicit_request_or_material_risk
+  stop_at:
+    default: release_package
+    values: [semantic_spec, wireframe, render_brief, draft, final, release_package]
+    independent_of_rigor: true
+  standard:
+    primary_record: job-brief.md
+    structured_contracts: required_when_actual_machine_validation_consumes_them
+    independent_review: final_when_available
+  strict:
+    primary_record: full_structured_contracts
+    independent_review: [G2_STRUCTURAL, FINAL]
+    reviewer_unavailable: continue_preparation_and_self_review_with_strict_release_pending
+initial_state: INTAKE
+intake_dispatch:
+  real_ui_screenshot_explanation:
+    entrypoint: modules/screenshot-explainer/SKILL.md
+    workflow: inspect_source_then_plan_and_decompose_then_render_then_visual_qa
+    replaces_general_visual_pipeline: true
+states:
+  INTAKE: {on_success: ROUTED}
+  ROUTED: {on_success: GROUNDED}
+  GROUNDED: {on_success: SEMANTIC_SPEC, on_missing_critical_truth: BLOCKED}
+  SEMANTIC_SPEC: {gate: G1_SEMANTIC, pass: VISUAL_SPEC, repair: SEMANTIC_SPEC, block: BLOCKED}
+  VISUAL_SPEC: {on_success: WIREFRAME}
+  WIREFRAME: {artifact: visible_svg_or_png, gate: G2_STRUCTURAL, pass: STYLE_RENDER_PLAN, repair: WIREFRAME, rebuild: VISUAL_SPEC}
+  STYLE_RENDER_PLAN: {on_success: RENDER}
+  RENDER: {artifacts: [editable_source, requested_export], gate: G3_RENDER_FIDELITY, pass: RELEASE_CANDIDATE, repair: RENDER, rebuild: WIREFRAME}
+  RELEASE_CANDIDATE: {gate: G4_RELEASE, pass: PACKAGE, repair: RENDER, missing_strict_review: PENDING_REVIEW, block: BLOCKED}
+  PACKAGE: {terminal: true}
+  STOP_AT: {terminal: true, only_claim_completed_stages: true}
+  PENDING_REVIEW: {terminal: true, release_pass: false}
+  BLOCKED: {terminal: true}
+stop_at_policy:
+  semantic_spec: after_G1_evidence
+  wireframe: after_visible_wireframe_and_G2_evidence
+  render_brief: after_STYLE_RENDER_PLAN
+  draft: after_actual_draft_and_recorded_G3_limitations
+  final: after_requested_export_and_G4
+  release_package: after_PACKAGE
+  missing_required_review: record_pending_never_invent_pass
+side_routes:
+  audit: [EXISTING_ARTIFACT, SOURCE_OR_OBSERVATION_PACKET, APPLICABLE_CHECKS, QA_REPORT]
+  repair: [BEFORE_STATE, PRESERVE_MODIFY_SCOPE, MINIMAL_PATCH, AFFECTED_GATES, REGRESSION_AND_G4, PATCH_AND_REPORT]
+gates:
+  G1_SEMANTIC:
+    owners: [SEM, DAT]
+    hard_fail_blocks_score: true
+    pass_action: advance_to_next_stage
+  G2_STRUCTURAL:
+    owners: [STR, COG, ACC]
+    hard_fail_blocks_score: true
+    pass_action: advance_to_next_stage
+  G3_RENDER_FIDELITY:
+    owners: [STR, VIS, DAT, ACC, OPS]
+    hard_fail_blocks_score: true
+    pass_action: advance_to_next_stage
+  G4_RELEASE:
+    owners: [SEM, COG, VIS, DAT, ACC, OPS, REG]
+    hard_fail_blocks_score: true
+    pass_action: release_only_with_applicable_prerequisites

@@ -1,0 +1,10 @@
+schema_version: "1.0"
+formula: "one primary skeleton + one composition + one representation technique + one base style + one accent"
+safe_start: "1 + 1 + 1: one construction, one shell, one accent"
+roles:
+  semantic_base: owns entities relationships topology and reading order
+  organizer: owns grid hierarchy spacing and grouping
+  explainer: owns callouts zooms and local annotation
+  accent: owns limited emphasis only
+risk_factors: [two_styles_claim_semantic_base, topology_redrawn_by_image_model, exact_text_generated_as_pixels, competing_focal_points, inconsistent_encoding]
+blocked: [two_primary_styles, accent_changes_meaning, metaphor_adds_connections, style_soup]

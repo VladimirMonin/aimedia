@@ -1,0 +1,8 @@
+schema_version: '1.0'
+owner: rules/registry.yaml
+rule_ids:
+- SEM-001
+- SEM-002
+- SEM-003
+- SEM-004
+- SEM-005

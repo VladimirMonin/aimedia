@@ -1,0 +1,9 @@
+schema_version: '1.0'
+owner: rules/registry.yaml
+rule_ids:
+- STR-001
+- STR-002
+- STR-003
+- STR-004
+- STR-005
+- STR-006

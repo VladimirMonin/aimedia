@@ -1,0 +1,41 @@
+schema_version: '1.0'
+id: clean-sketchnote
+purpose: Beginner-friendly explanation and memorable instruction
+tokens:
+  line: restrained hand-drawn
+  palette: light with few accents
+  depth: flat
+  typography: large friendly labels
+  material: whiteboard or paper
+compatible_skeletons:
+- hero-callouts
+- linear-sequence
+- timeline
+- small-multiples
+density: low
+renderer_hints:
+- svg
+- guided-generation with text overlay
+- hybrid-structured
+reliability:
+  exact_text: medium
+  topology: medium
+  editability: medium
+forbidden:
+- random doodles as semantic icons
+- handwritten tiny text
+semantic_invariants:
+- entity_count
+- relationship_direction
+- containment
+- sequence
+- exact_text
+- numeric_values
+- reading_order
+style_mutable:
+- palette
+- stroke_character
+- texture
+- decorative_depth
+- illustration_detail
+- accent_shape

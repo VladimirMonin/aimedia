@@ -1,0 +1,30 @@
+schema_version: '1.0'
+id: timeline
+answers:
+- Что меняется со временем?
+- Кто действует параллельно?
+best_for:
+- state change
+- history
+- swimlanes
+avoid_when:
+- time is not meaningful
+- too many lanes
+required_atoms:
+- time_axis
+- state_or_event
+- lane_optional
+budget:
+  lanes: 1-5
+  events: 3-12
+risks:
+- COG-003
+- VIS-004
+compatible_secondary:
+- linear-sequence
+wireframe_checks:
+- all_required_entities_present
+- reading_path_exists
+- encoding_is_consistent
+- works_without_color
+- target_size_is_readable

@@ -1,0 +1,43 @@
+schema_version: '1.0'
+id: editorial
+purpose: Article and educational explanation with clear hierarchy
+tokens:
+  line: mixed but controlled
+  palette: limited editorial palette
+  depth: mostly flat
+  typography: strong title and compact annotations
+  material: subtle
+compatible_skeletons:
+- hero-callouts
+- linear-sequence
+- timeline
+- small-multiples
+- node-link
+density: medium
+renderer_hints:
+- svg
+- html
+- pptx
+- hybrid-structured
+reliability:
+  exact_text: high
+  topology: medium
+  editability: high
+forbidden:
+- card grid without relations
+- ornament competing with takeaway
+semantic_invariants:
+- entity_count
+- relationship_direction
+- containment
+- sequence
+- exact_text
+- numeric_values
+- reading_order
+style_mutable:
+- palette
+- stroke_character
+- texture
+- decorative_depth
+- illustration_detail
+- accent_shape

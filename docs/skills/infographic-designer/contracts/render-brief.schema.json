@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "infographic-designer/render-brief.schema.json",
+  "title": "Render brief",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "route",
+    "dimensions",
+    "immutable_ids",
+    "exact_text",
+    "critical_relationships",
+    "composition",
+    "style_roles",
+    "negative_constraints",
+    "fallback"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "artifact_id": {
+      "type": "string"
+    },
+    "route": {
+      "enum": [
+        "diagram-first",
+        "chart-first",
+        "guided-generation",
+        "hybrid-structured"
+      ]
+    },
+    "dimensions": {
+      "type": "object"
+    },
+    "immutable_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "exact_text": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "critical_relationships": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "composition": {
+      "type": "object"
+    },
+    "style_roles": {
+      "type": "object"
+    },
+    "reference_roles": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "negative_constraints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "fallback": {
+      "type": "string"
+    }
+  }
+}

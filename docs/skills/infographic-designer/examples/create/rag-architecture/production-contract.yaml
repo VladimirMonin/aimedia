@@ -1,0 +1,24 @@
+schema_version: '1.0'
+artifact_id: rag-architecture
+route: create
+objective:
+  primary_question: Как контекст достигает LLM?
+  primary_takeaway: Путь индексации и извлечения
+audience:
+  level: beginner
+  context: skill fixture
+  prior_knowledge: []
+source_truth:
+- id: fixture-source
+  kind: user_brief
+  locator: fixture input
+  authority: primary
+output:
+  medium: svg
+  aspect_ratio: '16:9'
+  width: 1920
+  height: 1080
+  editable: true
+stop_at: wireframe
+constraints: []
+language: ru

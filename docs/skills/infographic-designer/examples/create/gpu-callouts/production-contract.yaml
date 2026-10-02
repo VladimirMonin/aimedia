@@ -1,0 +1,24 @@
+schema_version: '1.0'
+artifact_id: gpu-callouts
+route: create
+objective:
+  primary_question: Из каких частей состоит GPU?
+  primary_takeaway: Три ключевых функциональных блока
+audience:
+  level: beginner
+  context: skill fixture
+  prior_knowledge: []
+source_truth:
+- id: fixture-source
+  kind: user_brief
+  locator: fixture input
+  authority: primary
+output:
+  medium: svg
+  aspect_ratio: '16:9'
+  width: 1920
+  height: 1080
+  editable: true
+stop_at: wireframe
+constraints: []
+language: ru

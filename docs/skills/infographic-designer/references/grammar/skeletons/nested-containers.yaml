@@ -1,0 +1,30 @@
+schema_version: '1.0'
+id: nested-containers
+answers:
+- Что принадлежит чему?
+- Где проходят границы?
+best_for:
+- system boundaries
+- deployment scopes
+- taxonomy containment
+avoid_when:
+- sequence is primary
+- membership is uncertain
+required_atoms:
+- container
+- node
+- boundary_label
+budget:
+  depth: 1-3
+  children_per_container: 2-7
+risks:
+- STR-002
+- COG-003
+compatible_secondary:
+- node-link
+wireframe_checks:
+- all_required_entities_present
+- reading_path_exists
+- encoding_is_consistent
+- works_without_color
+- target_size_is_readable

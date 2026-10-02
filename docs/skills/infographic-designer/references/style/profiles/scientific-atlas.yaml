@@ -1,0 +1,41 @@
+schema_version: '1.0'
+id: scientific-atlas
+purpose: Dense reference, anatomy, layered or exploded explanation
+tokens:
+  line: precise fine line
+  palette: muted scientific colors
+  depth: controlled section or cutaway
+  typography: compact labels and figure notes
+  material: paper or clean plate
+compatible_skeletons:
+- hero-callouts
+- exploded-axis
+- layered-stack
+- small-multiples
+density: high
+renderer_hints:
+- svg
+- hybrid-structured
+reliability:
+  exact_text: high
+  topology: high
+  editability: medium
+forbidden:
+- fake measurements
+- decorative data marks
+- illegible micro-labels
+semantic_invariants:
+- entity_count
+- relationship_direction
+- containment
+- sequence
+- exact_text
+- numeric_values
+- reading_order
+style_mutable:
+- palette
+- stroke_character
+- texture
+- decorative_depth
+- illustration_detail
+- accent_shape

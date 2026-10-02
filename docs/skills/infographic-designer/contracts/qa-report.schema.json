@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "infographic-designer/qa-report.schema.json",
+  "title": "QA report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "gate_id",
+    "verdict",
+    "confidence",
+    "hard_fails",
+    "findings",
+    "unknowns",
+    "release_recommendation"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "gate_id": {
+      "enum": [
+        "G1_SEMANTIC",
+        "G2_STRUCTURAL",
+        "G3_RENDER_FIDELITY",
+        "G4_RELEASE"
+      ]
+    },
+    "verdict": {
+      "enum": [
+        "pass",
+        "repair",
+        "rebuild",
+        "block"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "hard_fails": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "title"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "rule_id",
+          "severity",
+          "expected",
+          "observed",
+          "evidence",
+          "minimal_fix"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rule_id": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "blocker",
+              "major",
+              "minor"
+            ]
+          },
+          "expected": {
+            "type": ["object", "array", "string", "number", "boolean"]
+          },
+          "observed": {
+            "type": ["object", "array", "string", "number", "boolean"]
+          },
+          "evidence": {
+            "type": ["object", "array", "string", "number", "boolean"]
+          },
+          "minimal_fix": {
+            "type": ["object", "array", "string", "number", "boolean"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "unknowns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "semantic_accuracy": {"type": "number", "minimum": 0, "maximum": 100},
+        "structural_accuracy": {"type": "number", "minimum": 0, "maximum": 100},
+        "visual_clarity": {"type": "number", "minimum": 0, "maximum": 100},
+        "cognitive_utility": {"type": "number", "minimum": 0, "maximum": 100},
+        "accessibility": {"type": "number", "minimum": 0, "maximum": 100},
+        "operational_fitness": {"type": "number", "minimum": 0, "maximum": 100},
+        "total": {"type": "number", "minimum": 0, "maximum": 100},
+        "threshold": {"type": "number", "minimum": 0, "maximum": 100},
+        "g1_prerequisite": {"enum": ["pass", "fail", "not_run"]},
+        "g2_structural": {"enum": ["pass", "fail", "not_run"]},
+        "graph_validator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["valid", "nodes", "edges"],
+          "properties": {
+            "valid": {"type": "boolean"},
+            "nodes": {"type": "integer", "minimum": 0},
+            "edges": {"type": "integer", "minimum": 0}
+          }
+        },
+        "structural_checks": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+          "additionalProperties": {"enum": ["pass", "fail", "not_run"]}
+        }
+      }
+    },
+    "release_recommendation": {
+      "enum": [
+        "advance_to_next_stage",
+        "release",
+        "repair_render",
+        "rebuild_wireframe",
+        "rebuild_semantics",
+        "blocked"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["scores"],
+        "properties": {"scores": {"anyOf": [
+          {"required": ["semantic_accuracy"]}, {"required": ["structural_accuracy"]},
+          {"required": ["visual_clarity"]}, {"required": ["cognitive_utility"]},
+          {"required": ["accessibility"]}, {"required": ["operational_fitness"]},
+          {"required": ["total"]}, {"required": ["threshold"]}
+        ]}}
+      },
+      "then": {"properties": {"verdict": {"const": "pass"}}}
+    },
+    {
+      "if": {"properties": {"verdict": {"const": "pass"}}, "required": ["verdict"]},
+      "then": {
+        "properties": {
+          "hard_fails": {"maxItems": 0},
+          "findings": {"items": {"properties": {"severity": {"const": "minor"}}}},
+          "scores": {
+            "properties": {
+              "g1_prerequisite": {"const": "pass"},
+              "g2_structural": {"const": "pass"},
+              "graph_validator": {"properties": {"valid": {"const": true}}},
+              "structural_checks": {"additionalProperties": {"const": "pass"}}
+            }
+          },
+          "release_recommendation": {"enum": ["release", "advance_to_next_stage"]}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"hard_fails": {"minItems": 1}}, "required": ["hard_fails"]},
+      "then": {
+        "properties": {
+          "verdict": {"enum": ["repair", "rebuild", "block"]},
+          "findings": {"contains": {"properties": {"severity": {"const": "blocker"}}, "required": ["severity"]}},
+          "scores": {"not": {"anyOf": [
+            {"required": ["semantic_accuracy"]}, {"required": ["structural_accuracy"]},
+            {"required": ["visual_clarity"]}, {"required": ["cognitive_utility"]},
+            {"required": ["accessibility"]}, {"required": ["operational_fitness"]},
+            {"required": ["total"]}, {"required": ["threshold"]}
+          ]}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"findings": {"contains": {"properties": {"severity": {"const": "blocker"}}, "required": ["severity"]}}}, "required": ["findings"]},
+      "then": {"properties": {"hard_fails": {"minItems": 1}}}
+    },
+    {
+      "if": {"properties": {"release_recommendation": {"const": "release"}}, "required": ["release_recommendation"]},
+      "then": {
+        "required": ["scores"],
+        "properties": {
+          "gate_id": {"const": "G4_RELEASE"},
+          "verdict": {"const": "pass"},
+          "scores": {"required": ["g1_prerequisite", "g2_structural"]}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"release_recommendation": {"const": "advance_to_next_stage"}}, "required": ["release_recommendation"]},
+      "then": {"properties": {"gate_id": {"enum": ["G1_SEMANTIC", "G2_STRUCTURAL", "G3_RENDER_FIDELITY"]}, "verdict": {"const": "pass"}}}
+    },
+    {
+      "if": {"properties": {"gate_id": {"enum": ["G3_RENDER_FIDELITY", "G4_RELEASE"]}, "verdict": {"const": "pass"}}, "required": ["gate_id", "verdict"]},
+      "then": {"required": ["scores"], "properties": {"scores": {"required": ["g1_prerequisite", "g2_structural"]}}}
+    },
+    {
+      "if": {"properties": {"gate_id": {"const": "G4_RELEASE"}, "verdict": {"const": "pass"}}, "required": ["gate_id", "verdict"]},
+      "then": {"properties": {"release_recommendation": {"const": "release"}}}
+    },
+    {
+      "if": {"properties": {"verdict": {"const": "repair"}}, "required": ["verdict"]},
+      "then": {"properties": {"release_recommendation": {"enum": ["repair_render", "rebuild_wireframe", "rebuild_semantics"]}}}
+    },
+    {
+      "if": {"properties": {"verdict": {"const": "rebuild"}}, "required": ["verdict"]},
+      "then": {"properties": {"release_recommendation": {"enum": ["rebuild_wireframe", "rebuild_semantics"]}}}
+    },
+    {
+      "if": {"properties": {"verdict": {"const": "block"}}, "required": ["verdict"]},
+      "then": {"properties": {"release_recommendation": {"const": "blocked"}}}
+    }
+  ]
+}

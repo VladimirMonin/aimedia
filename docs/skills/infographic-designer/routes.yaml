@@ -1,0 +1,57 @@
+schema_version: "1.0"
+skill: infographic-designer
+orchestrator: single_entry_sequential_roles
+configuration:
+  rigor: {default: standard, values: [standard, strict], selection: explicit_request_or_material_risk}
+  stop_at_independent_of_rigor: true
+specialized_routes:
+  explain_screenshot:
+    triggers: ["объясни скрин", "покажи куда нажать", "оформи инструкцию по интерфейсу", "annotate screenshot", "UI walkthrough"]
+    entrypoint: modules/screenshot-explainer/SKILL.md
+    priority: before_general_infographic_operations
+    input: real_ui_screenshot_and_reader_goal
+    stages: [inspect_source, plan_and_decompose, annotate_and_render, visual_qa]
+    output: annotated_image_or_series_with_source_prompt_and_short_qa
+public_routes:
+  create:
+    triggers: ["сделай инфографику", "объясни визуально", "создай схему", "visual explanation", "infographic"]
+    input: source_or_brief
+    output: mode_appropriate_visual_package
+    stop_at: [semantic_spec, wireframe, render_brief, draft, final, release_package]
+    stop_at_default: release_package
+    standard_package: [job_brief_with_qa, visible_wireframe_svg_or_png, editable_source, requested_export]
+    strict_additions: [schema_contracts, source_provenance, independent_G2_and_final, full_qa_evidence]
+  audit:
+    triggers: ["проверь инфографику", "аудит схемы", "правильно ли идут стрелки", "audit infographic"]
+    input: existing_artifact_source_and_optional_contracts
+    output: short_markdown_qa_or_strict_schema_qa
+    creates_visual: false
+  repair:
+    triggers: ["исправь только", "остальное не трогай", "почини стрелки", "repair infographic"]
+    input: before_artifact_findings_and_preserve_modify_scope
+    output: minimal_patch_editable_source_export_and_regression_qa
+internal_branches:
+  static_structured:
+    when: topology_or_exact_text_is_primary
+    preferred_routes: [diagram-first, hybrid-structured]
+  data_driven:
+    when: quantitative_values_are_primary
+    preferred_routes: [chart-first, hybrid-structured]
+  illustrative:
+    when: object_depiction_serves_explanatory_question
+    preferred_routes: [guided-generation, hybrid-structured]
+  temporal:
+    when: order_duration_state_change_or_parallelism_is_primary
+    runtime_scope: static_timeline_or_sequence
+    preferred_routes: [diagram-first, hybrid-structured]
+available_capability_classes: [svg_html, chart_renderer, image_generation_editing, design_tool, rasterizer]
+adjacent_skills:
+  processed_vault_image_card: image-card-processor
+  youtube_thumbnail_concept: copywriting-youtube-thumbnail-concept
+negative_boundaries:
+  - quick decorative image with no explanatory requirement
+  - ordinary prose summary with no visual deliverable
+  - photo retouching without information design
+  - slide-deck production where no infographic or diagram is requested
+  - youtube thumbnail concept or click-through visual without explanatory model
+deferred_routes: [adapt, series, derive_template, scrollytelling, exploratory_interactive]

@@ -1,0 +1,8 @@
+schema_version: '1.0'
+owner: rules/registry.yaml
+rule_ids:
+- REG-001
+- REG-002
+- REG-003
+- REG-004
+- REG-005

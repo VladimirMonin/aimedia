@@ -1,0 +1,33 @@
+schema_version: '1.0'
+id: gpu-vis-v1
+semantic_spec_id: gpu-sem-v1
+primary_skeleton: hero-callouts
+secondary_skeleton: null
+composition:
+  direction: center-out
+  entry_point: gpu
+  endpoint: null
+  focus: gpu
+  groups:
+  - parts
+entity_encoding:
+  hero: central object
+  part: callout
+relationship_encoding:
+  has_part: leader line
+reading_order:
+- gpu
+- compute
+- memory
+- interconnect
+wireframe_constraints:
+  monochrome: true
+  no_extra_entities: true
+  no_unlabeled_critical_edges: true
+  color_not_only_signal: true
+  target_size_checked: true
+style_profile: null
+validation:
+- all_required_entities_present
+- leader_lines_not_data_flow
+- reading_path_obvious

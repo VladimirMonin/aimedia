@@ -1,0 +1,7 @@
+schema_version: "1.0"
+artifact_id: example-id
+preserve: [composition, objects, wording, proportions, reading_order]
+modify:
+  - {target_id: background, property: color, operation: replace, expected_result: "approved palette"}
+forbidden: [add_objects, rewrite_text, change_topology]
+regression_checks: [preserved_paths_equal, failed_gate_passes]

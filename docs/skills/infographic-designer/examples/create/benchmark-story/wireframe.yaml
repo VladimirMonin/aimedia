@@ -1,0 +1,8 @@
+nodes:
+- id: model_a
+  label: Model A
+- id: model_b
+  label: Model B
+- id: model_c
+  label: Model C
+edges: []

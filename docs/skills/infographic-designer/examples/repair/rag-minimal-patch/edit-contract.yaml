@@ -1,0 +1,38 @@
+schema_version: '1.0'
+artifact_id: rag-architecture-wireframe
+preserve:
+- nodes.documents
+- nodes.chunker
+- nodes.vector_db
+- nodes.retriever
+- nodes.llm
+- edges.e1.id
+- edges.e1.type
+- edges.e1.label
+- edges.e1.critical
+- edges.e2
+- edges.e3
+- edges.e4
+modify:
+- target_id: nodes
+  property: answer_cache
+  operation: remove
+  expected_result: invented node answer_cache is absent
+- target_id: edges.e1
+  property: from
+  operation: replace
+  expected_result: documents
+- target_id: edges.e1
+  property: to
+  operation: replace
+  expected_result: chunker
+forbidden:
+- add_nodes
+- add_edges
+- rename_stable_ids
+- change_unlisted_properties
+regression_checks:
+- validate_preserve_contract_passes
+- validate_graph_passes
+- STR-001_absent
+- SEM-003_absent

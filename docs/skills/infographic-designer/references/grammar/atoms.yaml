@@ -1,0 +1,12 @@
+schema_version: "1.0"
+atoms:
+  node: {meaning: entity_or_concept, must_have: [stable_id, label, type]}
+  connector: {meaning: typed_relationship, must_have: [stable_id, endpoints, type]}
+  container: {meaning: real_membership_or_boundary, must_have: [stable_id, scope]}
+  layer: {meaning: ordered_system_level, must_have: [stable_id, ordering_basis]}
+  panel: {meaning: separate_state_or_comparison_unit, must_have: [stable_id, shared_frame]}
+  hero: {meaning: primary_object_or_takeaway, must_have: [stable_id]}
+  callout: {meaning: local_explanation, must_have: [target_id, concise_text]}
+  direct_label: {meaning: nearby_identity_or_relation, must_have: [target_id, exact_text]}
+  legend: {meaning: decode_reused_encoding, must_have: [only_necessary_keys]}
+  zoom_inset: {meaning: magnified_detail, must_have: [source_region, scale_boundary]}

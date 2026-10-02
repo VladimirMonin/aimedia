@@ -1,0 +1,10 @@
+schema_version: "1.0"
+priority: [direct_label, concise_callout, compact_legend, caption]
+rules:
+  direct_labels_stay_near_targets: true
+  callouts_resolve_specific_ambiguity: true
+  callout_text_is_not_paragraph: true
+  exact_text_is_immutable: true
+  leader_lines_do_not_encode_process: true
+  legends_decode_only_repeated_encodings: true
+  label_terminology_is_consistent: true

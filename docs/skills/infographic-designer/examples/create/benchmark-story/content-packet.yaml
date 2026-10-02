@@ -1,0 +1,55 @@
+schema_version: '1.0'
+topic: Benchmark comparison
+claims:
+- id: claim-1
+  text: Three model values are compared on one shared scale
+  source_refs:
+  - &id001
+    source_id: fixture-source
+    locator: fixture input
+  status: confirmed
+entities:
+- id: model_a
+  label: Model A
+  type: candidate
+  source_refs:
+  - *id001
+- id: model_b
+  label: Model B
+  type: candidate
+  source_refs:
+  - *id001
+- id: model_c
+  label: Model C
+  type: candidate
+  source_refs:
+  - *id001
+relationships: []
+exact_text: []
+data_values:
+- id: v-a
+  value: 100
+  unit: score
+  as_of: null
+  source_refs:
+  - *id001
+- id: v-b
+  value: 120
+  unit: score
+  as_of: null
+  source_refs:
+  - *id001
+- id: v-c
+  value: 90
+  unit: score
+  as_of: null
+  source_refs:
+  - *id001
+assumptions: []
+unknowns: []
+source_map:
+  sources:
+  - id: fixture-source
+    locator: fixture input
+    sha256: null
+    verified_at: null

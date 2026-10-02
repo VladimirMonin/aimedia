@@ -1,0 +1,3 @@
+schema_version: "1.0"
+owner: rules/registry.yaml
+rule_ids: [STR-001, COG-002, COG-003, COG-004, VIS-004, ACC-001, REG-004]

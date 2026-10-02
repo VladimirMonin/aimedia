@@ -1,0 +1,74 @@
+schema_version: '1.0'
+id: rag-sem-v1
+primary_question: Как внешний контекст достигает LLM?
+primary_takeaway: Документы индексируются, извлекаются и добавляются к запросу модели.
+abstraction_level: system
+include:
+- indexing path
+- retrieval path
+exclude:
+- embedding math
+- deployment
+entities:
+- id: documents
+  label: Documents
+  type: source
+  required: true
+- id: chunker
+  label: Chunker
+  type: processor
+  required: true
+- id: vector_db
+  label: Vector DB
+  type: storage
+  required: true
+- id: retriever
+  label: Retriever
+  type: processor
+  required: true
+- id: llm
+  label: LLM
+  type: model
+  required: true
+relationships:
+- id: e1
+  from: documents
+  to: chunker
+  type: transforms
+  directed: true
+  label: split
+- id: e2
+  from: chunker
+  to: vector_db
+  type: writes
+  directed: true
+  label: store
+- id: e3
+  from: vector_db
+  to: retriever
+  type: returns
+  directed: true
+  label: relevant chunks
+- id: e4
+  from: retriever
+  to: llm
+  type: augments
+  directed: true
+  label: context
+exact_text: []
+data_values: []
+semantic_budget:
+  primary_entities: 5
+  relationship_types: 4
+  container_depth: 0
+  within_budget: true
+  overflow_reason: null
+decomposition:
+  recommendation: one_visual
+  reason: Single end-to-end path
+comprehension_questions:
+- Где хранятся представления документов?
+- Что возвращает retriever?
+- Куда поступает контекст?
+assumptions: []
+unknowns: []

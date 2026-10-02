@@ -1,0 +1,163 @@
+schema_version: '1.0'
+id: editorial-engineering-spread
+purpose: Premium editorial engineering visual explanation with content-driven composition
+family: editorial-technical
+reference_character:
+  summary: Warm paper magazine spread with a large serif title, optional stage numbers, thin technical connectors, restrained semantic colors, and a single takeaway footer
+  primary_impression: authoritative, calm, educational, print-like
+  avoid_impression: dashboard UI, cyberpunk, childish worksheet, generic card grid
+
+layout:
+  canonical_ratio: '16:9'
+  safe_margin_percent: 3
+  title_band_percent: 18
+  footer_band_percent: 12
+  body_grid:
+    columns: content_driven
+    stage_numbers: 'optional; match the actual number and order of source-grounded stages'
+    separators: 'thin dotted rules only when grouping benefits from them'
+    reading_order: 'follow the checked primary skeleton; left-to-right for a linear sequence'
+    preferred_flow: 'use actual source relations; never invent a merge or stage'
+  example_composition:
+    use_only_if: the_source_has_five_relevant_stages_and_the_target_size_supports_them
+    columns: 5
+    stage_numbers: '01-05'
+    note: one_example_not_a_required_layout
+  composition_rules:
+    - Keep the title as one dominant line when the target width permits
+    - If stages are numbered, use their actual count and keep numbers subordinate to the title
+    - Use a prominent explanatory object where the checked composition needs it; do not require a middle stage
+    - Reserve the footer for one takeaway sentence, not a second summary
+    - Keep connectors orthogonal or gently stepped; arrowheads must be explicit
+
+tokens:
+  background:
+    color: '#F4F0E6'
+    role: warm ivory paper
+    texture: 'very subtle natural paper grain; no stains or heavy distress'
+  ink:
+    primary: '#111213'
+    secondary: '#24324A'
+    rule: '#30343A'
+  semantic_palette:
+    image_input: '#D99A2B'
+    text_input: '#356FC0'
+    model: '#6B5BAA'
+    output: '#2F743B'
+    limit_or_error: '#B51E24'
+    neutral_panel: '#FAF8F1'
+  color_rules:
+    - Color encodes role but must be reinforced by a direct label and icon or shape
+    - Red is reserved for limits, failures, warnings, or overflow boundaries
+    - Saturation stays muted; large areas use pale tints and dark outlines
+  line:
+    primary: 'clean dark stroke, visually about 1.5-2 px at 1600 px width'
+    separators: 'fine dotted or hairline rules'
+    connectors: 'solid black or graphite with compact filled arrowheads'
+    decorative_rules: 'hairline horizontal dividers with one tiny geometric center mark'
+  depth:
+    mode: flat
+    shadow: none_or_barely_visible
+    perspective: none
+  shape:
+    cards: 'rectangles with restrained 4-10 px corner radius'
+    hero_module: 'tall clipped-corner octagonal panel allowed for the main model or engine'
+    icons: 'simple outlined editorial pictograms, consistent stroke weight'
+    chips: 'small repeated squares or rectangles for tokens, samples, or units'
+
+typography:
+  title:
+    family_role: 'high-contrast editorial serif, Didone or transitional'
+    preferred_fallbacks: ['Bodoni Moda', 'Cormorant Garamond', 'Playfair Display', 'Libre Baskerville']
+    case: uppercase
+    weight: 600
+    tracking: 'slightly tight'
+    scale: 'largest text; about 7-9 percent of canvas height'
+  stage_numbers:
+    family_role: 'same serif family as title'
+    weight: 600
+    scale: 'about 6-7 percent of canvas height'
+  labels:
+    family_role: 'clean modern sans serif'
+    preferred_fallbacks: ['Inter', 'Source Sans 3', 'IBM Plex Sans', 'Arial']
+    weight: 650
+    case: 'uppercase for modules and short labels; sentence case for takeaway'
+  exact_text_policy: 'Render all final labels as deterministic SVG, HTML, PPTX, or design-tool text; never trust a raster generator for exact text'
+  minimum_text_rule: 'At target viewing size, labels must remain readable without zoom; split the visual instead of shrinking labels'
+
+density: medium
+compatible_skeletons:
+  - linear-sequence
+  - timeline
+  - hero-callouts
+  - exploded-axis
+  - layered-stack
+  - node-link
+weak_skeletons:
+  - small-multiples-with-many-panels
+  - dense-freeform-collage
+renderer_hints:
+  - svg
+  - html
+  - pptx
+  - hybrid-structured
+  - guided-generation-with-deterministic-text-overlay
+reliability_interpretation: qualitative_expectations_not_measured_guarantees_verify_actual_output
+reliability:
+  exact_text: high_with_overlay
+  topology: high_with_structured_skeleton
+  dense_labels: medium
+  print_legibility: high
+  editability: high
+
+semantic_invariants:
+  - entity_count
+  - relationship_direction
+  - containment
+  - sequence
+  - exact_text
+  - numeric_values
+  - reading_order
+style_mutable:
+  - palette_tint
+  - paper_texture_strength
+  - serif_family
+  - icon_detail
+  - accent_shape
+  - rule_ornament
+forbidden:
+  - decorative arrows that can be mistaken for data flow
+  - glossy 3D, glassmorphism, neon glow, or cyberpunk circuitry
+  - robots, brains, mascots, or stock photos unless they are source-grounded content entities
+  - dense card grids without explicit relations
+  - rounded app-dashboard styling
+  - heavy shadows, gradients, chrome, or bevels
+  - more than one takeaway sentence in the footer
+  - generated gibberish, fake labels, fake measurements, or invented numeric scales
+
+render_recipe:
+  - Build and check a visible monochrome SVG or PNG wireframe first; internal checks do not require renewed user approval
+  - Lock the content-driven grid, any source-grounded stage numbers, and reading path before styling
+  - Apply warm paper background and graphite rules
+  - Assign semantic colors only after entity roles are fixed
+  - Add simple direct-label icons; do not add decorative pictograms
+  - Render title, labels, numbers, units, and takeaway as editable deterministic text
+  - Run exact-text, arrow-direction, grayscale and intended-viewing-size checks
+
+prompt_fragment: >-
+  Premium editorial engineering infographic on warm ivory paper, source-grounded content-driven composition,
+  very large high-contrast serif title, optional source-grounded serif stage numbers, thin graphite rules and dotted
+  group separators where useful, flat outlined pictograms, restrained muted semantic colors, an explanatory
+  object where supported by the source, clean orthogonal arrows, generous negative space, subtle print grain, no 3D,
+  no dashboard UI, no cyberpunk, no robots, no brain imagery, no decorative connectors. Preserve the
+  checked topology exactly. Leave all exact text for a deterministic overlay.
+
+qa_checks:
+  - The title is dominant but does not reduce body readability
+  - Stage numbers, if present, match the actual count and sequence; no extra stages exist
+  - Any parallel branches and merge points match the source and semantic model exactly
+  - Every critical connector has an unambiguous direction
+  - Color roles remain consistent and still work in grayscale through labels and shapes
+  - The red role appears only on a real limit, warning, error, or overflow boundary
+  - Footer contains one concise takeaway supported by the diagram
+  - No decorative rule, separator, or icon is mistaken for a node or edge

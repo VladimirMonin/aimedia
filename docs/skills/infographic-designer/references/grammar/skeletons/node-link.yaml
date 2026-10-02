@@ -1,0 +1,32 @@
+schema_version: '1.0'
+id: node-link
+answers:
+- Кто с кем связан?
+- Какие сущности взаимодействуют?
+best_for:
+- architecture
+- dependency graph
+- concept map
+avoid_when:
+- order is primary
+- containment is primary
+- graph is dense
+required_atoms:
+- node
+- typed_connector
+- direct_label
+budget:
+  nodes: 5-10
+  relationship_types: 1-3
+risks:
+- STR-001
+- STR-004
+- COG-003
+compatible_secondary:
+- nested-containers
+wireframe_checks:
+- all_required_entities_present
+- reading_path_exists
+- encoding_is_consistent
+- works_without_color
+- target_size_is_readable

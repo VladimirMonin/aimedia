@@ -1,0 +1,51 @@
+schema_version: '1.0'
+gate_id: G2_STRUCTURAL
+verdict: repair
+confidence: 1.0
+hard_fails:
+- rule_id: STR-001
+  title: Wrong edge direction or type
+- rule_id: SEM-003
+  title: Invented entity or relationship
+findings:
+- id: audit-str-001-e1
+  rule_id: STR-001
+  severity: blocker
+  expected:
+    edge_id: e1
+    from: documents
+    to: chunker
+    type: transforms
+  observed:
+    edge_id: e1
+    from: chunker
+    to: documents
+    type: transforms
+  evidence:
+  - validate_graph exit 1
+  - missing or changed edge e1
+  - extra or reversed edge e1
+  minimal_fix:
+    target_id: e1
+    operation: restore_endpoints
+- id: audit-sem-003-answer-cache
+  rule_id: SEM-003
+  severity: blocker
+  expected:
+    approved_entity_ids:
+    - documents
+    - chunker
+    - vector_db
+    - retriever
+    - llm
+  observed:
+    invented_entity_id: answer_cache
+  evidence:
+  - validate_graph exit 1
+  - invented node answer_cache
+  minimal_fix:
+    target_id: answer_cache
+    operation: remove_node
+unknowns: []
+scores: {}
+release_recommendation: rebuild_wireframe

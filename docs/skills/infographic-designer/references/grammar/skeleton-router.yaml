@@ -1,0 +1,15 @@
+schema_version: "1.0"
+routes:
+  object_overview: [hero-callouts]
+  assembly_or_parts: [exploded-axis, hero-callouts]
+  ordered_layers: [layered-stack]
+  step_by_step: [linear-sequence, timeline]
+  time_or_parallelism: [timeline]
+  interactions: [node-link]
+  real_membership: [nested-containers]
+  comparison: [small-multiples]
+selection:
+  max_candidates: 3
+  primary_skeletons: 1
+  secondary_rule: local_role_only
+  reject_if: [does_not_expose_primary_relation, needs_false_semantics, exceeds_semantic_budget]

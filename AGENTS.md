@@ -60,11 +60,14 @@
 
 ## Пакет навыков
 
-Самостоятельные навыки находятся в [docs/skills/](docs/skills/README.md):
-`aimedia` — работа с image CLI, `visual-story-director` — текстовое
-предпроизводство. Читай нужный `SKILL.md` или подключай его явно; пакет не входит
-в uv tool v0.1.0 и не устанавливается автоматически. Сопровождение — по
-[DOCS.SkillPack](instructions/DOCS.skill-pack.instructions.md).
+В [каталоге docs/skills/](docs/skills/README.md) зарегистрированы три корневых
+пакета и все четыре `SKILL.md`: `aimedia` — image CLI, `visual-story-director` —
+текстовое предпроизводство, `infographic-designer` — управляющий master с вложенным
+модулем [screenshot-explainer](docs/skills/infographic-designer/modules/screenshot-explainer/SKILL.md).
+Начинай с нужного корневого `SKILL.md`; master выбирает сценарий и раскрывает
+ресурсы постепенно, один агент выполняет роли последовательно. Пакет не входит
+в uv tool v0.1.0 и не устанавливается автоматически. Подключение и ограничения —
+в каталоге; сопровождение — по [DOCS.SkillPack](instructions/DOCS.skill-pack.instructions.md).
 
 ## Работа с кодом
 

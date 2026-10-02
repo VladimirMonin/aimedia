@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "infographic-designer/production-contract.schema.json",
+  "title": "Production contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "route",
+    "objective",
+    "audience",
+    "source_truth",
+    "output",
+    "stop_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "route": {
+      "enum": [
+        "create",
+        "audit",
+        "repair"
+      ]
+    },
+    "rigor": {
+      "enum": ["standard", "strict"],
+      "default": "standard",
+      "description": "Workflow default is standard. Schemas apply only to structured contracts."
+    },
+    "objective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_question",
+        "primary_takeaway"
+      ],
+      "properties": {
+        "primary_question": {
+          "type": "string",
+          "minLength": 5
+        },
+        "primary_takeaway": {
+          "type": "string",
+          "minLength": 5
+        }
+      }
+    },
+    "audience": {
+      "type": "object",
+      "required": [
+        "level",
+        "context"
+      ],
+      "properties": {
+        "level": {
+          "enum": [
+            "beginner",
+            "intermediate",
+            "expert",
+            "mixed"
+          ]
+        },
+        "context": {
+          "type": "string"
+        },
+        "prior_knowledge": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "source_truth": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "locator"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "file",
+              "url",
+              "dataset",
+              "user_brief",
+              "approved_contract"
+            ]
+          },
+          "locator": {
+            "type": "string"
+          },
+          "hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verified_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "authority": {
+            "enum": [
+              "primary",
+              "secondary",
+              "context"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": [
+        "medium",
+        "aspect_ratio",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "medium": {
+          "enum": [
+            "svg",
+            "png",
+            "pdf",
+            "pptx",
+            "html",
+            "mermaid",
+            "graphviz"
+          ]
+        },
+        "aspect_ratio": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "editable": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stop_at": {
+      "enum": [
+        "semantic_spec",
+        "wireframe",
+        "render_brief",
+        "draft",
+        "final",
+        "release_package"
+      ]
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "language": {
+      "type": "string"
+    }
+  }
+}

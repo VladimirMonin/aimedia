@@ -1,0 +1,66 @@
+schema_version: '1.0'
+topic: GPU parts
+claims:
+- id: claim-1
+  text: GPU is shown as one object with three named functional blocks
+  source_refs:
+  - &id001
+    source_id: fixture-source
+    locator: fixture input
+  status: confirmed
+entities:
+- id: gpu
+  label: GPU
+  type: object
+  source_refs:
+  - *id001
+- id: compute
+  label: Compute units
+  type: part
+  source_refs:
+  - *id001
+- id: memory
+  label: Memory
+  type: part
+  source_refs:
+  - *id001
+- id: interconnect
+  label: Interconnect
+  type: part
+  source_refs:
+  - *id001
+relationships:
+- id: r1
+  from: gpu
+  to: compute
+  type: has_part
+  directed: false
+  label: contains
+  source_refs:
+  - *id001
+- id: r2
+  from: gpu
+  to: memory
+  type: has_part
+  directed: false
+  label: contains
+  source_refs:
+  - *id001
+- id: r3
+  from: gpu
+  to: interconnect
+  type: has_part
+  directed: false
+  label: contains
+  source_refs:
+  - *id001
+exact_text: []
+data_values: []
+assumptions: []
+unknowns: []
+source_map:
+  sources:
+  - id: fixture-source
+    locator: fixture input
+    sha256: null
+    verified_at: null

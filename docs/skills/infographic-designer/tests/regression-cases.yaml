@@ -1,0 +1,102 @@
+schema_version: "1.0"
+evaluation_kind: scenario_inventory
+execution: "Manual behavioral scenarios; assertions and covers are inventory, not evidence of execution. Executable validator checks live in scripts/test_contract_regressions.py."
+cases:
+  - id: unknown-source-blocks
+    route: create
+    covers: [SEM-001]
+    assertions:
+      - unknown claims remain unknown
+      - G1 verdict is block when a required claim has no source
+      - style selection does not begin
+  - id: missing-required-entity
+    route: audit
+    covers: [SEM-002]
+    assertions:
+      - SEM-002 is reported
+      - approved entity IDs are diffed against visible IDs
+      - G1 or G3 cannot pass while the entity is absent
+  - id: reversed-edge
+    route: audit
+    covers: [STR-001]
+    assertions:
+      - STR-001 is reported
+      - verdict is repair or rebuild, never pass
+      - score cannot compensate the blocker
+  - id: invented-node
+    route: audit
+    covers: [SEM-003]
+    assertions:
+      - SEM-003 is reported
+      - evidence identifies the extra node ID
+      - release is blocked until removal or sourcing
+  - id: false-containment
+    route: audit
+    covers: [STR-002]
+    assertions:
+      - STR-002 is reported
+      - expected and observed parent are recorded
+      - minimal fix preserves node identity and edges
+  - id: dangling-edge
+    route: audit
+    covers: [STR-003]
+    assertions:
+      - STR-003 is reported
+      - both edge endpoints are checked against stable node IDs
+      - the dangling edge is repaired or removed
+  - id: duplicate-stable-id
+    route: audit
+    covers: [STR-006]
+    assertions:
+      - STR-006 is reported
+      - duplicate IDs are listed as evidence
+      - unique stable IDs are required before release
+  - id: critical-comprehension-failure
+    route: audit
+    covers: [COG-004]
+    assertions:
+      - COG-004 is reported
+      - expected and observed answers are recorded
+      - a critical wrong answer blocks G4
+  - id: exact-text-drift
+    route: repair
+    covers: [DAT-002]
+    assertions:
+      - DAT-002 or REG-001 is reported
+      - exact wording is restored
+      - unrelated wording remains unchanged
+  - id: preserve-contract-violation
+    route: repair
+    covers: [REG-001, REG-003]
+    assertions:
+      - REG-001 or REG-003 is reported
+      - out-of-scope change is rejected
+      - failed gate is rerun after repair
+  - id: misleading-chart
+    route: audit
+    covers: [DAT-001]
+    assertions:
+      - DAT-001 is reported
+      - units and scale are checked
+      - high visual score cannot release it
+  - id: color-only-state
+    route: audit
+    covers: [ACC-001]
+    assertions:
+      - ACC-001 is reported
+      - grayscale meaning is tested
+      - a second channel is required
+  - id: temporal-identity-drift
+    route: audit
+    covers: [REG-004]
+    assertions:
+      - REG-004 is reported
+      - persistent object ID and visual identity are compared across states
+      - an unexplained jump cannot pass G4
+  - id: flattened-editable-deliverable
+    route: audit
+    covers: [REG-005]
+    assertions:
+      - REG-005 is reported
+      - production contract editability is compared with delivered format
+      - an editable source is required before release

@@ -1,0 +1,14 @@
+schema_version: "1.0"
+channels:
+  position: {best_for: [order, grouping, hierarchy], risk: false_proximity}
+  size: {best_for: [importance, quantity_when_scaled], risk: accidental_quantity}
+  color: {best_for: [category, state], risk: color_only_meaning}
+  shape: {best_for: [entity_type], risk: too_many_symbols}
+  line: {best_for: [relationship_type, direction], risk: ambiguous_arrows}
+  opacity: {best_for: [secondary_or_inactive], risk: unreadable_content}
+  time: {best_for: [transition, duration], risk: animation_without_state_model}
+invariants:
+  - one encoding keeps one meaning within an artifact
+  - color is never the only signal
+  - quantitative size uses an explicit scale
+  - decorative styling cannot change topology

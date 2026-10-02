@@ -1,0 +1,49 @@
+schema_version: "1.0"
+gate_vs_score: "G1/G2/G3 pass allows advance_to_next_stage; release requires G4 and applicable prerequisites. Score ranks only gate-passing variants."
+default_rigor: standard
+shared_invariants: [source_truth, entities, typed_direction, containment, exact_text, values_units_scale, reading_order]
+evidence_policy:
+  check_statuses: [pass, fail, not_run, not_applicable]
+  reviewer_kinds: [self, independent, human]
+  visual_checks_require: observed_render_at_recorded_viewing_size
+  human_timing_requires: actual_participants_and_recorded_protocol
+  model_first_impression: not_a_measured_five_second_or_human_test
+  missing_required_evidence: cannot_claim_pass
+modes:
+  standard:
+    record: short_qa_in_job_brief
+    structured_contracts: when_machine_validation_is_used
+    g2_reviewer: self_or_independent
+    final_reviewer: independent_when_available_otherwise_disclosed_self_review
+    g4_depth: comprehension_questions_essential_path_target_size_accessibility
+  strict:
+    record: schema_valid_qa_report_and_evidence
+    structured_contracts: required
+    g2_reviewer: independent
+    final_reviewer: independent
+    g4_depth: detailed_questions_path_trace_teach_back_accessibility_regression
+    reviewer_unavailable: continue_preparation_and_self_review_strict_release_pending
+gates:
+  G1_SEMANTIC:
+    checks: [source_truth, one_primary_question, include_exclude, entities, typed_relationships, exact_text, values_units_as_of, abstraction, semantic_budget, comprehension_questions]
+    blockers: [SEM-001, SEM-002, SEM-003, STR-006, DAT-002]
+    pass_action: advance_to_next_stage
+  G2_STRUCTURAL:
+    artifact: visible_svg_or_png_wireframe
+    structured_wireframe: additional_evidence_when_graph_validation_is_used
+    checks: [skeleton_fitness, topology, direction, containment, sequence, hierarchy, reading_path, encoding, grayscale, target_size]
+    blockers: [ACC-001, REG-004, SEM-002, SEM-003, STR-001, STR-002, STR-003, STR-006]
+    pass_action: advance_to_next_stage
+  G3_RENDER_FIDELITY:
+    deterministic_first: [dimensions, aspect_ratio, applicable_object_ids_bounds, clipping, exact_text, values, font_size, applicable_edge_ids, applicable_preserve_contract]
+    vision_second: [visible_required_elements, no_pseudo_elements, hierarchy, label_readability, topology_preserved, style_roles, target_size]
+    blockers: [ACC-001, DAT-001, DAT-002, REG-001, REG-003, REG-004, SEM-003, STR-001, STR-002, STR-003]
+    pass_action: advance_to_next_stage
+  G4_RELEASE:
+    shared_checks: [comprehension_questions, essential_path, target_size, accessibility, operational_fitness, applicable_regression]
+    strict_additions: [deep_reading, detailed_path_tracing, teach_back, recorded_regression]
+    optional_real_human_checks: [timed_first_impression, participant_comprehension]
+    prerequisites: [G1_SEMANTIC, G2_STRUCTURAL, applicable_G3_RENDER_FIDELITY]
+    blockers: [ACC-001, COG-004, DAT-001, REG-001, REG-003, REG-004, REG-005, SEM-001]
+    pass_action: release
+verdicts: [pass, repair, rebuild, block]

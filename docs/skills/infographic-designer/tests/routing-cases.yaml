@@ -1,0 +1,36 @@
+schema_version: "1.0"
+evaluation_kind: keyword_routing_controls
+execution: "Local keyword classifier controls; not proof of model skill activation."
+cases:
+  - {prompt: "Сделай инфографику по этой статье", expected: create}
+  - {prompt: "Объясни визуально, как работает RAG", expected: create}
+  - {prompt: "Создай техническую схему HTTP-запроса", expected: create}
+  - {prompt: "Подготовь визуальную модель устройства GPU", expected: create}
+  - {prompt: "Собери диаграмму архитектуры сервиса", expected: create}
+  - {prompt: "Покажи эти тезисы в виде инфографики", expected: create}
+  - {prompt: "Нужна карта процесса регистрации пользователя", expected: create}
+  - {prompt: "Визуализируй уровни этой системы", expected: create}
+  - {prompt: "Сделай таймлайн развития продукта", expected: create}
+  - {prompt: "Проверь, правильно ли идут стрелки", expected: audit}
+  - {prompt: "Найди ошибки в этой инфографике", expected: audit}
+  - {prompt: "Проведи аудит читаемости схемы", expected: audit}
+  - {prompt: "Можно ли по картинке ответить на эти вопросы?", expected: audit}
+  - {prompt: "Сверь схему с утверждённой архитектурой", expected: audit}
+  - {prompt: "Есть ли искажения данных на графике?", expected: audit}
+  - {prompt: "Сделай QA этой технической схемы", expected: audit}
+  - {prompt: "Оцени читаемость визуального объяснения", expected: audit}
+  - {prompt: "Исправь стрелки, остальное не трогай", expected: repair}
+  - {prompt: "Перекрась фон и сохрани композицию", expected: repair}
+  - {prompt: "Почини ложную вложенность без переписывания текста", expected: repair}
+  - {prompt: "Увеличь подписи, не меняя объекты", expected: repair}
+  - {prompt: "Замени только заголовок и сохрани всё остальное", expected: repair}
+  - {prompt: "Восстанови направление потока данных", expected: repair}
+  - {prompt: "Удали лишний узел, связи не трогай", expected: repair}
+  - {prompt: "Поправь контраст без изменения композиции", expected: repair}
+  - {prompt: "Сделай обычное резюме статьи", expected: none}
+  - {prompt: "Удали фон на фотографии", expected: none}
+  - {prompt: "Напиши презентацию на 20 слайдов", expected: none}
+  - {prompt: "Нарисуй красивую абстрактную обложку", expected: none}
+  - {prompt: "Создай логотип для команды", expected: none}
+  - {prompt: "Напиши эссе об истории визуализации", expected: none}
+  - {prompt: "Сгенерируй фоновую текстуру без текста", expected: none}

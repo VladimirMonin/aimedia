@@ -1,0 +1,36 @@
+nodes:
+- id: documents
+  label: Documents
+- id: chunker
+  label: Chunker
+- id: vector_db
+  label: Vector DB
+- id: retriever
+  label: Retriever
+- id: llm
+  label: LLM
+edges:
+- id: e1
+  from: documents
+  to: chunker
+  type: transforms
+  label: split
+  critical: true
+- id: e2
+  from: chunker
+  to: vector_db
+  type: writes
+  label: store
+  critical: true
+- id: e3
+  from: vector_db
+  to: retriever
+  type: returns
+  label: relevant chunks
+  critical: true
+- id: e4
+  from: retriever
+  to: llm
+  type: augments
+  label: context
+  critical: true

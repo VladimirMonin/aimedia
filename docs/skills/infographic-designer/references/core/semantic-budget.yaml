@@ -1,0 +1,23 @@
+schema_version: "1.0"
+interpretation:
+  kind: configurable_design_heuristics
+  not_claims: [measured_cognitive_limits, renderer_reliability, automatic_release_thresholds]
+  evidence: actual_target_size_and_comprehension_review
+defaults:
+  recommended_primary_entities: "5-10"
+  recommended_relationship_types: "1-3"
+  recommended_container_depth: "0-2"
+  primary_questions: 1
+warning_signals:
+  - more than one equal primary question
+  - more than three visual encodings requiring a legend
+  - mixed overview, mechanism, and implementation levels
+  - callouts become paragraphs
+  - main path is not traceable without narration
+decompose_when:
+  - required claims cannot remain legible at target size
+  - structure, behavior, state, and comparison compete
+  - two primary skeletons both demand global control
+recommendations: [one_visual, propose_decomposition, propose_other_medium]
+runtime_outputs: [one_visual, static_timeline, static_sequence]
+rule: "One visual answers one primary question; solve actual overload by simplifying or proposing decomposition, not smaller text."

@@ -1,0 +1,29 @@
+schema_version: '1.0'
+id: linear-sequence
+answers:
+- Что происходит шаг за шагом?
+best_for:
+- process
+- instruction
+- pipeline
+avoid_when:
+- parallelism dominates
+- network relations dominate
+required_atoms:
+- node
+- directed_connector
+- step_label
+budget:
+  steps: 3-8
+  relationship_types: 1-2
+risks:
+- STR-001
+- STR-004
+compatible_secondary:
+- state snapshots
+wireframe_checks:
+- all_required_entities_present
+- reading_path_exists
+- encoding_is_consistent
+- works_without_color
+- target_size_is_readable

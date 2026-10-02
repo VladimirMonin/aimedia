@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "infographic-designer/temporal-spec.schema.json",
+  "title": "Static temporal visual specification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "narrative_mode", "canonical_scene", "states", "transitions", "continuity", "fallback"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "id": {"type": "string"},
+    "narrative_mode": {"enum": ["static-overview", "small-multiples", "sequential-panels", "timeline-swimlanes"]},
+    "canonical_scene": {
+      "type": "object",
+      "required": ["reading_direction", "time_direction", "persistent_elements"],
+      "properties": {
+        "reading_direction": {"enum": ["left-to-right", "top-to-bottom"]},
+        "time_direction": {"enum": ["past-to-future", "top-to-bottom", "none"]},
+        "lanes": {"type": "array", "items": {"type": "string"}},
+        "persistent_elements": {"type": "array", "items": {"type": "string"}},
+        "context_elements": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "states": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "message", "visible_elements", "active_elements"],
+        "properties": {
+          "id": {"type": "string"},
+          "message": {"type": "string"},
+          "visible_elements": {"type": "array", "items": {"type": "string"}},
+          "active_elements": {"type": "array", "items": {"type": "string"}},
+          "exact_labels": {"type": "array", "items": {"type": "string"}},
+          "annotation": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "relation"],
+        "properties": {
+          "from": {"type": "string"},
+          "to": {"type": "string"},
+          "relation": {"enum": ["precedes", "transforms", "activates", "waits", "returns"]},
+          "label": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "continuity": {"type": "array", "items": {"type": "string"}},
+    "fallback": {"enum": ["static-timeline", "small-multiples", "sequential-panels"]}
+  }
+}

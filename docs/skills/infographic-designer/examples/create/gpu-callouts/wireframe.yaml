@@ -1,0 +1,28 @@
+nodes:
+- id: gpu
+  label: GPU
+- id: compute
+  label: Compute units
+- id: memory
+  label: Memory
+- id: interconnect
+  label: Interconnect
+edges:
+- id: r1
+  from: gpu
+  to: compute
+  type: has_part
+  label: contains
+  critical: true
+- id: r2
+  from: gpu
+  to: memory
+  type: has_part
+  label: contains
+  critical: true
+- id: r3
+  from: gpu
+  to: interconnect
+  type: has_part
+  label: contains
+  critical: true

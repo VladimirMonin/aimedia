@@ -1,0 +1,6 @@
+schema_version: '1.0'
+owner: rules/registry.yaml
+rule_ids:
+- DAT-001
+- DAT-002
+- DAT-003
