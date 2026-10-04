@@ -405,23 +405,31 @@ def test_load_registry_root_missing_directory_is_empty(tmp_path: Path) -> None:
 def test_builtin_catalog_is_documented_experimental_not_live_verified() -> None:
     """Only official catalog bindings, with conservative Guide reference limit."""
     records = load_builtin_registry()
-    assert len(registry_files(builtin_registry_dir())) == len(records) == 3
+    assert len(registry_files(builtin_registry_dir())) == len(records) == 5
     assert {record.providers["polza"].remote_model_id for record in records} == {
         "qwen/image-2.1",
         "google/gemini-3.1-flash-image-preview",
         "openai/gpt-5.4-image-2",
+        "openai/gpt-image-2.5-sunburst",
+        "openai/gpt-image-2.5-flare",
     }
     for record in records:
         assert record.status.value == "experimental"
         assert record.verification is not None and record.verified_at is None
-        if record.model_id != "gpt-5-4-image-2-mie":
+        if not record.model_id.startswith("gpt-"):
             assert "polza.ai/api/v1/models/catalog" in record.verification.source
             assert "max_images" not in record.parameters
         else:
-            assert "polza.ai/docs/gaidy/gpt-5-4-image-2.md" in record.verification.source
-            assert "polza.ai/models/openai/gpt-5.4-image-2.md" in record.verification.source
+            if record.model_id == "gpt-5-4-image-2-mie":
+                assert "polza.ai/docs/gaidy/gpt-5-4-image-2.md" in record.verification.source
+                assert "polza.ai/models/openai/gpt-5.4-image-2.md" in record.verification.source
+                assert record.inputs["prompt"].max_chars == 5000
+            else:
+                remote = record.providers["polza"].remote_model_id
+                assert f"polza.ai/models/{remote}.md" in record.verification.source
+                assert "polza.ai/api/v1/models/catalog" in record.verification.source
+                assert record.inputs["prompt"].max_chars == 20000
             assert record.parameters["max_images"].max == 1
-            assert record.inputs["prompt"].max_chars == 5000
             assert record.inputs["images"].max == 16
             assert record.inputs["images"].formats == ("png", "jpeg", "webp")
             assert record.pricing.by_resolution == {

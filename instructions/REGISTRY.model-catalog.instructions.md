@@ -85,16 +85,17 @@ Registry v0.1 различает только:
   multiple_outputs=false. Ни seed/quality, ни extra ratios другого upstream не
   объявляются из common DTO. Registry Qwen/Gemini не меняются.
 - `validator._validate_gpt_mie_settings` — маленькое exact Polza/canonical GPT
-  правило из model page: auto (omitted берётся из effective default) только 1K,
+  правило для GPT-5.4 Image 2 и GPT Image 2.5 Sunburst/Flare из model pages:
+  auto (omitted берётся из effective default) только 1K,
   1:1 недопустимо в 4K. Это три исключённых пары из документированных enums,
-  не generic conditional DSL/schema/новый framework. Все остальные 15 пар
+  не generic conditional DSL/schema/новый framework. Остальные 15 пар GPT-5.4 и по 36 пар Sunburst/Flare
   проходят через тот же public validation и adapter до одного POST.
   Изменение этого устойчивого правила требует источника и contract/CLI regressions.
   Старые multi-output Job snapshots/GET-only recovery не проверяются по новому
   count cap и не мигрируют. Generic processing нескольких artifacts сохраняется.
 - `CatalogPricing` — typed exact Decimal metadata RUB по resolution для **выбранного
   MIE**, не всех/default upstreams. Опубликованный максимум вычисляется из текущих
-  tiers. Для трёх exact builtins Python adapter использует ceiling этого effective
+  tiers. Для пяти exact builtins Python adapter использует ceiling этого effective
   максимума как top-level ProviderDto.max_price.image с only=[mie]/fallbacks=false
   (owner — [PROVIDER.polza-media](PROVIDER.polza-media.instructions.md)); YAML schema,
   IDs и tiers не меняются. Missing/non-RUB/unusable pricing закрывается до HTTP.
@@ -102,6 +103,13 @@ Registry v0.1 различает только:
   ценами не ограничены. Price filter не гарантия будущей цены/total/бюджета и не
   actual billing; unknown reservations не превращаются в zero. View/help читают
   те же pricing/limits effective definition; live support не заявляется.
+- GPT Image 2.5 — отдельные `gpt-image-2-5-sunburst` / `gpt-image-2-5-flare` →
+  `openai/gpt-image-2.5-sunburst` / `openai/gpt-image-2.5-flare`, fixed MIE,
+  documented/experimental. Aliases `sunburst`, `flare`, `flair` не меняют wire ID.
+  Public catalog задаёт prompt≤20000, refs≤16 и расширенные ratios; YAML — источник
+  enums/цен. Required 1K/auto передаются явно (не upstream price default11).
+  Quality из marketing текста Flare не является input-контрактом MIE. Новые модели
+  не расширяют старый GPT-5.4 binding и не доказывают live поддержку.
 - Загрузка встроенного каталога идёт через `importlib.resources`
   (`builtin_registry_dir`), а не через относительный путь: loader не должен
   зависеть от текущей рабочей директории.

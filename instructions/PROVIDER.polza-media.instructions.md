@@ -62,10 +62,25 @@ Binding остаётся experimental / NOT_LIVE_VERIFIED до отдельны�
 Регрессии: test_polza_mie_count.py, test_polza_priced_routing.py и public CLI
 single/all-settings/multiref/legacy snapshot tests.
 
+## GPT Image 2.5 Sunburst / Flare
+
+Отдельные canonical IDs `openai/gpt-image-2.5-sunburst` и
+`openai/gpt-image-2.5-flare` используют тот же fixed MIE routing, async и
+`input.max_images=1`. Источники: public catalog и model Markdown
+[Sunburst](https://polza.ai/models/openai/gpt-image-2.5-sunburst.md) /
+[Flare](https://polza.ai/models/openai/gpt-image-2.5-flare.md).
+Четыре дополнительные пропорции 27:16, 16:27, 9:8, 8:9 подтверждены также
+[ImageInputDto OpenAPI](https://polza.ai/api/openapi.json); mapper допускает их
+только после model-specific validation. Старые YAML не расширяются.
+Required defaults явно отправляют 1K/auto; limits/enums/pricing принадлежат
+Registry. Marketing quality Flare не добавляет wire-параметр. Поддержка documented,
+без live/paid подтверждения; security, uncertain submit и billing остаются прежними.
+
 ## Фиксированный финансовый фильтр Media
 
-Для exact remote `qwen/image-2.1`, `google/gemini-3.1-flash-image-preview` и
-`openai/gpt-5.4-image-2` mapper добавляет **top-level**
+Для exact remote `qwen/image-2.1`, `google/gemini-3.1-flash-image-preview`,
+`openai/gpt-5.4-image-2`, `openai/gpt-image-2.5-sunburst` и
+`openai/gpt-image-2.5-flare` mapper добавляет **top-level**
 `provider={only:[mie],allow_fallbacks:false,max_price:{image:<integer>}}`.
 Источник wire-контракта — [MediaRequestDto / ProviderDto](https://polza.ai/docs/api-reference/media/create.md)
 и [Nano guide](https://polza.ai/docs/gaidy/nanobanano-2.md).
@@ -81,13 +96,13 @@ Unqualified Gemini без provider DTO выбирал бы upstream автома
 не покрывают token-priced google-ai-studio и прочие upstreams. Media не поддерживает
 общие key=value model aliases; Gemini@mie/новые qualifiers не вводятся.
 Фильтр API **не** гарантирует actual billing, total Job или бюджет 200 RUB:
-фактические usage/cost и unknown reservations учитываются отдельно. Все три
+фактические usage/cost и unknown reservations учитываются отдельно. Все эти
 binding остаются experimental/NOT_LIVE_VERIFIED. Регрессии —
 `tests/contracts/test_polza_priced_routing.py`.
 
 ## Documented async submit для fixed bindings
 
-В том же exact-binding условии финансового фильтра для трёх remote IDs выше
+В том же exact-binding условии финансового фильтра для пяти remote IDs выше
 `build_media_request` добавляет **top-level JSON boolean `async: true`** до
 проверки окончательных `serialize_media_request` bytes. Single output (`input.max_images=1` для GPT MIE), references и fixed routing не меняются. Caller `provider_options`
 не могут ни выключить, ни переопределить async; generic/synthetic/near-match

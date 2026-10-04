@@ -42,6 +42,10 @@ CLI не выполняет HTTP/ORM запросы напрямую и не р�
 - Config хранит только secret reference; ключ не передаётся в argv/TOML/БД/logs.
   CLI→TOML→AIMEDIA_*→defaults; системный settings.toml читается если существует,
   .env из cwd не читается. config init эксклюзивен, redirects запрещены.
+  Установка `uv tool` не настраивает авторизацию: обычная оболочка должна передать
+  указанную переменную. Явно разрешённая постоянная настройка Windows — только
+  пользовательское окружение, не system scope и не TOML/argv/логи; проверять наличие,
+  не печатать значение. Уже открытым оболочкам может требоваться перезапуск.
 
 Источник истины persistent данных — user TOML и SQLite/managed tree, не cache.
 Первая запись config init — mkdir собственного config parent, затем exclusive file;

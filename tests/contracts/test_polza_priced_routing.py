@@ -31,6 +31,8 @@ MODELS = [
     ("qwen-image-2-1", "qwen/image-2.1", 6),
     ("gemini-3-1-flash-image-preview", "google/gemini-3.1-flash-image-preview", 11),
     ("gpt-5-4-image-2-mie", "openai/gpt-5.4-image-2", 11),
+    ("gpt-image-2-5-sunburst", "openai/gpt-image-2.5-sunburst", 11),
+    ("gpt-image-2-5-flare", "openai/gpt-image-2.5-flare", 11),
 ]
 
 
@@ -80,7 +82,7 @@ def test_builtin_exact_selected_mie_body_and_one_serialized_post(model, remote, 
     effective = definition(model)
     req = request(model, max_images=count)
     expected_input = {"prompt": "synthetic robot"}
-    if model == "gpt-5-4-image-2-mie":
+    if model.startswith("gpt-"):
         expected_input.update(aspect_ratio="auto", image_resolution="1K", max_images=count)
     expected = {
         "model": remote,
@@ -176,6 +178,8 @@ def test_ceiling_uses_effective_exact_decimal_published_max(
         "google/gemini-3.1-flash-image-preview-other",
         "openai/gpt-5.4-image-2-other",
         "openai/gpt-5.4-image-2-mie",
+        "openai/gpt-image-2.5-sunburst-other",
+        "openai/gpt-image-2.5-flare-other",
     ],
 )
 def test_unknown_and_synthetic_mapping_unchanged_without_pricing(remote):

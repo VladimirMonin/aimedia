@@ -389,3 +389,23 @@ proof данного режима,не committed-source CLI/all-settings live ac
 Lifetime checkpoint14POST,known40.6+unknown77=117.6/200;multiple-output probes
 stopped by deferral. New source NOT_COMMITTED/NOT_LIVE_VERIFIED;E06/E10 OPEN для
 CN-05 source/installed scenarios,E11 не авторизован.
+
+## D06/D07 дополнение — GPT Image 2.5, 2026-10-04
+
+По прямому запросу владельца добавляются отдельные Sunburst и Flare (в запросе
+«flair»): `openai/gpt-image-2.5-sunburst` / `openai/gpt-image-2.5-flare`.
+Это не aliases GPT-5.4 Image 2. Источники — public catalog GET `search=gpt&type=image`
+и [Sunburst](https://polza.ai/models/openai/gpt-image-2.5-sunburst.md) /
+[Flare](https://polza.ai/models/openai/gpt-image-2.5-flare.md); новые пропорции
+также подтверждены [ImageInputDto](https://polza.ai/api/openapi.json).
+
+Fixed MIE, async, no fallback, один output; цена exact RUB4/7/11 по resolution,
+price filter ceiling11. Catalog/input contract: prompt20000, refs16, 13 ratios,
+1K/2K/4K; auto только1K и 1:1 не4K. Defaults передаются явно 1K/auto, не
+неявный price default11. Обзорное упоминание quality Flare не разрешает параметр,
+которого нет в MIE input schema. YAML documented/experimental; paid/live NOT_RUN.
+
+Владелец также разрешил настроить существующий ключ Polza для обычного uv tool:
+пользовательская переменная окружения Windows, без значения в TOML/argv/Git/логах.
+Это локальное обновление; перенос опубликованного тега и новая публикация не
+следуют автоматически из поручения.

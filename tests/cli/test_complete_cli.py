@@ -61,7 +61,11 @@ class OfflinePolza:
         if request.method == "POST":
             payload = json.loads(request.content)
             assert payload["model"] == self.expected_model
-            if self.expected_model == "openai/gpt-5.4-image-2":
+            if self.expected_model in {
+                "openai/gpt-5.4-image-2",
+                "openai/gpt-image-2.5-sunburst",
+                "openai/gpt-image-2.5-flare",
+            }:
                 expected_input = {
                     "prompt": "robot",
                     "image_resolution": self.expected_resolution,
@@ -1136,3 +1140,34 @@ def test_mie_seventeen_references_and_unknown_argv_are_pre_http(tmp_path, offlin
     assert failed["cost"] is None and failed["remote_ref"] is None
     invoke(runner, [*mie_args(1), "--async"], 2)
     assert not server.calls
+
+
+@pytest.mark.parametrize(
+    "alias,suffix", [("sunburst", "sunburst"), ("flare", "flare"), ("flair", "flare")]
+)
+def test_gpt25_alias_views_help_and_generation(offline_cli, alias, suffix):
+    runner, server, _ = offline_cli
+    model = f"gpt-image-2-5-{suffix}"
+    remote = f"openai/gpt-image-2.5-{suffix}"
+    listed = invoke(runner, ["models", "list"])["data"]
+    assert model in {item["id"] for item in listed}
+    view = invoke(runner, ["models", "show", alias])["data"]
+    assert view["remote_model_id"] == remote
+    assert view["status"] == "experimental"
+    assert view["inputs"]["prompt"]["max_chars"] == 20000
+    assert view["inputs"]["images"]["max"] == 16
+    assert view["pricing"]["by_resolution"] == {"1K": "4", "2K": "7", "4K": "11"}
+    assert "27:16" in view["parameters"]["aspect_ratio"]["values"]
+    assert remote in invoke(runner, ["help", "models.capabilities"])["data"]["markdown"]
+    configure_mie(server, 1)
+    server.expected_model = remote
+    server.expected_resolution = "2K"
+    server.expected_ratio = "27:16"
+    server.billed_cost = "7.000"
+    args = mie_args(1)
+    args[args.index(MIE_MODEL)] = alias
+    job = invoke(runner, [*args, "--resolution", "2K", "--aspect-ratio", "27:16"])["data"]["job"]
+    assert job["status"] == "completed" and job["remote_model_id"] == remote
+    assert job["cost"] == {"amount": "7.000", "currency": "RUB"}
+    assert len(job["result"]["artifacts"]) == 1
+    assert sum(method == "POST" for method, _ in server.calls) == 1

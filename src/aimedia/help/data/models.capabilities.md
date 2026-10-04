@@ -22,7 +22,7 @@ MIE count binding подтверждён публичными guide/model Markdo
 Неизвестные ограничения остаются null, никаких придуманных seeds/quality/unitParam.
 
 Опубликованные RUB цены и максимумы — в effective views ниже, из Registry;
-это тарифы выбранного MIE, не default/всех upstreams. Для трёх встроенных binding
+это тарифы выбранного MIE, не default/всех upstreams. Для встроенных MIE bindings
 adapter отправляет top-level `provider.only=[mie]`, `allow_fallbacks=false` и
 `max_price.image` — целочисленный потолок опубликованного effective максимума.
 Для этих exact bindings также отправляется top-level boolean `async: true`;
@@ -58,3 +58,16 @@ routing (only=[mie], без fallback) и Media `input.max_images=1`.
 стоимость сохраняется только из ответа provider до download.
 
 {{model:gpt-5-4-image-2-mie}}
+
+## GPT Image 2.5 Sunburst и Flare
+
+Отдельные модели, не aliases GPT-5.4 Image 2. Короткие имена: `sunburst`, `flare`;
+`flair` — дополнительный CLI alias Flare, не название модели Polza.
+Public catalog/model pages проверены 2026-10-04; живые вызовы не выполнялись.
+Используются только MIE, один результат и явные defaults из Registry. Для auto
+доступно только 1K, для 1:1 недоступно 4K. Quality из обзорного текста Flare не
+входит в опубликованный MIE input contract: quality/seed не поддерживаются.
+
+{{model:gpt-image-2-5-sunburst}}
+
+{{model:gpt-image-2-5-flare}}

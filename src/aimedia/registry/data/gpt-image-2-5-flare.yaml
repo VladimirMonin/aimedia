@@ -1,0 +1,57 @@
+schema_version: 1
+model_id: gpt-image-2-5-flare
+name: GPT Image 2.5 Flare
+family: image
+status: experimental
+aliases: [flare, flair]
+capabilities:
+  text_to_image: true
+  reference_images:
+    supported: true
+    max: 16
+  multiple_outputs: false
+inputs:
+  prompt:
+    supported: true
+    required: true
+    max_chars: 20000
+  images:
+    supported: true
+    max: 16
+    formats: [png, jpeg, webp]
+outputs:
+  images:
+    supported: true
+    min: 1
+    max: 1
+parameters:
+  resolution:
+    type: enum
+    values: [1K, 2K, 4K]
+    default: 1K
+    required: true
+  aspect_ratio:
+    type: enum
+    values: [auto, '1:1', '9:16', '16:9', '4:3', '3:4', '3:2', '2:3', '21:9', '27:16', '16:27', '9:8', '8:9']
+    default: auto
+    required: true
+    description: MIE auto only at 1K; 1:1 is unavailable at 4K.
+  max_images:
+    type: integer
+    min: 1
+    max: 1
+    default: 1
+    description: One output per request; multiple input references are separate.
+providers:
+  polza:
+    remote_model_id: openai/gpt-image-2.5-flare
+verification:
+  checked_at: 2026-10-04
+  source: https://polza.ai/models/openai/gpt-image-2.5-flare.md ; https://polza.ai/api/v1/models/catalog?search=gpt&type=image ; https://polza.ai/api/openapi.json (public GET; MIE only; prompt limit from catalog; explicit 1K/auto defaults; quality marketing is not a MIE input contract; documented, NOT_LIVE_VERIFIED)
+pricing:
+  currency: RUB
+  unit_parameter: null
+  by_resolution:
+    1K: "4"
+    2K: "7"
+    4K: "11"

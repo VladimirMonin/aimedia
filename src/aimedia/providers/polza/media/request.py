@@ -18,11 +18,11 @@ effective definition модели; произвольная передача `pr
 - `max_images` всегда уходит, когда модель объявляет точное поле (включая
   доменное значение `1`, независимо от model default); без поля `1` опускается,
   а значения больше `1` отклоняются; граница generic схемы Polza — не более 6.
-  Exact GPT-5.4 Image 2 с fixed MIE provider routing использует Media
+  Exact GPT-5.4 Image 2 и GPT Image 2.5 с fixed MIE routing используют Media
   input.max_images=1 по CN-05 (references — отдельные входы);
 - обязательные устойчивые поля и поддерживаемые provider options с документированным
   default передаются явно, без default — отклоняются до HTTP;
-- три exact fixed-MIE binding получают top-level boolean async=true до final cap;
+- exact fixed-MIE bindings получают top-level boolean async=true до final cap;
   generic mapping и caller provider_options не управляют этим правилом;
 - размер тела ограничен **явным локальным** safety-cap: это защита проекта, а не
   документированный лимит Polza или конкретной модели.
@@ -63,9 +63,12 @@ _MAX_IMAGES_PARAMETER = "max_images"
 _MAX_SCHEMA_IMAGES = 6
 # Canonical Media model identity; MIE is selected only by the fixed ProviderDto.
 _GPT_MIE_MODEL = "openai/gpt-5.4-image-2"
+_GPT_MIE_MODELS = frozenset(
+    {_GPT_MIE_MODEL, "openai/gpt-image-2.5-sunburst", "openai/gpt-image-2.5-flare"}
+)
 # MediaRequestDto.provider selects upstreams without inventing model qualifiers.
 _MIE_PRICED_MODELS = frozenset(
-    {"qwen/image-2.1", "google/gemini-3.1-flash-image-preview", _GPT_MIE_MODEL}
+    {"qwen/image-2.1", "google/gemini-3.1-flash-image-preview", *_GPT_MIE_MODELS}
 )
 _SAFE_REMOTE_MODEL_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_./-]{0,127}\Z")
 _STABLE_SCHEMA_ENUMS = {
@@ -85,6 +88,11 @@ _STABLE_SCHEMA_ENUMS = {
         "16:9",
         "21:9",
         "9:21",
+        # ImageInputDto OpenAPI and GPT Image 2.5 catalog, 2026-10-04.
+        "27:16",
+        "16:27",
+        "9:8",
+        "8:9",
         "auto",
     ),
     "resolution": ("0.5K", "1K", "2K", "4K"),
@@ -349,7 +357,7 @@ def _apply_declared_parameters(
                 details={"parameter": name, **({"required": True} if using_default else {})},
             )
         input_payload[provider_field] = value
-    if effective.remote_model_id == _GPT_MIE_MODEL:
+    if effective.remote_model_id in _GPT_MIE_MODELS:
         if request.max_images != 1:
             raise InvalidParameterValueError(
                 "Новый GPT MIE запрос поддерживает один результат (CN-05).",

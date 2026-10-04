@@ -63,6 +63,10 @@ uv run --locked --no-env-file aimedia config init
 Настройте `POLZA_API_KEY` вне argv/TOML/истории, через вашу переменную окружения
 или secret manager. Установленная команда не ищет `.env` в cwd. TOML содержит
 только `polza_api_key_env = "POLZA_API_KEY"`; `config init` не перезаписывает файл.
+Для обычного `uv tool` ключ должен быть доступен запускающей оболочке. На Windows
+его можно сохранить в пользовательском окружении (не системном, не TOML);
+после настройки откройте новый терминал. Не передавайте ключ через argv/`setx`
+или текст команды в истории. Установка пакета сама ключ не настраивает.
 Для изолированных данных используйте `--data-dir` или `AIMEDIA_DATA_DIR`.
 
 Следующая команда **платная**, запускайте только намеренно:
@@ -100,6 +104,23 @@ uv run --locked --no-env-file aimedia jobs search "laboratory robot" --json
 uv run --locked --no-env-file aimedia jobs costs --month --json
 uv run --locked --no-env-file aimedia jobs sync 1 --json
 ```
+
+### GPT Image 2.5 — Sunburst и Flare
+
+Добавлены отдельные модели `gpt-image-2-5-sunburst` и `gpt-image-2-5-flare`.
+Короткие имена — `sunburst` и `flare`; `flair` также принимается как alias Flare.
+Это новый срез после опубликованного `v0.1.0`, не переименование GPT-5.4 Image 2.
+Сведения подтверждены public Polza catalog/model pages 2026-10-04, **не live**.
+MIE: 1K/2K/4K, до 16 референсов, prompt≤20000; один результат. Ограничения:
+auto только1K, квадрат не4K; quality/seed не поддерживаются выбранным MIE.
+
+```bash
+aimedia models show sunburst --json
+aimedia models show flare --json
+```
+
+Для генерации используйте эти имена в `--model` и `--allow-experimental`.
+Тарифы/полный список пропорций — в `models show`; цена не гарантирует списание.
 
 Retry (`jobs retry 1 --allow-experimental`) — новая платная попытка и новый Job.
 Sync — только известное remote execution, никогда submit. Timeout/Ctrl+C не

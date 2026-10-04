@@ -142,10 +142,14 @@ def _validate_gpt_mie_settings(
 ) -> None:
     """Exact fixed-MIE catalog constraints; no generic conditional-rule language.
 
-    Defaults still come from the effective definition. Source: GPT model page
-    (2026-10-01): auto only at 1K; 1:1 unavailable at 4K.
+    Defaults still come from the effective definition. Sources: GPT model pages
+    (2026-10-01/04): auto only at 1K; 1:1 unavailable at 4K.
     """
-    if effective.provider_id != "polza" or effective.remote_model_id != "openai/gpt-5.4-image-2":
+    if effective.provider_id != "polza" or effective.remote_model_id not in {
+        "openai/gpt-5.4-image-2",
+        "openai/gpt-image-2.5-sunburst",
+        "openai/gpt-image-2.5-flare",
+    }:
         return
     resolution_spec = effective.parameters.get("resolution")
     ratio_spec = effective.parameters.get("aspect_ratio")
