@@ -45,13 +45,22 @@ SUCCESS на CI-only `76e614f` (runtime/tests/lock не изменены).
 Документарные HEAD не новые tested runtime/tag; опубликованный тег не перемещён.
 Исторические checkpoint/NOT_RUN ниже относятся только к своим датам/SHA.
 
-**CURRENT — docs-only refresh, 2026-10-02:** владелец явно разрешил commit/push,
+**Исторический docs-only refresh, 2026-10-02:** владелец явно разрешил commit/push,
 перенос существующего `v0.1.0`, замену шести assets и scoped reinstall личного
 uv tool; это именованное исключение к обычной immutable policy, не новый runtime
 или patch version. [Решение/границы](progress/v0.1.0-refresh-2026-10-02.md).
 Точный текущий payload после публикации задают tag и публичный `release-manifest.json`.
 Приёмки f7 выше исторические; разрешение не означает выполненную публикацию.
 Действующая процедура — [RELEASE.verified-tool](../../instructions/RELEASE.verified-tool.instructions.md).
+
+**CURRENT — Sunburst/Flare и refresh v0.1.0, 2026-10-04:** implementation
+`aacad812daf0d313fe262797334fbf525655d9d3` добавляет две отдельные модели; всего
+пять experimental bindings. Владелец явно разрешил обновить docs, push, перенос
+тега и переустановку обычного uv tool. Это изменение каталога/runtime относительно
+прежнего тега, не только docs-only. [Объём и evidence](progress/v0.1.0-refresh-2026-10-04.md).
+Первый full gate raw1 (1809 PASS / старый count3 FAIL), focused repair231 PASS;
+исходный failure сохранён, новых live/Linux/CI claims нет. Ключ настроен отдельно
+в user environment, не в релизе. Exact current payload — `release-manifest.json`.
 
 **Исторический baseline (e751):** E07/E08/E09 CLOSED / ACCEPTED offline на
 `8a09d186a650248715b6efcade96b81f69370613`; count/price wire guard принят offline

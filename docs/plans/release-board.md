@@ -471,3 +471,17 @@ Docs commit/push интегратора — не новый релиз или п
 [Объём и порядок завершения](progress/v0.1.0-refresh-2026-10-02.md); actual current
 source commit после публикации — в публичном `release-manifest.json` и tag.
 Разрешение/подготовка не означают, что remote tag/assets/tool уже обновлены.
+
+## GPT Image 2.5 и обновление v0.1.0 — 2026-10-04
+
+Implementation `aacad812daf0d313fe262797334fbf525655d9d3`: Sunburst и Flare,
+пять моделей в каталоге, aliases `sunburst`/`flare`/`flair`, прежние MIE/security
+ограничения. Независимый source review — OK; initial release raw1 (1809 PASS,
+устаревший count3 FAIL), исправление exact set/count/provenance проверено:
+231 PASS, lint/format/build raw0. Initial gate не переименован в PASSED.
+
+Владелец отдельно разрешил docs/push/перенос существующего тега и рабочий uv tool
+по публичному тегу вместо локального wheel. [Решение и evidence](progress/v0.1.0-refresh-2026-10-04.md).
+Исторический live не доказывает генерацию новых моделей; paid POST0. Ключ настроен
+локально, GET Key HTTP200; secret не входит в Git/assets. Фактическую новую
+публикацию/установку фиксируют release manifest и receipts интегратора.

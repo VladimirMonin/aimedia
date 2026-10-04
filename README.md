@@ -7,8 +7,10 @@ wheel/sdist и установленный пакет, агентский walkthr
 сценарии. [Отчёт и границы приёмки](docs/plans/progress/e10-f7fb04e6.acceptance.md).
 Опубликован [релиз v0.1.0](https://github.com/VladimirMonin/aimedia/releases/tag/v0.1.0):
 исходная публикация и её CI зафиксированы в [отчёте E11](docs/plans/progress/e11-v0.1.0.publication.md).
-Владелец явно разрешил docs-only обновление сборки с переносом того же тега и
-заменой assets, без смены версии/runtime. [Решение и границы обновления](docs/plans/progress/v0.1.0-refresh-2026-10-02.md).
+Обновлённая поставка включает GPT Image 2.5 Sunburst и Flare. Владелец явно
+разрешил перенос того же тега и замену assets без смены версии.
+[Изменения и границы проверки](docs/plans/progress/v0.1.0-refresh-2026-10-04.md).
+[Предыдущее docs-only обновление](docs/plans/progress/v0.1.0-refresh-2026-10-02.md) — история.
 Текущий payload тега сверяйте с `source_commit` публичного `release-manifest.json`,
 а не с историческим SHA приёмки.
 
@@ -26,7 +28,7 @@ aimedia --help
 `release-manifest.json` и `SHA256SUMS`. Сверьте constraints/checksums с текущими assets;
 после установки `direct_url.json` должен соответствовать payload тега из manifest.
 Исходная установка → `f7fb04e6` (81 package-файл, 25 pins) и Windows/Linux CI —
-исторические результаты, не новая проверка docs-only сборки. Каталог моделей
+исторические результаты, не проверка новых моделей. Каталог моделей
 остаётся experimental.
 
 Если `v0.1.0` уже установлен и владелец явно разрешил обновление **того же тега**,
@@ -54,10 +56,10 @@ uv sync --locked
 ## Первый запуск
 
 ```bash
-uv run --locked --no-env-file aimedia --help
-uv run --locked --no-env-file aimedia models list --json
-uv run --locked --no-env-file aimedia help getting-started --raw
-uv run --locked --no-env-file aimedia config init
+aimedia --help
+aimedia models list --json
+aimedia help getting-started --raw
+aimedia config init
 ```
 
 Настройте `POLZA_API_KEY` вне argv/TOML/истории, через вашу переменную окружения
@@ -109,7 +111,7 @@ uv run --locked --no-env-file aimedia jobs sync 1 --json
 
 Добавлены отдельные модели `gpt-image-2-5-sunburst` и `gpt-image-2-5-flare`.
 Короткие имена — `sunburst` и `flare`; `flair` также принимается как alias Flare.
-Это новый срез после опубликованного `v0.1.0`, не переименование GPT-5.4 Image 2.
+Они входят в обновлённую поставку `v0.1.0`, не являются переименованием GPT-5.4 Image 2.
 Сведения подтверждены public Polza catalog/model pages 2026-10-04, **не live**.
 MIE: 1K/2K/4K, до 16 референсов, prompt≤20000; один результат. Ограничения:
 auto только1K, квадрат не4K; quality/seed не поддерживаются выбранным MIE.
@@ -121,6 +123,15 @@ aimedia models show flare --json
 
 Для генерации используйте эти имена в `--model` и `--allow-experimental`.
 Тарифы/полный список пропорций — в `models show`; цена не гарантирует списание.
+Пример ниже **платный**, запускайте только намеренно:
+
+```bash
+aimedia image generate --model sunburst --allow-experimental --prompt "A watercolor laboratory robot" --resolution 1K --aspect-ratio 1:1 --format webp
+```
+
+Для Flare замените `sunburst` на `flare`. После обновления по прежнему тегу
+проверьте `aimedia models list`: в каталоге пять моделей. Баннер `0.1.0` сам по
+себе не отличает старую сборку от новой.
 
 Retry (`jobs retry 1 --allow-experimental`) — новая платная попытка и новый Job.
 Sync — только известное remote execution, никогда submit. Timeout/Ctrl+C не

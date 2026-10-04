@@ -1,13 +1,14 @@
 ---
 applyTo: "README.md,docs/plans/release-board.md,docs/plans/progress/postrelease-*.md,docs/plans/progress/e11-*.md,docs/plans/progress/v*-refresh-*.md"
 name: "RELEASE.VerifiedTool"
-description: "Читай при установке, повторной проверке или явно разрешённом docs-only refresh опубликованного aimedia: Git-tag, release assets/provenance, scoped reinstall обычного uv tool, offline/live evidence, бюджет и изоляция пользовательских данных."
+description: "Читай при установке, повторной проверке или явно разрешённом refresh опубликованного aimedia: Git-tag, release assets/provenance, scoped reinstall обычного uv tool, offline/live evidence, бюджет и изоляция пользовательских данных."
 ---
 
 # RELEASE — Проверенная установка и эксплуатационная проверка uv tool
 
-Владелец — установка, проверка и подготовка docs-only refresh **уже опубликованного**
-image-only инструмента, не новый runtime. Исходные контракты: [план E10/E11](../docs/plans/README.md),
+Владелец — установка, проверка и явно разрешённое обновление **уже опубликованного**
+image-only инструмента. Реализация новых моделей принадлежит Registry/Provider.
+Исходные контракты: [план E10/E11](../docs/plans/README.md),
 [CLI](CLI.public-image.instructions.md), [offline quality](TEST.offline-quality.instructions.md),
 [Polza](PROVIDER.polza-media.instructions.md). Разрешение на проверку не разрешает
 двигать тег, активировать модели или менять provider/security/recovery контракты.
@@ -33,7 +34,7 @@ peeled commit `f7fb04e6768aaf1c04c575166e5b73a5e4e95473` — историчес�
 При использовании wheel/sdist проверь и их строки. Checksums из того же release
 не являются независимой цифровой подписью. Несовпадение — STOP, не переиздание тега.
 
-### Явно разрешённое исключение: docs-only refresh того же тега
+### Явно разрешённое исключение: refresh того же тега
 
 Только отдельное решение владельца разрешает перенос существующего тега и замену
 assets без смены версии. Именованное решение/дата/объём принадлежат отчёту refresh,
@@ -41,6 +42,13 @@ assets без смены версии. Именованное решение/д�
 До замены сохрани прежние публичные assets и old tag object/peeled commit; после
 commit зафиксируй new tag object/peeled commit и installed VCS commit. Старые
 приёмки/evidence не переписывай и не выдавай за прогоны обновлённого payload.
+Перенос выполняй с ожиданием точного прежнего remote tag object (`force-with-lease`
+только для tag ref); main публикуется обычным fast-forward, без force.
+Если в поставке изменён runtime/каталог, не называй весь refresh docs-only:
+отдельно назови implementation commit, его проверки/failures и независимый review.
+Подготовка только документации поверх проверенного среза не является новой
+приёмкой кода. Не переименовывай исходный failed full gate в PASSED после focused
+repair; сохраняй оба результата и границы оставшихся NOT_RUN.
 
 Для docs-only кандидата достаточно одного diff, подтверждающего неизменность
 runtime/tests/lock/pyproject, focused docs links/YAML/whitespace checks и одной
@@ -53,6 +61,9 @@ uv --no-config build --offline --out-dir <owned-assets-dir>
 Перед spawn удали секреты по именам, включая alias `AIMEDIA_POLZA_API_KEY_ENV`;
 не загружай `.env`. Проверь archive members: актуальные docs в sdist, навыки отдельно
 в source/sdist, не wheel resources; без `.env`, БД, `.pi` и private artifacts.
+Не копируй в сборку чужие untracked файлы или состояние агентов. При dirty checkout
+используй отдельный snapshot tracked Git source с наложением только owned candidate
+docs; исходное дерево/чужие файлы не удаляй и не меняй.
 Публичный корневой `.env.example` допустим: Git-ignore исключение только
 `!/.env.example`, не глобальное `!.env.example`, чтобы templates внутри `.pi/`
 и корневого `artifacts/` не попадали в sdist; `src/aimedia/artifacts/` — штатный код.
@@ -193,4 +204,4 @@ Cleanup касается только точных новых owned Temp dirs п
 [проверенный quiescent backup+restore](../docs/plans/backup-contract.md).
 Обычное обновление — отдельное разрешение и **новый** тег/peeled SHA/constraints/
 verification, не перемещение старого тега. Исключение — явно разрешённый владельцем
-docs-only refresh по разделу 1; совместимость БД/откат не предполагаются автоматически.
+refresh с явно указанным объёмом по разделу 1; совместимость БД/откат не предполагаются автоматически.
