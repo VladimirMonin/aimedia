@@ -77,7 +77,9 @@ editor, SVG/HTML/chart renderer, rasterizer или систему редакти
 
 ## Состав и происхождение
 
-`visual-story-director` 1.2.0 импортирован целиком и без редактирования.
+`visual-story-director` 1.3.0 импортирован целиком и без редактирования
+из принятой пользовательской редакции. Обновление описано в
+[отчёте](../plans/progress/visual-story-v1.3-2026-10-05.md).
 Сохраняются [README](visual-story-director/README.md),
 [Apache-2.0 LICENSE](visual-story-director/LICENSE),
 [THIRD_PARTY_NOTICES](visual-story-director/THIRD_PARTY_NOTICES.md),
